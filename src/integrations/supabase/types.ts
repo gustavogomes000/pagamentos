@@ -14,35 +14,116 @@ export type Database = {
   }
   public: {
     Tables: {
+      administrativo: {
+        Row: {
+          cpf: string | null
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+          valor_contrato: number | null
+          whatsapp: string | null
+        }
+        Insert: {
+          cpf?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+          valor_contrato?: number | null
+          whatsapp?: string | null
+        }
+        Update: {
+          cpf?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+          valor_contrato?: number | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      liderancas: {
+        Row: {
+          chave_pix: string | null
+          cpf: string | null
+          created_at: string
+          id: string
+          ligacao_politica: string | null
+          nome: string
+          rede_social: string | null
+          regiao: string | null
+          retirada_mensal_valor: number | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          chave_pix?: string | null
+          cpf?: string | null
+          created_at?: string
+          id?: string
+          ligacao_politica?: string | null
+          nome: string
+          rede_social?: string | null
+          regiao?: string | null
+          retirada_mensal_valor?: number | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          chave_pix?: string | null
+          cpf?: string | null
+          created_at?: string
+          id?: string
+          ligacao_politica?: string | null
+          nome?: string
+          rede_social?: string | null
+          regiao?: string | null
+          retirada_mensal_valor?: number | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       pagamentos: {
         Row: {
+          admin_id: string | null
           ano: number
           categoria: string
           created_at: string
           id: string
+          lideranca_id: string | null
           mes: number
           observacao: string | null
-          suplente_id: string
+          suplente_id: string | null
+          tipo_pessoa: string | null
           valor: number
         }
         Insert: {
+          admin_id?: string | null
           ano: number
           categoria: string
           created_at?: string
           id?: string
+          lideranca_id?: string | null
           mes: number
           observacao?: string | null
-          suplente_id: string
+          suplente_id?: string | null
+          tipo_pessoa?: string | null
           valor?: number
         }
         Update: {
+          admin_id?: string | null
           ano?: number
           categoria?: string
           created_at?: string
           id?: string
+          lideranca_id?: string | null
           mes?: number
           observacao?: string | null
-          suplente_id?: string
+          suplente_id?: string | null
+          tipo_pessoa?: string | null
           valor?: number
         }
         Relationships: [
@@ -125,6 +206,7 @@ export type Database = {
         Row: {
           ano_eleicao: number | null
           assinatura: string | null
+          bairro: string | null
           base_politica: string | null
           cargo_disputado: string | null
           created_at: string
@@ -135,6 +217,7 @@ export type Database = {
           liderancas_qtd: number | null
           liderancas_valor_unit: number | null
           nome: string
+          numero_urna: string | null
           partido: string | null
           plotagem_qtd: number | null
           plotagem_valor_unit: number | null
@@ -150,6 +233,7 @@ export type Database = {
         Insert: {
           ano_eleicao?: number | null
           assinatura?: string | null
+          bairro?: string | null
           base_politica?: string | null
           cargo_disputado?: string | null
           created_at?: string
@@ -160,6 +244,7 @@ export type Database = {
           liderancas_qtd?: number | null
           liderancas_valor_unit?: number | null
           nome: string
+          numero_urna?: string | null
           partido?: string | null
           plotagem_qtd?: number | null
           plotagem_valor_unit?: number | null
@@ -175,6 +260,7 @@ export type Database = {
         Update: {
           ano_eleicao?: number | null
           assinatura?: string | null
+          bairro?: string | null
           base_politica?: string | null
           cargo_disputado?: string | null
           created_at?: string
@@ -185,6 +271,7 @@ export type Database = {
           liderancas_qtd?: number | null
           liderancas_valor_unit?: number | null
           nome?: string
+          numero_urna?: string | null
           partido?: string | null
           plotagem_qtd?: number | null
           plotagem_valor_unit?: number | null

@@ -80,7 +80,7 @@ export default function CadastroLideranca() {
     if (id) {
       ({ error } = await (supabase as any).from("liderancas").update(payload).eq("id", id));
     } else {
-      ({ error } = await supabase.from("liderancas").insert(payload));
+      ({ error } = await (supabase as any).from("liderancas").insert(payload));
     }
     setSaving(false);
     if (error) {

@@ -68,7 +68,7 @@ export default function CadastroAdmin() {
     if (id) {
       ({ error } = await (supabase as any).from("administrativo").update(payload).eq("id", id));
     } else {
-      ({ error } = await supabase.from("administrativo").insert(payload));
+      ({ error } = await (supabase as any).from("administrativo").insert(payload));
     }
     setSaving(false);
     if (error) {
