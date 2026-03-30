@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       administrativo: {
         Row: {
+          contrato_ate_mes: number | null
           cpf: string | null
           created_at: string
           id: string
@@ -25,6 +26,7 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          contrato_ate_mes?: number | null
           cpf?: string | null
           created_at?: string
           id?: string
@@ -34,6 +36,7 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          contrato_ate_mes?: number | null
           cpf?: string | null
           created_at?: string
           id?: string
@@ -54,6 +57,7 @@ export type Database = {
           nome: string
           rede_social: string | null
           regiao: string | null
+          retirada_ate_mes: number | null
           retirada_mensal_valor: number | null
           updated_at: string
           whatsapp: string | null
@@ -67,6 +71,7 @@ export type Database = {
           nome: string
           rede_social?: string | null
           regiao?: string | null
+          retirada_ate_mes?: number | null
           retirada_mensal_valor?: number | null
           updated_at?: string
           whatsapp?: string | null
@@ -80,6 +85,7 @@ export type Database = {
           nome?: string
           rede_social?: string | null
           regiao?: string | null
+          retirada_ate_mes?: number | null
           retirada_mensal_valor?: number | null
           updated_at?: string
           whatsapp?: string | null
