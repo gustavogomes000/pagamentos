@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { PageTransition } from "@/components/PageTransition";
 import { CardSkeletonList } from "@/components/CardSkeleton";
@@ -10,7 +11,7 @@ import {
   ChevronDown, ChevronUp, Trash2, X, Loader2, Wallet,
   ChevronLeft, ChevronRight, Save, Search,
   CheckCircle2, AlertCircle, Users, Briefcase, List, Pencil,
-  TrendingDown, Receipt, DollarSign, BarChart3, Eye, EyeOff,
+  DollarSign, Receipt,
 } from "lucide-react";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 
@@ -19,10 +20,6 @@ const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
 
 const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
-type FiltroAba = "todos" | "suplentes" | "liderancas" | "admin";
-
-type CategoriaGasto = "retirada" | "plotagem" | "liderancas" | "fiscais";
 
 type Pagamento = {
   id: string;
@@ -37,6 +34,7 @@ type Suplente = {
   plotagem_qtd: number; plotagem_valor_unit: number;
   liderancas_qtd: number; liderancas_valor_unit: number;
   fiscais_qtd: number; fiscais_valor_unit: number; total_campanha: number;
+  numero_urna: string | null;
 };
 
 type Lideranca = {
@@ -54,18 +52,6 @@ const CAT_LABEL: Record<string, string> = {
   salario: "Salário", outro: "Outro",
 };
 
-const CAT_ICON: Record<string, typeof DollarSign> = {
-  retirada: DollarSign, plotagem: BarChart3,
-  liderancas: Users, fiscais: Briefcase,
-};
-
-const CAT_COLOR: Record<string, { bg: string; text: string; bar: string }> = {
-  retirada: { bg: "bg-pink-500/10", text: "text-pink-600 dark:text-pink-400", bar: "bg-pink-500" },
-  plotagem: { bg: "bg-violet-500/10", text: "text-violet-600 dark:text-violet-400", bar: "bg-violet-500" },
-  liderancas: { bg: "bg-blue-500/10", text: "text-blue-600 dark:text-blue-400", bar: "bg-blue-500" },
-  fiscais: { bg: "bg-amber-500/10", text: "text-amber-600 dark:text-amber-400", bar: "bg-amber-500" },
-};
-
 // ─── Barra de progresso ───────────────────────────────────────────────────────
 function Bar({ pago, total, cor = "bg-primary", height = "h-1.5" }: { pago: number; total: number; cor?: string; height?: string }) {
   const pct = total > 0 ? Math.min(100, (pago / total) * 100) : 0;
@@ -76,55 +62,70 @@ function Bar({ pago, total, cor = "bg-primary", height = "h-1.5" }: { pago: numb
   );
 }
 
-// ─── Formulário de pagamento inline ──────────────────────────────────────────
-function QuickPayForm({ valorEsperado, categoria, categorias, onSave, onCancel, saving }: {
-  valorEsperado: number;
-  categoria?: string;
-  categorias?: { key: string; label: string }[];
+// ─── Formulário de pagamento ─────────────────────────────────────────────────
+function PayForm({ pessoaNome, valorSugerido, categorias, onSave, onCancel, saving }: {
+  pessoaNome: string;
+  valorSugerido: number;
+  categorias: { key: string; label: string }[];
   onSave: (valor: number, obs: string, cat: string) => Promise<void>;
   onCancel: () => void; saving: boolean;
 }) {
-  const [valor, setValor] = useState(valorEsperado > 0 ? String(valorEsperado) : "");
+  const [valor, setValor] = useState(valorSugerido > 0 ? String(valorSugerido) : "");
   const [obs, setObs] = useState("");
-  const [cat, setCat] = useState(categoria || "retirada");
+  const [cat, setCat] = useState(categorias[0]?.key || "retirada");
   const valorNum = parseFloat(valor.replace(",", ".")) || 0;
-  const parcial = valorEsperado > 0 && valorNum > 0 && valorNum < valorEsperado;
 
   return (
-    <div className="border-t border-border/60 bg-muted/30 px-3 py-3 space-y-2">
+    <div className="bg-card rounded-2xl border border-primary/30 p-4 space-y-3 shadow-sm">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-foreground">Registrar pagamento</span>
-        {valorEsperado > 0 && <span className="text-[10px] text-muted-foreground">Esperado: {fmt(valorEsperado)}</span>}
+        <div>
+          <p className="text-xs font-bold text-primary uppercase tracking-wider">Registrar Pagamento</p>
+          <p className="text-sm font-semibold text-foreground">{pessoaNome}</p>
+        </div>
+        <button onClick={onCancel} className="text-muted-foreground hover:text-foreground p-1"><X size={16} /></button>
       </div>
-      {categorias && categorias.length > 1 && (
-        <div className="flex gap-1 flex-wrap">
-          {categorias.map(c => (
-            <button key={c.key} onClick={() => setCat(c.key)}
-              className={`text-[10px] font-semibold px-2 py-1 rounded-lg transition-all ${cat === c.key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-              {c.label}
-            </button>
-          ))}
+
+      {categorias.length > 1 && (
+        <div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Categoria</p>
+          <div className="flex gap-1.5 flex-wrap">
+            {categorias.map(c => (
+              <button key={c.key} onClick={() => setCat(c.key)}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-xl transition-all ${cat === c.key ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                {c.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-medium">R$</span>
-          <Input type="number" inputMode="decimal" value={valor} onChange={e => setValor(e.target.value)}
-            className="pl-8 h-11 text-base font-bold bg-card border-primary/40" placeholder="0,00" autoFocus />
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Valor (R$)</p>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-medium">R$</span>
+            <Input type="number" inputMode="decimal" value={valor} onChange={e => setValor(e.target.value)}
+              className="pl-8 h-11 text-base font-bold bg-card border-primary/40" placeholder="0,00" autoFocus />
+          </div>
         </div>
-        <Button onClick={() => onSave(valorNum, obs, cat)} disabled={saving || valorNum <= 0}
-          className="h-11 px-4 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-bold shrink-0">
-          {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-        </Button>
-        <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" onClick={onCancel}><X size={16} /></Button>
+        <div>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Observação</p>
+          <Input value={obs} onChange={e => setObs(e.target.value)} className="h-11 bg-card" placeholder="Opcional" />
+        </div>
       </div>
-      <Input value={obs} onChange={e => setObs(e.target.value)} className="h-8 text-xs bg-card" placeholder="Observação (opcional)" />
-      {parcial && (
+
+      {valorSugerido > 0 && valorNum > 0 && valorNum < valorSugerido && (
         <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-1.5">
           <AlertCircle size={11} className="text-amber-500 shrink-0" />
-          <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">Parcial — faltará {fmt(valorEsperado - valorNum)}</span>
+          <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">Parcial — faltará {fmt(valorSugerido - valorNum)}</span>
         </div>
       )}
+
+      <Button onClick={() => onSave(valorNum, obs, cat)} disabled={saving || valorNum <= 0}
+        className="w-full h-11 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-bold text-sm">
+        {saving ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
+        {saving ? "Salvando..." : `Registrar ${fmt(valorNum)}`}
+      </Button>
     </div>
   );
 }
@@ -147,7 +148,7 @@ function HistoricoItem({ p, onDelete }: { p: Pagamento; onDelete: (id: string) =
   };
 
   if (editing) return (
-    <div className="px-3 py-2 space-y-1.5 border-b border-border/40 bg-muted/20">
+    <div className="px-3 py-2 space-y-1.5 bg-muted/20">
       <div className="flex gap-1.5">
         <Input type="number" value={valor} onChange={e => setValor(e.target.value)} className="h-7 text-xs flex-1 bg-card" />
         <Input value={obs} onChange={e => setObs(e.target.value)} className="h-7 text-xs flex-1 bg-card" placeholder="Obs" />
@@ -160,7 +161,7 @@ function HistoricoItem({ p, onDelete }: { p: Pagamento; onDelete: (id: string) =
   );
 
   return (
-    <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/30 last:border-0">
+    <div className="flex items-center justify-between px-3 py-1.5">
       <div className="min-w-0">
         <span className="text-xs font-medium text-foreground">{CAT_LABEL[p.categoria] || p.categoria}</span>
         {p.observacao && <span className="text-[10px] text-muted-foreground ml-2">{p.observacao}</span>}
@@ -175,118 +176,39 @@ function HistoricoItem({ p, onDelete }: { p: Pagamento; onDelete: (id: string) =
   );
 }
 
-// ─── Card de gasto por categoria (dentro do card do suplente) ─────────────────
-function CategoriaGastoCard({ catKey, label, detalhe, planejado, pago, pagamentos, onDelete }: {
-  catKey: string; label: string; detalhe: string; planejado: number; pago: number;
-  pagamentos: Pagamento[]; onDelete: (id: string) => void;
-}) {
-  const [showPags, setShowPags] = useState(false);
-  const falta = Math.max(0, planejado - pago);
-  const pct = planejado > 0 ? Math.min(100, (pago / planejado) * 100) : 0;
-  const colors = CAT_COLOR[catKey] || CAT_COLOR.retirada;
-  const Icon = CAT_ICON[catKey] || DollarSign;
-  const quitado = pago >= planejado && planejado > 0;
-
-  return (
-    <div className={`rounded-xl border overflow-hidden ${quitado ? "border-green-500/30 bg-green-500/5" : "border-border/50 bg-card"}`}>
-      <div className="p-2.5">
-        <div className="flex items-center justify-between gap-2 mb-1.5">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${colors.bg}`}>
-              <Icon size={12} className={colors.text} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-foreground leading-tight">{label}</p>
-              <p className="text-[10px] text-muted-foreground truncate">{detalhe}</p>
-            </div>
-          </div>
-          <div className="text-right shrink-0">
-            <p className="text-xs font-bold text-foreground">{fmt(planejado)}</p>
-          </div>
-        </div>
-
-        <Bar pago={pago} total={planejado} cor={quitado ? "bg-green-500" : colors.bar} height="h-1" />
-
-        <div className="flex justify-between mt-1 items-center">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">
-              ✓ {fmt(pago)}
-            </span>
-            {falta > 0 ? (
-              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
-                ⏳ {fmt(falta)}
-              </span>
-            ) : planejado > 0 ? (
-              <span className="text-[10px] text-green-600 font-bold">✓ Quitado</span>
-            ) : null}
-          </div>
-          {pagamentos.length > 0 && (
-            <button onClick={() => setShowPags(!showPags)} className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-0.5">
-              {pagamentos.length} pag. {showPags ? <ChevronUp size={9} /> : <ChevronDown size={9} />}
-            </button>
-          )}
-        </div>
-      </div>
-
-      {showPags && pagamentos.length > 0 && (
-        <div className="border-t border-border/30 bg-muted/10">
-          {pagamentos.map(p => <HistoricoItem key={p.id} p={p} onDelete={onDelete} />)}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Card completo do Suplente ────────────────────────────────────────────────
-function SuplenteCard({ suplente, pagamentosTodos, pagamentosMes, mes, ano }: {
-  suplente: Suplente; pagamentosTodos: Pagamento[]; pagamentosMes: Pagamento[];
-  mes: number; ano: number;
+// ─── Card de Suplente no Pagamentos ──────────────────────────────────────────
+function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
+  s: Suplente; pagsMes: Pagamento[]; pagsTodos: Pagamento[]; mes: number; ano: number;
 }) {
   const qc = useQueryClient();
-  const [expanded, setExpanded] = useState(false);
   const [paying, setPaying] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showFicha, setShowFicha] = useState(false);
 
-  const totais = calcTotaisFinanceiros(suplente);
-  const retiradaMes = suplente.retirada_mensal_valor || 0;
+  const retiradaMes = s.retirada_mensal_valor || 0;
+  const pagoMes = pagsMes.reduce((a, p) => a + p.valor, 0);
+  const faltaMes = Math.max(0, retiradaMes - pagoMes);
+  const pago = pagoMes >= retiradaMes && retiradaMes > 0;
 
-  // Pagos este mês por categoria
-  const pagoMesRetirada = pagamentosMes.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0);
-  const pagoMesPlotagem = pagamentosMes.filter(p => p.categoria === "plotagem").reduce((a, p) => a + p.valor, 0);
-  const pagoMesLiderancas = pagamentosMes.filter(p => p.categoria === "liderancas").reduce((a, p) => a + p.valor, 0);
-  const pagoMesFiscais = pagamentosMes.filter(p => p.categoria === "fiscais").reduce((a, p) => a + p.valor, 0);
-  const totalPagoMes = pagoMesRetirada + pagoMesPlotagem + pagoMesLiderancas + pagoMesFiscais;
-
-  // Totais gerais (todos os meses)
-  const pagoTotalRetirada = pagamentosTodos.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0);
-  const pagoTotalPlotagem = pagamentosTodos.filter(p => p.categoria === "plotagem").reduce((a, p) => a + p.valor, 0);
-  const pagoTotalLiderancas = pagamentosTodos.filter(p => p.categoria === "liderancas").reduce((a, p) => a + p.valor, 0);
-  const pagoTotalFiscais = pagamentosTodos.filter(p => p.categoria === "fiscais").reduce((a, p) => a + p.valor, 0);
-  const totalPagoGeral = pagoTotalRetirada + pagoTotalPlotagem + pagoTotalLiderancas + pagoTotalFiscais;
-
-  const faltaRetiradaMes = Math.max(0, retiradaMes - pagoMesRetirada);
-  const retiradaPaga = pagoMesRetirada >= retiradaMes && retiradaMes > 0;
-
-  const subtitulo = [suplente.bairro || suplente.regiao_atuacao, suplente.partido].filter(Boolean).join(" · ");
+  const totais = calcTotaisFinanceiros(s);
+  const totalPagoGeral = pagsTodos.reduce((a, p) => a + p.valor, 0);
 
   const categorias = [
-    { key: "retirada", label: "Retirada Mensal", planejado: totais.retirada, pagoTotal: pagoTotalRetirada, detalhe: `${fmt(retiradaMes)} × ${suplente.retirada_mensal_meses || 0} meses` },
-    { key: "plotagem", label: "Plotagem", planejado: totais.plotagem, pagoTotal: pagoTotalPlotagem, detalhe: `${suplente.plotagem_qtd || 0} un. × ${fmt(suplente.plotagem_valor_unit || 0)}` },
-    { key: "liderancas", label: "Lideranças", planejado: totais.liderancas, pagoTotal: pagoTotalLiderancas, detalhe: `${suplente.liderancas_qtd || 0} × ${fmt(suplente.liderancas_valor_unit || 0)}` },
-    { key: "fiscais", label: "Fiscais", planejado: totais.fiscais, pagoTotal: pagoTotalFiscais, detalhe: `${suplente.fiscais_qtd || 0} × ${fmt(suplente.fiscais_valor_unit || 0)}` },
+    { key: "retirada", label: "Retirada", planejado: totais.retirada, pago: pagsTodos.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0), detalhe: `${fmt(retiradaMes)} × ${s.retirada_mensal_meses || 0}m` },
+    { key: "plotagem", label: "Plotagem", planejado: totais.plotagem, pago: pagsTodos.filter(p => p.categoria === "plotagem").reduce((a, p) => a + p.valor, 0), detalhe: `${s.plotagem_qtd || 0} × ${fmt(s.plotagem_valor_unit || 0)}` },
+    { key: "liderancas", label: "Lideranças", planejado: totais.liderancas, pago: pagsTodos.filter(p => p.categoria === "liderancas").reduce((a, p) => a + p.valor, 0), detalhe: `${s.liderancas_qtd || 0} × ${fmt(s.liderancas_valor_unit || 0)}` },
+    { key: "fiscais", label: "Fiscais", planejado: totais.fiscais, pago: pagsTodos.filter(p => p.categoria === "fiscais").reduce((a, p) => a + p.valor, 0), detalhe: `${s.fiscais_qtd || 0} × ${fmt(s.fiscais_valor_unit || 0)}` },
   ].filter(c => c.planejado > 0);
-
-  const saldoCampanha = totais.totalFinal - totalPagoGeral;
 
   const handleSave = async (valor: number, obs: string, cat: string) => {
     setSaving(true);
     const { error } = await (supabase as any).from("pagamentos").insert({
-      tipo_pessoa: "suplente", suplente_id: suplente.id, mes, ano,
+      tipo_pessoa: "suplente", suplente_id: s.id, mes, ano,
       categoria: cat, valor, observacao: obs || null,
     });
     setSaving(false);
     if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
-    else { toast({ title: `✅ ${fmt(valor)} registrado!`, description: `${suplente.nome} — ${CAT_LABEL[cat]}` }); qc.invalidateQueries({ queryKey: ["pagamentos"] }); setPaying(false); }
+    else { toast({ title: `✅ ${fmt(valor)} registrado para ${s.nome}` }); qc.invalidateQueries({ queryKey: ["pagamentos"] }); setPaying(false); }
   };
 
   const handleDelete = async (pagId: string) => {
@@ -295,133 +217,123 @@ function SuplenteCard({ suplente, pagamentosTodos, pagamentosMes, mes, ano }: {
     qc.invalidateQueries({ queryKey: ["pagamentos"] });
   };
 
+  const subtitle = [s.bairro || s.regiao_atuacao, s.partido].filter(Boolean).join(" · ");
+
   return (
-    <div className={`bg-card rounded-2xl border shadow-sm overflow-hidden transition-all ${retiradaPaga ? "border-green-500/20" : "border-amber-500/30"}`}>
-      {/* Header */}
+    <div className={`bg-card rounded-2xl border shadow-sm overflow-hidden ${pago ? "border-green-500/20" : "border-amber-500/30"}`}>
       <div className="p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-pink-500 bg-pink-500/10">Suplente</span>
-              {retiradaPaga && <CheckCircle2 size={11} className="text-green-500" />}
+            <p className="font-bold text-foreground text-sm truncate">{s.nome}</p>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              {s.numero_urna && <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">#{s.numero_urna}</span>}
+              {subtitle && <span className="text-[11px] text-muted-foreground">{subtitle}</span>}
             </div>
-            <p className="font-bold text-foreground text-sm truncate">{suplente.nome}</p>
-            {subtitulo && <p className="text-[11px] text-muted-foreground truncate">{subtitulo}</p>}
           </div>
           <div className="text-right shrink-0">
-            {retiradaPaga ? (
-              <>
-                <p className="text-[10px] text-green-600 dark:text-green-400 font-medium">Retirada paga</p>
-                <p className="text-base font-bold text-green-600 dark:text-green-400">{fmt(totalPagoMes)}</p>
-              </>
+            {pago ? (
+              <div className="flex items-center gap-1">
+                <CheckCircle2 size={14} className="text-green-500" />
+                <span className="text-sm font-bold text-green-600 dark:text-green-400">{fmt(pagoMes)}</span>
+              </div>
             ) : (
               <>
-                <p className="text-[10px] text-muted-foreground">Falta retirada</p>
-                <p className="text-xl font-bold text-amber-600 dark:text-amber-400 leading-tight">{fmt(faltaRetiradaMes)}</p>
+                <p className="text-[10px] text-muted-foreground">Falta</p>
+                <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{fmt(faltaMes)}</p>
               </>
             )}
           </div>
         </div>
 
-        {/* Mini resumo mensal */}
         {retiradaMes > 0 && (
           <div className="mt-2">
             <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
-              <span>Retirada mensal</span>
-              <span>{fmt(pagoMesRetirada)} / {fmt(retiradaMes)}</span>
+              <span>Retirada {MESES[mes - 1]}</span>
+              <span>{fmt(pagoMes)} / {fmt(retiradaMes)}</span>
             </div>
-            <Bar pago={pagoMesRetirada} total={retiradaMes} cor={retiradaPaga ? "bg-green-500" : "bg-amber-500"} />
+            <Bar pago={pagoMes} total={retiradaMes} cor={pago ? "bg-green-500" : "bg-amber-500"} />
           </div>
         )}
       </div>
 
       {/* Ações */}
       <div className="flex border-t border-border/30 divide-x divide-border/30">
-        {!retiradaPaga && (
-          <button onClick={() => setPaying(!paying)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold text-white bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-600 hover:to-rose-500">
-            <DollarSign size={12} /> Pagar
-          </button>
-        )}
-        {retiradaPaga && (
-          <button onClick={() => setPaying(!paying)}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-primary font-semibold hover:bg-primary/5">
-            + Pagamento
-          </button>
-        )}
-        <button onClick={() => setExpanded(!expanded)}
+        <button onClick={() => { setPaying(!paying); setShowFicha(false); }}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold ${!pago ? "text-white bg-gradient-to-r from-pink-500 to-rose-400" : "text-primary hover:bg-primary/5"}`}>
+          <DollarSign size={12} /> {pago ? "+ Pagamento" : "Pagar"}
+        </button>
+        <button onClick={() => { setShowFicha(!showFicha); setPaying(false); }}
           className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-muted-foreground hover:bg-muted/20 font-medium">
-          <Receipt size={12} /> Ficha Completa {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+          <Receipt size={12} /> Ficha {showFicha ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
         </button>
       </div>
 
-      {/* Form de pagamento */}
       {paying && (
-        <QuickPayForm
-          valorEsperado={faltaRetiradaMes}
-          categoria="retirada"
-          categorias={categorias.map(c => ({ key: c.key, label: c.label }))}
-          onSave={handleSave}
-          onCancel={() => setPaying(false)}
-          saving={saving}
-        />
+        <div className="p-3 border-t border-border/30">
+          <PayForm
+            pessoaNome={s.nome}
+            valorSugerido={faltaMes}
+            categorias={categorias.map(c => ({ key: c.key, label: c.label }))}
+            onSave={handleSave}
+            onCancel={() => setPaying(false)}
+            saving={saving}
+          />
+        </div>
       )}
 
-      {/* Ficha completa expandida */}
-      {expanded && (
-        <div className="border-t border-border/50 bg-muted/5">
-          {/* Gastos por categoria */}
-          <div className="px-3 pt-3 pb-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-2 flex items-center gap-1">
-              <Receipt size={10} /> Gastos da Campanha (Total Geral)
-            </p>
-            <div className="space-y-2">
-              {categorias.map(c => (
-                <CategoriaGastoCard
-                  key={c.key}
-                  catKey={c.key}
-                  label={c.label}
-                  detalhe={c.detalhe}
-                  planejado={c.planejado}
-                  pago={c.pagoTotal}
-                  pagamentos={pagamentosTodos.filter(p => p.categoria === c.key)}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Resumo total da campanha */}
-          <div className="px-3 pb-3">
-            <div className={`rounded-xl p-3 border ${saldoCampanha <= 0 ? "bg-green-500/10 border-green-500/30" : "bg-card border-border"}`}>
-              <div className="flex justify-between items-center mb-1.5">
-                <span className="text-xs font-bold text-foreground">Total da Campanha</span>
-                <span className="text-sm font-bold text-foreground">{fmt(totais.totalFinal)}</span>
-              </div>
-              <Bar pago={totalPagoGeral} total={totais.totalFinal} cor={saldoCampanha <= 0 ? "bg-green-500" : "bg-primary"} />
-              <div className="flex justify-between mt-1.5">
-                <span className="text-[11px] text-green-600 dark:text-green-400 font-bold">Pago: {fmt(totalPagoGeral)}</span>
-                <span className={`text-[11px] font-bold ${saldoCampanha > 0 ? "text-rose-500" : "text-green-500"}`}>
-                  {saldoCampanha > 0 ? `Falta: ${fmt(saldoCampanha)}` : "Quitado ✓"}
-                </span>
-              </div>
-
-              {/* Breakdown parcial */}
-              <div className="mt-2 space-y-1 border-t border-border/30 pt-2">
-                {categorias.map(c => {
-                  const falta = Math.max(0, c.planejado - c.pagoTotal);
-                  return (
-                    <div key={c.key} className="flex items-center justify-between text-[10px]">
-                      <span className="text-muted-foreground">{c.label}</span>
-                      <div className="flex gap-3">
-                        <span className="text-green-600 dark:text-green-400">{fmt(c.pagoTotal)}</span>
-                        <span className="text-muted-foreground">/ {fmt(c.planejado)}</span>
-                        {falta > 0 && <span className="text-amber-500 font-medium">-{fmt(falta)}</span>}
+      {showFicha && (
+        <div className="border-t border-border/50 bg-muted/5 p-3 space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-primary flex items-center gap-1">
+            <Receipt size={10} /> Gastos da Campanha
+          </p>
+          {categorias.map(c => {
+            const falta = Math.max(0, c.planejado - c.pago);
+            const catPags = pagsTodos.filter(p => p.categoria === c.key);
+            return (
+              <div key={c.key} className="bg-card rounded-xl border border-border/50 p-2.5">
+                <div className="flex items-center justify-between mb-1">
+                  <div>
+                    <p className="text-xs font-semibold text-foreground">{CAT_LABEL[c.key]}</p>
+                    <p className="text-[10px] text-muted-foreground">{c.detalhe}</p>
+                  </div>
+                  <p className="text-xs font-bold text-foreground">{fmt(c.planejado)}</p>
+                </div>
+                <Bar pago={c.pago} total={c.planejado} cor={c.pago >= c.planejado ? "bg-green-500" : "bg-primary"} height="h-1" />
+                <div className="flex justify-between mt-1">
+                  <span className="text-[10px] text-green-600 dark:text-green-400">✓ {fmt(c.pago)}</span>
+                  {falta > 0 ? (
+                    <span className="text-[10px] text-amber-600 dark:text-amber-400">⏳ {fmt(falta)}</span>
+                  ) : (
+                    <span className="text-[10px] text-green-600 font-bold">Quitado ✓</span>
+                  )}
+                </div>
+                {catPags.length > 0 && (
+                  <div className="mt-1.5 border-t border-border/30 pt-1">
+                    {catPags.slice(0, 3).map(p => (
+                      <div key={p.id} className="flex justify-between text-[10px] py-0.5">
+                        <span className="text-muted-foreground">{new Date(p.created_at).toLocaleDateString("pt-BR")} {p.observacao && `— ${p.observacao}`}</span>
+                        <span className="font-medium text-foreground">{fmt(p.valor)}</span>
                       </div>
-                    </div>
-                  );
-                })}
+                    ))}
+                    {catPags.length > 3 && <p className="text-[9px] text-muted-foreground">+{catPags.length - 3} pagamentos</p>}
+                  </div>
+                )}
               </div>
+            );
+          })}
+
+          {/* Total campanha */}
+          <div className={`rounded-xl p-3 border ${totalPagoGeral >= totais.totalFinal ? "bg-green-500/10 border-green-500/30" : "bg-card border-border"}`}>
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs font-bold text-foreground">Total Campanha</span>
+              <span className="text-sm font-bold text-foreground">{fmt(totais.totalFinal)}</span>
+            </div>
+            <Bar pago={totalPagoGeral} total={totais.totalFinal} cor={totalPagoGeral >= totais.totalFinal ? "bg-green-500" : "bg-primary"} />
+            <div className="flex justify-between mt-1">
+              <span className="text-[11px] text-green-600 dark:text-green-400 font-bold">Pago: {fmt(totalPagoGeral)}</span>
+              <span className={`text-[11px] font-bold ${totais.totalFinal > totalPagoGeral ? "text-rose-500" : "text-green-500"}`}>
+                {totais.totalFinal > totalPagoGeral ? `Falta: ${fmt(totais.totalFinal - totalPagoGeral)}` : "Quitado ✓"}
+              </span>
             </div>
           </div>
         </div>
@@ -431,20 +343,18 @@ function SuplenteCard({ suplente, pagamentosTodos, pagamentosMes, mes, ano }: {
 }
 
 // ─── Card simples: Liderança / Admin ──────────────────────────────────────────
-function PessoaSimplesCard({ tipo, id, nome, subtitulo, valorEsperado, totalPagoMes, pagamentosMes, mes, ano }: {
+function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes, ano }: {
   tipo: "lideranca" | "admin"; id: string; nome: string; subtitulo?: string;
-  valorEsperado: number; totalPagoMes: number; pagamentosMes: Pagamento[];
-  mes: number; ano: number;
+  valorEsperado: number; pagsMes: Pagamento[]; mes: number; ano: number;
 }) {
   const qc = useQueryClient();
   const [paying, setPaying] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showHist, setShowHist] = useState(false);
-  const faltando = Math.max(0, valorEsperado - totalPagoMes);
-  const pago = totalPagoMes >= valorEsperado && valorEsperado > 0;
+  const totalPago = pagsMes.reduce((a, p) => a + p.valor, 0);
+  const faltando = Math.max(0, valorEsperado - totalPago);
+  const isPago = totalPago >= valorEsperado && valorEsperado > 0;
   const catPadrao = tipo === "lideranca" ? "retirada" : "salario";
-  const tipoColor = tipo === "lideranca" ? "text-violet-500 bg-violet-500/10" : "text-blue-500 bg-blue-500/10";
-  const tipoLabel = tipo === "lideranca" ? "Liderança" : "Admin";
 
   const handleSave = async (valor: number, obs: string) => {
     setSaving(true);
@@ -454,7 +364,7 @@ function PessoaSimplesCard({ tipo, id, nome, subtitulo, valorEsperado, totalPago
     const { error } = await (supabase as any).from("pagamentos").insert(payload);
     setSaving(false);
     if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
-    else { toast({ title: `✅ ${fmt(valor)} registrado!`, description: nome }); qc.invalidateQueries({ queryKey: ["pagamentos"] }); setPaying(false); }
+    else { toast({ title: `✅ ${fmt(valor)} registrado!` }); qc.invalidateQueries({ queryKey: ["pagamentos"] }); setPaying(false); }
   };
 
   const handleDelete = async (pagId: string) => {
@@ -464,71 +374,78 @@ function PessoaSimplesCard({ tipo, id, nome, subtitulo, valorEsperado, totalPago
   };
 
   return (
-    <div className={`bg-card rounded-2xl border shadow-sm overflow-hidden ${pago ? "border-green-500/20" : "border-amber-500/30"}`}>
+    <div className={`bg-card rounded-2xl border shadow-sm overflow-hidden ${isPago ? "border-green-500/20" : "border-amber-500/30"}`}>
       <div className="p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md ${tipoColor}`}>{tipoLabel}</span>
-              {pago && <CheckCircle2 size={11} className="text-green-500" />}
-            </div>
             <p className="font-bold text-foreground text-sm truncate">{nome}</p>
             {subtitulo && <p className="text-[11px] text-muted-foreground truncate">{subtitulo}</p>}
           </div>
           <div className="text-right shrink-0">
-            {pago ? (
-              <>
-                <p className="text-[10px] text-green-600 dark:text-green-400 font-medium">Pago</p>
-                <p className="text-base font-bold text-green-600 dark:text-green-400">{fmt(totalPagoMes)}</p>
-              </>
+            {isPago ? (
+              <div className="flex items-center gap-1">
+                <CheckCircle2 size={14} className="text-green-500" />
+                <span className="text-sm font-bold text-green-600 dark:text-green-400">{fmt(totalPago)}</span>
+              </div>
             ) : (
               <>
-                <p className="text-[10px] text-muted-foreground">Falta pagar</p>
-                <p className="text-xl font-bold text-amber-600 dark:text-amber-400 leading-tight">{fmt(faltando)}</p>
+                <p className="text-[10px] text-muted-foreground">Falta</p>
+                <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{fmt(faltando)}</p>
               </>
             )}
           </div>
         </div>
-        {!pago && totalPagoMes > 0 && (
+        {!isPago && totalPago > 0 && (
           <div className="mt-2">
-            <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
-              <span>Pago parcial</span>
-              <span>{fmt(totalPagoMes)} / {fmt(valorEsperado)}</span>
+            <Bar pago={totalPago} total={valorEsperado} cor="bg-amber-500" />
+            <div className="flex justify-between text-[10px] text-muted-foreground mt-0.5">
+              <span>Pago: {fmt(totalPago)}</span>
+              <span>Total: {fmt(valorEsperado)}</span>
             </div>
-            <Bar pago={totalPagoMes} total={valorEsperado} cor="bg-amber-500" />
           </div>
         )}
       </div>
 
       <div className="flex border-t border-border/30 divide-x divide-border/30">
-        <button onClick={() => setPaying(!paying)}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold ${pago ? "text-primary hover:bg-primary/5" : "text-white bg-gradient-to-r from-pink-500 to-rose-400 font-bold"}`}>
-          {pago ? "+ Extra" : <><DollarSign size={12} /> Pagar</>}
+        <button onClick={() => { setPaying(!paying); setShowHist(false); }}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold ${!isPago ? "text-white bg-gradient-to-r from-pink-500 to-rose-400" : "text-primary hover:bg-primary/5"}`}>
+          <DollarSign size={12} /> {isPago ? "+ Extra" : "Pagar"}
         </button>
-        {pagamentosMes.length > 0 && (
-          <button onClick={() => setShowHist(!showHist)}
+        {pagsMes.length > 0 && (
+          <button onClick={() => { setShowHist(!showHist); setPaying(false); }}
             className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-muted-foreground hover:bg-muted/20">
-            {pagamentosMes.length} pag. {showHist ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+            {pagsMes.length} pag. {showHist ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
           </button>
         )}
       </div>
 
-      {paying && <QuickPayForm valorEsperado={faltando} onSave={(v, o) => handleSave(v, o)} onCancel={() => setPaying(false)} saving={saving} />}
+      {paying && (
+        <div className="p-3 border-t border-border/30">
+          <PayForm
+            pessoaNome={nome}
+            valorSugerido={faltando}
+            categorias={[{ key: catPadrao, label: tipo === "lideranca" ? "Retirada" : "Salário" }]}
+            onSave={(v, o) => handleSave(v, o)}
+            onCancel={() => setPaying(false)}
+            saving={saving}
+          />
+        </div>
+      )}
       {showHist && (
-        <div className="bg-muted/10 border-t border-border/30">
-          {pagamentosMes.map(p => <HistoricoItem key={p.id} p={p} onDelete={handleDelete} />)}
+        <div className="bg-muted/10 border-t border-border/30 divide-y divide-border/20">
+          {pagsMes.map(p => <HistoricoItem key={p.id} p={p} onDelete={handleDelete} />)}
         </div>
       )}
     </div>
   );
 }
 
-// ─── Página Principal ─────────────────────────────────────────────────────────
+// ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
 export default function Pagamentos() {
   const now = new Date();
   const [mes, setMes] = useState(now.getMonth() + 1);
   const [ano, setAno] = useState(now.getFullYear());
-  const [filtro, setFiltro] = useState<FiltroAba>("todos");
+  const [abaAtiva, setAbaAtiva] = useState<"suplentes" | "liderancas" | "admin">("suplentes");
   const [busca, setBusca] = useState("");
   const [showPagos, setShowPagos] = useState(false);
 
@@ -536,7 +453,7 @@ export default function Pagamentos() {
     queryKey: ["suplentes"],
     queryFn: async () => {
       const { data, error } = await supabase.from("suplentes").select(
-        "id,nome,regiao_atuacao,partido,bairro,retirada_mensal_valor,retirada_mensal_meses,plotagem_qtd,plotagem_valor_unit,liderancas_qtd,liderancas_valor_unit,fiscais_qtd,fiscais_valor_unit,total_campanha"
+        "id,nome,numero_urna,bairro,regiao_atuacao,partido,retirada_mensal_valor,retirada_mensal_meses,plotagem_qtd,plotagem_valor_unit,liderancas_qtd,liderancas_valor_unit,fiscais_qtd,fiscais_valor_unit,total_campanha"
       ).order("nome");
       if (error) throw error;
       return data as unknown as Suplente[];
@@ -583,184 +500,284 @@ export default function Pagamentos() {
 
   const pagsMes = (pagamentos || []).filter(p => p.mes === mes && p.ano === ano);
 
-  // ─── Cálculos do painel ────────────────────────────────────────────
-  const supPlanejadoMes = (suplentes || []).reduce((a, s) => a + (s.retirada_mensal_valor || 0), 0);
-  const lidPlanejadoMes = (liderancas || []).reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0);
-  const admPlanejadoMes = (administrativo || []).reduce((a, p) => a + (p.valor_contrato || 0), 0);
-  const totalPlanejadoMes = supPlanejadoMes + lidPlanejadoMes + admPlanejadoMes;
-  const supPagoMes = pagsMes.filter(p => p.tipo_pessoa === "suplente").reduce((a, p) => a + p.valor, 0);
-  const lidPagoMes = pagsMes.filter(p => p.tipo_pessoa === "lideranca").reduce((a, p) => a + p.valor, 0);
-  const admPagoMes = pagsMes.filter(p => p.tipo_pessoa === "admin").reduce((a, p) => a + p.valor, 0);
-  const totalPagoMes = supPagoMes + lidPagoMes + admPagoMes;
-  const totalFaltaMes = Math.max(0, totalPlanejadoMes - totalPagoMes);
-  const pctGeral = totalPlanejadoMes > 0 ? Math.min(100, (totalPagoMes / totalPlanejadoMes) * 100) : 0;
-
-  // Contagens
+  // Cálculos
   const supComValor = (suplentes || []).filter(s => (s.retirada_mensal_valor || 0) > 0);
   const lidComValor = (liderancas || []).filter(l => (l.retirada_mensal_valor || 0) > 0);
   const admComValor = (administrativo || []).filter(a => (a.valor_contrato || 0) > 0);
 
-  const supPagosCount = supComValor.filter(s => pagsMes.filter(p => p.suplente_id === s.id).reduce((a, p) => a + p.valor, 0) >= (s.retirada_mensal_valor || 0)).length;
-  const lidPagosCount = lidComValor.filter(l => pagsMes.filter(p => p.lideranca_id === l.id).reduce((a, p) => a + p.valor, 0) >= (l.retirada_mensal_valor || 0)).length;
-  const admPagosCount = admComValor.filter(a => pagsMes.filter(p => p.admin_id === a.id).reduce((a, p) => a + p.valor, 0) >= (a.valor_contrato || 0)).length;
+  const supPlanejado = supComValor.reduce((a, s) => a + (s.retirada_mensal_valor || 0), 0);
+  const lidPlanejado = lidComValor.reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0);
+  const admPlanejado = admComValor.reduce((a, p) => a + (p.valor_contrato || 0), 0);
+  const totalPlanejado = supPlanejado + lidPlanejado + admPlanejado;
 
-  const totalPessoas = supComValor.length + lidComValor.length + admComValor.length;
-  const totalPagosCount = supPagosCount + lidPagosCount + admPagosCount;
-  const totalPendentesCount = totalPessoas - totalPagosCount;
+  const supPago = pagsMes.filter(p => p.tipo_pessoa === "suplente").reduce((a, p) => a + p.valor, 0);
+  const lidPago = pagsMes.filter(p => p.tipo_pessoa === "lideranca").reduce((a, p) => a + p.valor, 0);
+  const admPago = pagsMes.filter(p => p.tipo_pessoa === "admin").reduce((a, p) => a + p.valor, 0);
+  const totalPago = supPago + lidPago + admPago;
+  const totalFalta = Math.max(0, totalPlanejado - totalPago);
+  const pctGeral = totalPlanejado > 0 ? Math.min(100, (totalPago / totalPlanejado) * 100) : 0;
 
-  // ─── Listas filtradas ──────────────────────────────────────────────
-  const matchBusca = (nome: string, sub?: string) => {
+  // Contagens pagos
+  const supPagosN = supComValor.filter(s => pagsMes.filter(p => p.suplente_id === s.id).reduce((a, p) => a + p.valor, 0) >= (s.retirada_mensal_valor || 0)).length;
+  const lidPagosN = lidComValor.filter(l => pagsMes.filter(p => p.lideranca_id === l.id).reduce((a, p) => a + p.valor, 0) >= (l.retirada_mensal_valor || 0)).length;
+  const admPagosN = admComValor.filter(a => pagsMes.filter(p => p.admin_id === a.id).reduce((a2, p) => a2 + p.valor, 0) >= (a.valor_contrato || 0)).length;
+
+  // Filtro busca
+  const matchBusca = (nome: string, extra?: string) => {
     if (!busca.trim()) return true;
     const q = norm(busca);
-    return norm(nome).includes(q) || norm(sub || "").includes(q);
+    return norm(nome).includes(q) || norm(extra || "").includes(q);
   };
 
-  const supFiltrados = supComValor.filter(s => matchBusca(s.nome, [s.bairro || s.regiao_atuacao, s.partido].filter(Boolean).join(" ")));
-  const lidFiltrados = lidComValor.filter(l => matchBusca(l.nome, l.regiao || ""));
-  const admFiltrados = admComValor.filter(a => matchBusca(a.nome, a.whatsapp || ""));
+  // Renderizar conteúdo da aba ativa
+  const renderAba = () => {
+    if (abaAtiva === "suplentes") {
+      const filtrados = supComValor.filter(s => matchBusca(s.nome, [s.bairro, s.regiao_atuacao, s.numero_urna, s.partido].filter(Boolean).join(" ")));
+      const pendentes = filtrados.filter(s => pagsMes.filter(p => p.suplente_id === s.id).reduce((a, p) => a + p.valor, 0) < (s.retirada_mensal_valor || 0));
+      const pagos = filtrados.filter(s => pagsMes.filter(p => p.suplente_id === s.id).reduce((a, p) => a + p.valor, 0) >= (s.retirada_mensal_valor || 0));
 
-  const isPagoSup = (s: Suplente) => pagsMes.filter(p => p.suplente_id === s.id).reduce((a, p) => a + p.valor, 0) >= (s.retirada_mensal_valor || 0);
-  const isPagoLid = (l: Lideranca) => pagsMes.filter(p => p.lideranca_id === l.id).reduce((a, p) => a + p.valor, 0) >= (l.retirada_mensal_valor || 0);
-  const isPagoAdm = (a: AdminPessoa) => pagsMes.filter(p => p.admin_id === a.id).reduce((a2, p) => a2 + p.valor, 0) >= (a.valor_contrato || 0);
-
-  // Separar pendentes e pagos
-  const pendentes: { type: "sup" | "lid" | "adm"; item: any }[] = [];
-  const pagosList: { type: "sup" | "lid" | "adm"; item: any }[] = [];
-
-  if (filtro === "todos" || filtro === "suplentes") {
-    supFiltrados.forEach(s => (isPagoSup(s) ? pagosList : pendentes).push({ type: "sup", item: s }));
-  }
-  if (filtro === "todos" || filtro === "liderancas") {
-    lidFiltrados.forEach(l => (isPagoLid(l) ? pagosList : pendentes).push({ type: "lid", item: l }));
-  }
-  if (filtro === "todos" || filtro === "admin") {
-    admFiltrados.forEach(a => (isPagoAdm(a) ? pagosList : pendentes).push({ type: "adm", item: a }));
-  }
-
-  const totalFaltaPendentes = pendentes.reduce((acc, p) => {
-    if (p.type === "sup") return acc + Math.max(0, (p.item.retirada_mensal_valor || 0) - pagsMes.filter(pg => pg.suplente_id === p.item.id).reduce((a, pg) => a + pg.valor, 0));
-    if (p.type === "lid") return acc + Math.max(0, (p.item.retirada_mensal_valor || 0) - pagsMes.filter(pg => pg.lideranca_id === p.item.id).reduce((a, pg) => a + pg.valor, 0));
-    return acc + Math.max(0, (p.item.valor_contrato || 0) - pagsMes.filter(pg => pg.admin_id === p.item.id).reduce((a, pg) => a + pg.valor, 0));
-  }, 0);
-
-  const renderCard = (entry: { type: string; item: any }) => {
-    if (entry.type === "sup") {
-      const s = entry.item as Suplente;
       return (
-        <SuplenteCard
-          key={`sup-${s.id}`}
-          suplente={s}
-          pagamentosTodos={(pagamentos || []).filter(p => p.suplente_id === s.id)}
-          pagamentosMes={pagsMes.filter(p => p.suplente_id === s.id)}
-          mes={mes} ano={ano}
-        />
+        <>
+          {/* Resumo suplentes */}
+          <div className="bg-card rounded-xl border border-border p-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-pink-500 bg-pink-500/10 flex items-center gap-1"><List size={10} />Suplentes</span>
+                {supPagosN}/{supComValor.length} pagos
+              </span>
+              <span className="text-xs font-bold text-foreground">{fmt(supPago)} / {fmt(supPlanejado)}</span>
+            </div>
+            <Bar pago={supPago} total={supPlanejado} cor="bg-pink-500" />
+            {supPlanejado > supPago && <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(supPlanejado - supPago)}</p>}
+          </div>
+
+          {pendentes.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={14} className="text-amber-500" />
+                <h2 className="text-sm font-bold text-foreground">Falta pagar — {pendentes.length}</h2>
+              </div>
+              {pendentes.map(s => (
+                <SuplentePayCard key={s.id} s={s}
+                  pagsMes={pagsMes.filter(p => p.suplente_id === s.id)}
+                  pagsTodos={(pagamentos || []).filter(p => p.suplente_id === s.id)}
+                  mes={mes} ano={ano} />
+              ))}
+            </div>
+          )}
+
+          {pendentes.length === 0 && pagos.length > 0 && (
+            <div className="flex items-center justify-center gap-2 bg-green-500/10 border border-green-500/30 rounded-2xl py-4">
+              <CheckCircle2 size={18} className="text-green-500" />
+              <p className="text-sm font-bold text-green-600 dark:text-green-400">Todos os suplentes pagos! 🎉</p>
+            </div>
+          )}
+
+          {pagos.length > 0 && (
+            <div className="space-y-2">
+              <button className="w-full flex items-center justify-between py-2 px-1" onClick={() => setShowPagos(!showPagos)}>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={14} className="text-green-500" />
+                  <h2 className="text-sm font-bold text-foreground">Pagos — {pagos.length}</h2>
+                </div>
+                {showPagos ? <ChevronUp size={15} className="text-muted-foreground" /> : <ChevronDown size={15} className="text-muted-foreground" />}
+              </button>
+              {showPagos && pagos.map(s => (
+                <SuplentePayCard key={s.id} s={s}
+                  pagsMes={pagsMes.filter(p => p.suplente_id === s.id)}
+                  pagsTodos={(pagamentos || []).filter(p => p.suplente_id === s.id)}
+                  mes={mes} ano={ano} />
+              ))}
+            </div>
+          )}
+        </>
       );
     }
-    if (entry.type === "lid") {
-      const l = entry.item as Lideranca;
+
+    if (abaAtiva === "liderancas") {
+      const filtrados = lidComValor.filter(l => matchBusca(l.nome, l.regiao || ""));
+      const pendentes = filtrados.filter(l => pagsMes.filter(p => p.lideranca_id === l.id).reduce((a, p) => a + p.valor, 0) < (l.retirada_mensal_valor || 0));
+      const pagos = filtrados.filter(l => pagsMes.filter(p => p.lideranca_id === l.id).reduce((a, p) => a + p.valor, 0) >= (l.retirada_mensal_valor || 0));
+
       return (
-        <PessoaSimplesCard
-          key={`lid-${l.id}`}
-          tipo="lideranca" id={l.id} nome={l.nome}
-          subtitulo={[l.regiao, l.chave_pix ? `PIX: ${l.chave_pix}` : undefined].filter(Boolean).join(" · ")}
-          valorEsperado={l.retirada_mensal_valor || 0}
-          totalPagoMes={pagsMes.filter(p => p.lideranca_id === l.id).reduce((a, p) => a + p.valor, 0)}
-          pagamentosMes={pagsMes.filter(p => p.lideranca_id === l.id)}
-          mes={mes} ano={ano}
-        />
+        <>
+          <div className="bg-card rounded-xl border border-border p-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-violet-500 bg-violet-500/10 flex items-center gap-1"><Users size={10} />Lideranças</span>
+                {lidPagosN}/{lidComValor.length} pagos
+              </span>
+              <span className="text-xs font-bold text-foreground">{fmt(lidPago)} / {fmt(lidPlanejado)}</span>
+            </div>
+            <Bar pago={lidPago} total={lidPlanejado} cor="bg-violet-500" />
+            {lidPlanejado > lidPago && <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(lidPlanejado - lidPago)}</p>}
+          </div>
+
+          {pendentes.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={14} className="text-amber-500" />
+                <h2 className="text-sm font-bold text-foreground">Falta pagar — {pendentes.length}</h2>
+              </div>
+              {pendentes.map(l => (
+                <PessoaPayCard key={l.id} tipo="lideranca" id={l.id} nome={l.nome}
+                  subtitulo={[l.regiao, l.chave_pix ? `PIX: ${l.chave_pix}` : undefined].filter(Boolean).join(" · ")}
+                  valorEsperado={l.retirada_mensal_valor || 0}
+                  pagsMes={pagsMes.filter(p => p.lideranca_id === l.id)}
+                  mes={mes} ano={ano} />
+              ))}
+            </div>
+          )}
+
+          {pendentes.length === 0 && pagos.length > 0 && (
+            <div className="flex items-center justify-center gap-2 bg-green-500/10 border border-green-500/30 rounded-2xl py-4">
+              <CheckCircle2 size={18} className="text-green-500" />
+              <p className="text-sm font-bold text-green-600 dark:text-green-400">Todas lideranças pagas!</p>
+            </div>
+          )}
+
+          {pagos.length > 0 && (
+            <div className="space-y-2">
+              <button className="w-full flex items-center justify-between py-2 px-1" onClick={() => setShowPagos(!showPagos)}>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={14} className="text-green-500" />
+                  <h2 className="text-sm font-bold text-foreground">Pagos — {pagos.length}</h2>
+                </div>
+                {showPagos ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+              </button>
+              {showPagos && pagos.map(l => (
+                <PessoaPayCard key={l.id} tipo="lideranca" id={l.id} nome={l.nome}
+                  subtitulo={l.regiao || undefined}
+                  valorEsperado={l.retirada_mensal_valor || 0}
+                  pagsMes={pagsMes.filter(p => p.lideranca_id === l.id)}
+                  mes={mes} ano={ano} />
+              ))}
+            </div>
+          )}
+
+          {lidComValor.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <Users size={28} className="mx-auto mb-2 opacity-30" />
+              <p className="text-sm">Nenhuma liderança com valor cadastrado</p>
+            </div>
+          )}
+        </>
       );
     }
-    const a = entry.item as AdminPessoa;
+
+    // Admin
+    const filtrados = admComValor.filter(a => matchBusca(a.nome, a.whatsapp || ""));
+    const pendentes = filtrados.filter(a => pagsMes.filter(p => p.admin_id === a.id).reduce((acc, p) => acc + p.valor, 0) < (a.valor_contrato || 0));
+    const pagos = filtrados.filter(a => pagsMes.filter(p => p.admin_id === a.id).reduce((acc, p) => acc + p.valor, 0) >= (a.valor_contrato || 0));
+
     return (
-      <PessoaSimplesCard
-        key={`adm-${a.id}`}
-        tipo="admin" id={a.id} nome={a.nome}
-        subtitulo={a.whatsapp || undefined}
-        valorEsperado={a.valor_contrato || 0}
-        totalPagoMes={pagsMes.filter(p => p.admin_id === a.id).reduce((acc, p) => acc + p.valor, 0)}
-        pagamentosMes={pagsMes.filter(p => p.admin_id === a.id)}
-        mes={mes} ano={ano}
-      />
+      <>
+        <div className="bg-card rounded-xl border border-border p-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-blue-500 bg-blue-500/10 flex items-center gap-1"><Briefcase size={10} />Admin</span>
+              {admPagosN}/{admComValor.length} pagos
+            </span>
+            <span className="text-xs font-bold text-foreground">{fmt(admPago)} / {fmt(admPlanejado)}</span>
+          </div>
+          <Bar pago={admPago} total={admPlanejado} cor="bg-blue-500" />
+          {admPlanejado > admPago && <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(admPlanejado - admPago)}</p>}
+        </div>
+
+        {pendentes.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <AlertCircle size={14} className="text-amber-500" />
+              <h2 className="text-sm font-bold text-foreground">Falta pagar — {pendentes.length}</h2>
+            </div>
+            {pendentes.map(a => (
+              <PessoaPayCard key={a.id} tipo="admin" id={a.id} nome={a.nome}
+                subtitulo={a.whatsapp || undefined}
+                valorEsperado={a.valor_contrato || 0}
+                pagsMes={pagsMes.filter(p => p.admin_id === a.id)}
+                mes={mes} ano={ano} />
+            ))}
+          </div>
+        )}
+
+        {pendentes.length === 0 && pagos.length > 0 && (
+          <div className="flex items-center justify-center gap-2 bg-green-500/10 border border-green-500/30 rounded-2xl py-4">
+            <CheckCircle2 size={18} className="text-green-500" />
+            <p className="text-sm font-bold text-green-600 dark:text-green-400">Todos admin pagos!</p>
+          </div>
+        )}
+
+        {pagos.length > 0 && (
+          <div className="space-y-2">
+            <button className="w-full flex items-center justify-between py-2 px-1" onClick={() => setShowPagos(!showPagos)}>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={14} className="text-green-500" />
+                <h2 className="text-sm font-bold text-foreground">Pagos — {pagos.length}</h2>
+              </div>
+              {showPagos ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+            </button>
+            {showPagos && pagos.map(a => (
+              <PessoaPayCard key={a.id} tipo="admin" id={a.id} nome={a.nome}
+                subtitulo={a.whatsapp || undefined}
+                valorEsperado={a.valor_contrato || 0}
+                pagsMes={pagsMes.filter(p => p.admin_id === a.id)}
+                mes={mes} ano={ano} />
+            ))}
+          </div>
+        )}
+
+        {admComValor.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            <Briefcase size={28} className="mx-auto mb-2 opacity-30" />
+            <p className="text-sm">Nenhum administrativo com valor cadastrado</p>
+          </div>
+        )}
+      </>
     );
   };
 
   const abas = [
-    { id: "todos" as FiltroAba, label: "Todos", count: totalPessoas },
-    { id: "suplentes" as FiltroAba, label: "Suplentes", icon: <List size={12} />, count: supComValor.length },
-    { id: "liderancas" as FiltroAba, label: "Lideranças", icon: <Users size={12} />, count: lidComValor.length },
-    { id: "admin" as FiltroAba, label: "Admin", icon: <Briefcase size={12} />, count: admComValor.length },
+    { id: "suplentes" as const, label: "Suplentes", icon: <List size={12} />, count: supComValor.length, pagos: supPagosN },
+    { id: "liderancas" as const, label: "Lideranças", icon: <Users size={12} />, count: lidComValor.length, pagos: lidPagosN },
+    { id: "admin" as const, label: "Admin", icon: <Briefcase size={12} />, count: admComValor.length, pagos: admPagosN },
   ];
-
-  // ─── Breakdown por categoria no painel ─────────────────────────────
-  const panelRows = [
-    { label: "Suplentes", icon: <List size={10} />, cor: "bg-pink-500", corText: "text-pink-500 bg-pink-500/10", pago: supPagoMes, planejado: supPlanejadoMes, pagosCount: supPagosCount, total: supComValor.length, show: supComValor.length > 0 },
-    { label: "Lideranças", icon: <Users size={10} />, cor: "bg-violet-500", corText: "text-violet-500 bg-violet-500/10", pago: lidPagoMes, planejado: lidPlanejadoMes, pagosCount: lidPagosCount, total: lidComValor.length, show: lidComValor.length > 0 },
-    { label: "Administrativo", icon: <Briefcase size={10} />, cor: "bg-blue-500", corText: "text-blue-500 bg-blue-500/10", pago: admPagoMes, planejado: admPlanejadoMes, pagosCount: admPagosCount, total: admComValor.length, show: admComValor.length > 0 },
-  ].filter(r => r.show);
 
   return (
     <PageTransition>
       <div className="space-y-4">
         <h1 className="text-xl font-bold text-foreground">Pagamentos</h1>
 
-        {/* ─── Painel Financeiro ─────────────────────────────────────────── */}
+        {/* Painel financeiro geral */}
         {!isLoading && (
-          <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-            {/* Header gradient */}
-            <div className="bg-gradient-to-r from-pink-500 to-rose-400 px-4 py-4">
-              <div className="flex items-center gap-2 text-white/80 text-xs mb-3">
-                <Wallet size={14} /> Painel Financeiro — {MESES[mes - 1]}/{ano}
+          <div className="bg-gradient-to-r from-pink-500 to-rose-400 rounded-2xl p-4 shadow-lg">
+            <div className="flex items-center gap-2 text-white/80 text-xs mb-3">
+              <Wallet size={14} /> Painel Financeiro — {MESES[mes - 1]}/{ano}
+            </div>
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              <div className="bg-white/15 backdrop-blur rounded-xl p-2.5 text-center">
+                <p className="text-white/70 text-[9px] uppercase tracking-wider font-medium">Planejado</p>
+                <p className="text-white font-bold text-base leading-tight">{fmt(totalPlanejado)}</p>
               </div>
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="bg-white/15 backdrop-blur rounded-xl p-2.5 text-center">
-                  <p className="text-white/70 text-[9px] uppercase tracking-wider font-medium">Planejado</p>
-                  <p className="text-white font-bold text-base leading-tight">{fmt(totalPlanejadoMes)}</p>
-                </div>
-                <div className="bg-white/15 backdrop-blur rounded-xl p-2.5 text-center">
-                  <p className="text-white/70 text-[9px] uppercase tracking-wider font-medium">Pago</p>
-                  <p className="text-white font-bold text-base leading-tight">{fmt(totalPagoMes)}</p>
-                </div>
-                <div className="bg-black/20 backdrop-blur rounded-xl p-2.5 text-center">
-                  <p className="text-white/70 text-[9px] uppercase tracking-wider font-medium">Falta</p>
-                  <p className="text-white font-bold text-base leading-tight">{fmt(totalFaltaMes)}</p>
-                </div>
+              <div className="bg-white/15 backdrop-blur rounded-xl p-2.5 text-center">
+                <p className="text-white/70 text-[9px] uppercase tracking-wider font-medium">Pago</p>
+                <p className="text-white font-bold text-base leading-tight">{fmt(totalPago)}</p>
               </div>
-              <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${pctGeral}%` }} />
-              </div>
-              <div className="flex justify-between mt-1">
-                <span className="text-white/60 text-[9px]">{totalPagosCount} pagos · {totalPendentesCount} pendentes</span>
-                <span className="text-white/60 text-[9px]">{pctGeral.toFixed(0)}%</span>
+              <div className="bg-black/20 backdrop-blur rounded-xl p-2.5 text-center">
+                <p className="text-white/70 text-[9px] uppercase tracking-wider font-medium">Falta</p>
+                <p className="text-white font-bold text-base leading-tight">{fmt(totalFalta)}</p>
               </div>
             </div>
-
-            {/* Breakdown por tipo */}
-            <div className="divide-y divide-border">
-              {panelRows.map(row => (
-                <div key={row.label} className="px-4 py-3">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md flex items-center gap-1 ${row.corText}`}>
-                        {row.icon}{row.label}
-                      </span>
-                      <span className="text-[11px] text-muted-foreground">{row.pagosCount}/{row.total} pagos</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs font-bold text-foreground">{fmt(row.pago)}</span>
-                      <span className="text-[10px] text-muted-foreground"> / {fmt(row.planejado)}</span>
-                    </div>
-                  </div>
-                  <Bar pago={row.pago} total={row.planejado} cor={row.cor} />
-                  {row.planejado > row.pago && (
-                    <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(row.planejado - row.pago)}</p>
-                  )}
-                </div>
-              ))}
+            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+              <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${pctGeral}%` }} />
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-white/60 text-[9px]">{supPagosN + lidPagosN + admPagosN} pagos · {(supComValor.length + lidComValor.length + admComValor.length) - (supPagosN + lidPagosN + admPagosN)} pendentes</span>
+              <span className="text-white/60 text-[9px]">{pctGeral.toFixed(0)}%</span>
             </div>
           </div>
         )}
 
-        {/* ─── Seletor de mês ───────────────────────────────────────────── */}
+        {/* Seletor de mês */}
         <div className="bg-card rounded-2xl border border-border p-3 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navMes(-1)}><ChevronLeft size={20} /></Button>
@@ -772,7 +789,7 @@ export default function Pagamentos() {
           </div>
         </div>
 
-        {/* ─── Busca ────────────────────────────────────────────────────── */}
+        {/* Busca */}
         <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input value={busca} onChange={e => setBusca(e.target.value)}
@@ -780,69 +797,22 @@ export default function Pagamentos() {
           {busca && <button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setBusca("")}><X size={14} /></button>}
         </div>
 
-        {/* ─── Tabs filtro ──────────────────────────────────────────────── */}
+        {/* Tabs: Suplentes / Lideranças / Admin */}
         <div className="flex bg-muted rounded-xl p-1 gap-1">
           {abas.map(a => (
-            <button key={a.id} onClick={() => setFiltro(a.id)}
-              className={`flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold py-1.5 rounded-lg transition-all ${filtro === a.id ? "bg-card shadow text-primary" : "text-muted-foreground"}`}>
+            <button key={a.id} onClick={() => { setAbaAtiva(a.id); setShowPagos(false); }}
+              className={`flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold py-2 rounded-lg transition-all ${abaAtiva === a.id ? "bg-card shadow text-primary" : "text-muted-foreground"}`}>
               {a.icon}{a.label}
-              <span className={`text-[9px] px-1 py-0.5 rounded-full font-bold ml-0.5 ${filtro === a.id ? "bg-primary/10 text-primary" : "bg-muted-foreground/20"}`}>{a.count}</span>
+              <span className={`text-[9px] px-1 py-0.5 rounded-full font-bold ml-0.5 ${abaAtiva === a.id ? "bg-primary/10 text-primary" : "bg-muted-foreground/20"}`}>{a.count}</span>
             </button>
           ))}
         </div>
 
-        {/* ─── Lista ────────────────────────────────────────────────────── */}
+        {/* Conteúdo da aba */}
         {isLoading ? <CardSkeletonList count={5} /> : (
-          <>
-            {/* PENDENTES */}
-            {pendentes.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <AlertCircle size={14} className="text-amber-500" />
-                  <h2 className="text-sm font-bold text-foreground">Falta pagar — {pendentes.length}</h2>
-                  <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold ml-auto">{fmt(totalFaltaPendentes)}</span>
-                </div>
-                {pendentes.map(renderCard)}
-              </div>
-            )}
-
-            {pendentes.length === 0 && !busca && filtro === "todos" && pagosList.length > 0 && (
-              <div className="flex items-center justify-center gap-2 bg-green-500/10 border border-green-500/30 rounded-2xl py-4">
-                <CheckCircle2 size={18} className="text-green-500" />
-                <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                  Todos os pagamentos de {MESES[mes - 1]} registrados! 🎉
-                </p>
-              </div>
-            )}
-
-            {/* PAGOS */}
-            {pagosList.length > 0 && (
-              <div className="space-y-2">
-                <button className="w-full flex items-center justify-between py-2 px-1" onClick={() => setShowPagos(!showPagos)}>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 size={14} className="text-green-500" />
-                    <h2 className="text-sm font-bold text-foreground">Pagos — {pagosList.length}</h2>
-                    <span className="text-xs text-green-600 dark:text-green-400 font-semibold">
-                      {fmt(pagosList.reduce((acc, p) => {
-                        if (p.type === "sup") return acc + pagsMes.filter(pg => pg.suplente_id === p.item.id).reduce((a, pg) => a + pg.valor, 0);
-                        if (p.type === "lid") return acc + pagsMes.filter(pg => pg.lideranca_id === p.item.id).reduce((a, pg) => a + pg.valor, 0);
-                        return acc + pagsMes.filter(pg => pg.admin_id === p.item.id).reduce((a, pg) => a + pg.valor, 0);
-                      }, 0))}
-                    </span>
-                  </div>
-                  {showPagos ? <ChevronUp size={15} className="text-muted-foreground" /> : <ChevronDown size={15} className="text-muted-foreground" />}
-                </button>
-                {showPagos && pagosList.map(renderCard)}
-              </div>
-            )}
-
-            {totalPessoas === 0 && (
-              <div className="text-center py-12 text-muted-foreground">
-                <Wallet size={32} className="mx-auto mb-3 opacity-30" />
-                <p className="text-sm">Nenhuma pessoa com valor cadastrado</p>
-              </div>
-            )}
-          </>
+          <div className="space-y-3">
+            {renderAba()}
+          </div>
         )}
       </div>
     </PageTransition>
