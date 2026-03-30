@@ -22,7 +22,7 @@ export default function ListaLiderancas() {
   const { data: liderancas, isLoading } = useQuery({
     queryKey: ["liderancas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("liderancas").select("*").order("nome");
+      const { data, error } = await (supabase as any).from("liderancas").select("*").order("nome");
       if (error) throw error;
       return data;
     },
