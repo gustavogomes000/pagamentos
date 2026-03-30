@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import {
   ChevronDown, ChevronUp, Trash2, X, Loader2, Wallet,
   ChevronLeft, ChevronRight, Save, Search,
   CheckCircle2, AlertCircle, Users, Briefcase, List, Pencil,
-  TrendingDown, Receipt,
+  TrendingDown, Receipt, DollarSign, BarChart3, Eye, EyeOff,
 } from "lucide-react";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 
@@ -22,6 +22,8 @@ const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").t
 
 type FiltroAba = "todos" | "suplentes" | "liderancas" | "admin";
 
+type CategoriaGasto = "retirada" | "plotagem" | "liderancas" | "fiscais";
+
 type Pagamento = {
   id: string;
   suplente_id: string | null; lideranca_id: string | null; admin_id: string | null;
@@ -30,7 +32,7 @@ type Pagamento = {
 };
 
 type Suplente = {
-  id: string; nome: string; regiao_atuacao: string | null; partido: string | null;
+  id: string; nome: string; regiao_atuacao: string | null; partido: string | null; bairro: string | null;
   retirada_mensal_valor: number; retirada_mensal_meses: number;
   plotagem_qtd: number; plotagem_valor_unit: number;
   liderancas_qtd: number; liderancas_valor_unit: number;
@@ -46,160 +48,45 @@ type AdminPessoa = {
   id: string; nome: string; whatsapp: string | null; valor_contrato: number | null;
 };
 
+const CAT_LABEL: Record<string, string> = {
+  retirada: "Retirada Mensal", plotagem: "Plotagem",
+  liderancas: "Lideranças", fiscais: "Fiscais",
+  salario: "Salário", outro: "Outro",
+};
+
+const CAT_ICON: Record<string, typeof DollarSign> = {
+  retirada: DollarSign, plotagem: BarChart3,
+  liderancas: Users, fiscais: Briefcase,
+};
+
+const CAT_COLOR: Record<string, { bg: string; text: string; bar: string }> = {
+  retirada: { bg: "bg-pink-500/10", text: "text-pink-600 dark:text-pink-400", bar: "bg-pink-500" },
+  plotagem: { bg: "bg-violet-500/10", text: "text-violet-600 dark:text-violet-400", bar: "bg-violet-500" },
+  liderancas: { bg: "bg-blue-500/10", text: "text-blue-600 dark:text-blue-400", bar: "bg-blue-500" },
+  fiscais: { bg: "bg-amber-500/10", text: "text-amber-600 dark:text-amber-400", bar: "bg-amber-500" },
+};
+
 // ─── Barra de progresso ───────────────────────────────────────────────────────
-function Bar({ pago, total, cor = "bg-primary" }: { pago: number; total: number; cor?: string }) {
+function Bar({ pago, total, cor = "bg-primary", height = "h-1.5" }: { pago: number; total: number; cor?: string; height?: string }) {
   const pct = total > 0 ? Math.min(100, (pago / total) * 100) : 0;
   return (
-    <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+    <div className={`${height} bg-muted rounded-full overflow-hidden`}>
       <div className={`h-full rounded-full transition-all duration-500 ${cor}`} style={{ width: `${pct}%` }} />
     </div>
   );
 }
 
-// ─── Ficha financeira completa (apenas suplentes) ─────────────────────────────
-function FichaFinanceira({ suplente, todosPagamentos }: { suplente: Suplente; todosPagamentos: Pagamento[] }) {
-  const pags = todosPagamentos.filter(p => p.suplente_id === suplente.id);
-  const catLabel: Record<string, string> = {
-    retirada: "Retirada Mensal", plotagem: "Plotagem",
-    liderancas: "Lideranças na Campanha", fiscais: "Fiscais no Dia",
-  };
-
-  const categorias = [
-    {
-      key: "retirada",
-      planejado: (suplente.retirada_mensal_valor || 0) * (suplente.retirada_mensal_meses || 0),
-      detalhe: `${fmt(suplente.retirada_mensal_valor || 0)} × ${suplente.retirada_mensal_meses || 0} meses`,
-    },
-    {
-      key: "plotagem",
-      planejado: (suplente.plotagem_qtd || 0) * (suplente.plotagem_valor_unit || 0),
-      detalhe: `${suplente.plotagem_qtd || 0} un. × ${fmt(suplente.plotagem_valor_unit || 0)}`,
-    },
-    {
-      key: "liderancas",
-      planejado: (suplente.liderancas_qtd || 0) * (suplente.liderancas_valor_unit || 0),
-      detalhe: `${suplente.liderancas_qtd || 0} líderes × ${fmt(suplente.liderancas_valor_unit || 0)}`,
-    },
-    {
-      key: "fiscais",
-      planejado: (suplente.fiscais_qtd || 0) * (suplente.fiscais_valor_unit || 0),
-      detalhe: `${suplente.fiscais_qtd || 0} fiscais × ${fmt(suplente.fiscais_valor_unit || 0)}`,
-    },
-  ].filter(c => c.planejado > 0);
-
-  const totalCampanha = calcTotaisFinanceiros(suplente).totalFinal;
-  const totalPago = pags.reduce((a, p) => a + p.valor, 0);
-  const saldo = totalCampanha - totalPago;
-
-  // Histórico por mês
-  const historico = pags.reduce<Record<string, { total: number; itens: Pagamento[] }>>((acc, p) => {
-    const key = `${String(p.ano)}-${String(p.mes).padStart(2, "0")}`;
-    if (!acc[key]) acc[key] = { total: 0, itens: [] };
-    acc[key].total += p.valor;
-    acc[key].itens.push(p);
-    return acc;
-  }, {});
-
-  const historicoOrdenado = Object.entries(historico).sort((a, b) => b[0].localeCompare(a[0]));
-
-  return (
-    <div className="border-t border-border/50 bg-muted/10">
-      {/* Por categoria */}
-      <div className="px-3 pt-3 pb-2">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-2 flex items-center gap-1">
-          <Receipt size={10} /> Discriminação Financeira
-        </p>
-        <div className="space-y-2.5">
-          {categorias.map(c => {
-            const pago = pags.filter(p => p.categoria === c.key).reduce((a, p) => a + p.valor, 0);
-            const falta = Math.max(0, c.planejado - pago);
-            const pct = c.planejado > 0 ? Math.min(100, (pago / c.planejado) * 100) : 0;
-            return (
-              <div key={c.key} className="bg-card rounded-xl p-2.5 border border-border/50">
-                <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <div>
-                    <p className="text-xs font-semibold text-foreground">{catLabel[c.key]}</p>
-                    <p className="text-[10px] text-muted-foreground">{c.detalhe}</p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-xs font-bold text-foreground">{fmt(c.planejado)}</p>
-                    <p className="text-[10px] text-muted-foreground">planejado</p>
-                  </div>
-                </div>
-                <Bar pago={pago} total={c.planejado} cor={pct >= 100 ? "bg-green-500" : pct > 0 ? "bg-amber-500" : "bg-muted-foreground/30"} />
-                <div className="flex justify-between mt-1">
-                  <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">✓ {fmt(pago)} pago</span>
-                  {falta > 0
-                    ? <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">⏳ {fmt(falta)} falta</span>
-                    : <span className="text-[10px] text-green-600 font-bold">100%</span>}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Total geral */}
-        <div className={`mt-2.5 rounded-xl p-3 border ${saldo <= 0 ? "bg-green-500/10 border-green-500/30" : "bg-rose-500/10 border-rose-500/30"}`}>
-          <div className="flex justify-between items-center mb-1.5">
-            <span className="text-xs font-bold text-foreground">Total da Campanha</span>
-            <span className="text-sm font-bold text-foreground">{fmt(totalCampanha)}</span>
-          </div>
-          <Bar pago={totalPago} total={totalCampanha} cor={saldo <= 0 ? "bg-green-500" : "bg-primary"} />
-          <div className="flex justify-between mt-1.5">
-            <span className="text-[11px] text-green-600 dark:text-green-400 font-bold">Pago: {fmt(totalPago)}</span>
-            <span className={`text-[11px] font-bold ${saldo > 0 ? "text-rose-500" : "text-green-500"}`}>
-              {saldo > 0 ? `Falta: ${fmt(saldo)}` : "Quitado ✓"}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Histórico por mês */}
-      {historicoOrdenado.length > 0 && (
-        <div className="px-3 pb-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-2 mt-1 flex items-center gap-1">
-            <Receipt size={10} /> Histórico de Pagamentos
-          </p>
-          <div className="space-y-1.5">
-            {historicoOrdenado.map(([key, { total, itens }]) => {
-              const [a, m] = key.split("-");
-              return (
-                <div key={key} className="bg-card rounded-xl border border-border/50 overflow-hidden">
-                  <div className="flex items-center justify-between px-3 py-2">
-                    <span className="text-xs font-semibold text-foreground">
-                      {MESES[parseInt(m) - 1]}/{a}
-                    </span>
-                    <span className="text-sm font-bold text-green-600 dark:text-green-400">{fmt(total)}</span>
-                  </div>
-                  <div className="border-t border-border/30 divide-y divide-border/20">
-                    {itens.map(p => (
-                      <div key={p.id} className="flex items-center justify-between px-3 py-1">
-                        <span className="text-[10px] text-muted-foreground capitalize">
-                          {p.categoria === "retirada" ? "Retirada Mensal" : p.categoria}
-                          {p.observacao && ` — ${p.observacao}`}
-                        </span>
-                        <span className="text-[11px] font-bold text-foreground">{fmt(p.valor)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── Formulário de pagamento inline ──────────────────────────────────────────
-function QuickPayForm({ valorEsperado, onSave, onCancel, saving }: {
+function QuickPayForm({ valorEsperado, categoria, categorias, onSave, onCancel, saving }: {
   valorEsperado: number;
-  onSave: (valor: number, obs: string) => Promise<void>;
+  categoria?: string;
+  categorias?: { key: string; label: string }[];
+  onSave: (valor: number, obs: string, cat: string) => Promise<void>;
   onCancel: () => void; saving: boolean;
 }) {
   const [valor, setValor] = useState(valorEsperado > 0 ? String(valorEsperado) : "");
   const [obs, setObs] = useState("");
+  const [cat, setCat] = useState(categoria || "retirada");
   const valorNum = parseFloat(valor.replace(",", ".")) || 0;
   const parcial = valorEsperado > 0 && valorNum > 0 && valorNum < valorEsperado;
 
@@ -209,13 +96,23 @@ function QuickPayForm({ valorEsperado, onSave, onCancel, saving }: {
         <span className="text-xs font-semibold text-foreground">Registrar pagamento</span>
         {valorEsperado > 0 && <span className="text-[10px] text-muted-foreground">Esperado: {fmt(valorEsperado)}</span>}
       </div>
+      {categorias && categorias.length > 1 && (
+        <div className="flex gap-1 flex-wrap">
+          {categorias.map(c => (
+            <button key={c.key} onClick={() => setCat(c.key)}
+              className={`text-[10px] font-semibold px-2 py-1 rounded-lg transition-all ${cat === c.key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex gap-2">
         <div className="relative flex-1">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-medium">R$</span>
           <Input type="number" inputMode="decimal" value={valor} onChange={e => setValor(e.target.value)}
             className="pl-8 h-11 text-base font-bold bg-card border-primary/40" placeholder="0,00" autoFocus />
         </div>
-        <Button onClick={() => onSave(valorNum, obs)} disabled={saving || valorNum <= 0}
+        <Button onClick={() => onSave(valorNum, obs, cat)} disabled={saving || valorNum <= 0}
           className="h-11 px-4 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-bold shrink-0">
           {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
         </Button>
@@ -225,7 +122,7 @@ function QuickPayForm({ valorEsperado, onSave, onCancel, saving }: {
       {parcial && (
         <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-1.5">
           <AlertCircle size={11} className="text-amber-500 shrink-0" />
-          <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">Adiantamento — faltará {fmt(valorEsperado - valorNum)}</span>
+          <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">Parcial — faltará {fmt(valorEsperado - valorNum)}</span>
         </div>
       )}
     </div>
@@ -239,7 +136,6 @@ function HistoricoItem({ p, onDelete }: { p: Pagamento; onDelete: (id: string) =
   const [valor, setValor] = useState(String(p.valor));
   const [obs, setObs] = useState(p.observacao || "");
   const [saving, setSaving] = useState(false);
-  const cats: Record<string, string> = { retirada: "Retirada", plotagem: "Plotagem", liderancas: "Lideranças", fiscais: "Fiscais", salario: "Salário", outro: "Outro" };
 
   const save = async () => {
     const v = parseFloat(valor.replace(",", "."));
@@ -266,7 +162,7 @@ function HistoricoItem({ p, onDelete }: { p: Pagamento; onDelete: (id: string) =
   return (
     <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/30 last:border-0">
       <div className="min-w-0">
-        <span className="text-xs font-medium text-foreground">{cats[p.categoria] || p.categoria}</span>
+        <span className="text-xs font-medium text-foreground">{CAT_LABEL[p.categoria] || p.categoria}</span>
         {p.observacao && <span className="text-[10px] text-muted-foreground ml-2">{p.observacao}</span>}
         <p className="text-[10px] text-muted-foreground">{new Date(p.created_at).toLocaleDateString("pt-BR")}</p>
       </div>
@@ -279,31 +175,281 @@ function HistoricoItem({ p, onDelete }: { p: Pagamento; onDelete: (id: string) =
   );
 }
 
-// ─── Card: pessoa pendente ────────────────────────────────────────────────────
-function PendenteCard({
-  tipo, id, nome, subtitulo, valorEsperado, totalPagoMes,
-  pagamentosMes, todosPagamentos, suplente, mes, ano,
-}: {
-  tipo: "suplente" | "lideranca" | "admin"; id: string; nome: string; subtitulo?: string;
+// ─── Card de gasto por categoria (dentro do card do suplente) ─────────────────
+function CategoriaGastoCard({ catKey, label, detalhe, planejado, pago, pagamentos, onDelete }: {
+  catKey: string; label: string; detalhe: string; planejado: number; pago: number;
+  pagamentos: Pagamento[]; onDelete: (id: string) => void;
+}) {
+  const [showPags, setShowPags] = useState(false);
+  const falta = Math.max(0, planejado - pago);
+  const pct = planejado > 0 ? Math.min(100, (pago / planejado) * 100) : 0;
+  const colors = CAT_COLOR[catKey] || CAT_COLOR.retirada;
+  const Icon = CAT_ICON[catKey] || DollarSign;
+  const quitado = pago >= planejado && planejado > 0;
+
+  return (
+    <div className={`rounded-xl border overflow-hidden ${quitado ? "border-green-500/30 bg-green-500/5" : "border-border/50 bg-card"}`}>
+      <div className="p-2.5">
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${colors.bg}`}>
+              <Icon size={12} className={colors.text} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-foreground leading-tight">{label}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{detalhe}</p>
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-xs font-bold text-foreground">{fmt(planejado)}</p>
+          </div>
+        </div>
+
+        <Bar pago={pago} total={planejado} cor={quitado ? "bg-green-500" : colors.bar} height="h-1" />
+
+        <div className="flex justify-between mt-1 items-center">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">
+              ✓ {fmt(pago)}
+            </span>
+            {falta > 0 ? (
+              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                ⏳ {fmt(falta)}
+              </span>
+            ) : planejado > 0 ? (
+              <span className="text-[10px] text-green-600 font-bold">✓ Quitado</span>
+            ) : null}
+          </div>
+          {pagamentos.length > 0 && (
+            <button onClick={() => setShowPags(!showPags)} className="text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-0.5">
+              {pagamentos.length} pag. {showPags ? <ChevronUp size={9} /> : <ChevronDown size={9} />}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {showPags && pagamentos.length > 0 && (
+        <div className="border-t border-border/30 bg-muted/10">
+          {pagamentos.map(p => <HistoricoItem key={p.id} p={p} onDelete={onDelete} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Card completo do Suplente ────────────────────────────────────────────────
+function SuplenteCard({ suplente, pagamentosTodos, pagamentosMes, mes, ano }: {
+  suplente: Suplente; pagamentosTodos: Pagamento[]; pagamentosMes: Pagamento[];
+  mes: number; ano: number;
+}) {
+  const qc = useQueryClient();
+  const [expanded, setExpanded] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const totais = calcTotaisFinanceiros(suplente);
+  const retiradaMes = suplente.retirada_mensal_valor || 0;
+
+  // Pagos este mês por categoria
+  const pagoMesRetirada = pagamentosMes.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0);
+  const pagoMesPlotagem = pagamentosMes.filter(p => p.categoria === "plotagem").reduce((a, p) => a + p.valor, 0);
+  const pagoMesLiderancas = pagamentosMes.filter(p => p.categoria === "liderancas").reduce((a, p) => a + p.valor, 0);
+  const pagoMesFiscais = pagamentosMes.filter(p => p.categoria === "fiscais").reduce((a, p) => a + p.valor, 0);
+  const totalPagoMes = pagoMesRetirada + pagoMesPlotagem + pagoMesLiderancas + pagoMesFiscais;
+
+  // Totais gerais (todos os meses)
+  const pagoTotalRetirada = pagamentosTodos.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0);
+  const pagoTotalPlotagem = pagamentosTodos.filter(p => p.categoria === "plotagem").reduce((a, p) => a + p.valor, 0);
+  const pagoTotalLiderancas = pagamentosTodos.filter(p => p.categoria === "liderancas").reduce((a, p) => a + p.valor, 0);
+  const pagoTotalFiscais = pagamentosTodos.filter(p => p.categoria === "fiscais").reduce((a, p) => a + p.valor, 0);
+  const totalPagoGeral = pagoTotalRetirada + pagoTotalPlotagem + pagoTotalLiderancas + pagoTotalFiscais;
+
+  const faltaRetiradaMes = Math.max(0, retiradaMes - pagoMesRetirada);
+  const retiradaPaga = pagoMesRetirada >= retiradaMes && retiradaMes > 0;
+
+  const subtitulo = [suplente.bairro || suplente.regiao_atuacao, suplente.partido].filter(Boolean).join(" · ");
+
+  const categorias = [
+    { key: "retirada", label: "Retirada Mensal", planejado: totais.retirada, pagoTotal: pagoTotalRetirada, detalhe: `${fmt(retiradaMes)} × ${suplente.retirada_mensal_meses || 0} meses` },
+    { key: "plotagem", label: "Plotagem", planejado: totais.plotagem, pagoTotal: pagoTotalPlotagem, detalhe: `${suplente.plotagem_qtd || 0} un. × ${fmt(suplente.plotagem_valor_unit || 0)}` },
+    { key: "liderancas", label: "Lideranças", planejado: totais.liderancas, pagoTotal: pagoTotalLiderancas, detalhe: `${suplente.liderancas_qtd || 0} × ${fmt(suplente.liderancas_valor_unit || 0)}` },
+    { key: "fiscais", label: "Fiscais", planejado: totais.fiscais, pagoTotal: pagoTotalFiscais, detalhe: `${suplente.fiscais_qtd || 0} × ${fmt(suplente.fiscais_valor_unit || 0)}` },
+  ].filter(c => c.planejado > 0);
+
+  const saldoCampanha = totais.totalFinal - totalPagoGeral;
+
+  const handleSave = async (valor: number, obs: string, cat: string) => {
+    setSaving(true);
+    const { error } = await (supabase as any).from("pagamentos").insert({
+      tipo_pessoa: "suplente", suplente_id: suplente.id, mes, ano,
+      categoria: cat, valor, observacao: obs || null,
+    });
+    setSaving(false);
+    if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
+    else { toast({ title: `✅ ${fmt(valor)} registrado!`, description: `${suplente.nome} — ${CAT_LABEL[cat]}` }); qc.invalidateQueries({ queryKey: ["pagamentos"] }); setPaying(false); }
+  };
+
+  const handleDelete = async (pagId: string) => {
+    if (!confirm("Excluir pagamento?")) return;
+    await supabase.from("pagamentos").delete().eq("id", pagId);
+    qc.invalidateQueries({ queryKey: ["pagamentos"] });
+  };
+
+  return (
+    <div className={`bg-card rounded-2xl border shadow-sm overflow-hidden transition-all ${retiradaPaga ? "border-green-500/20" : "border-amber-500/30"}`}>
+      {/* Header */}
+      <div className="p-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-pink-500 bg-pink-500/10">Suplente</span>
+              {retiradaPaga && <CheckCircle2 size={11} className="text-green-500" />}
+            </div>
+            <p className="font-bold text-foreground text-sm truncate">{suplente.nome}</p>
+            {subtitulo && <p className="text-[11px] text-muted-foreground truncate">{subtitulo}</p>}
+          </div>
+          <div className="text-right shrink-0">
+            {retiradaPaga ? (
+              <>
+                <p className="text-[10px] text-green-600 dark:text-green-400 font-medium">Retirada paga</p>
+                <p className="text-base font-bold text-green-600 dark:text-green-400">{fmt(totalPagoMes)}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-[10px] text-muted-foreground">Falta retirada</p>
+                <p className="text-xl font-bold text-amber-600 dark:text-amber-400 leading-tight">{fmt(faltaRetiradaMes)}</p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Mini resumo mensal */}
+        {retiradaMes > 0 && (
+          <div className="mt-2">
+            <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
+              <span>Retirada mensal</span>
+              <span>{fmt(pagoMesRetirada)} / {fmt(retiradaMes)}</span>
+            </div>
+            <Bar pago={pagoMesRetirada} total={retiradaMes} cor={retiradaPaga ? "bg-green-500" : "bg-amber-500"} />
+          </div>
+        )}
+      </div>
+
+      {/* Ações */}
+      <div className="flex border-t border-border/30 divide-x divide-border/30">
+        {!retiradaPaga && (
+          <button onClick={() => setPaying(!paying)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-bold text-white bg-gradient-to-r from-pink-500 to-rose-400 hover:from-pink-600 hover:to-rose-500">
+            <DollarSign size={12} /> Pagar
+          </button>
+        )}
+        {retiradaPaga && (
+          <button onClick={() => setPaying(!paying)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-primary font-semibold hover:bg-primary/5">
+            + Pagamento
+          </button>
+        )}
+        <button onClick={() => setExpanded(!expanded)}
+          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-muted-foreground hover:bg-muted/20 font-medium">
+          <Receipt size={12} /> Ficha Completa {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+        </button>
+      </div>
+
+      {/* Form de pagamento */}
+      {paying && (
+        <QuickPayForm
+          valorEsperado={faltaRetiradaMes}
+          categoria="retirada"
+          categorias={categorias.map(c => ({ key: c.key, label: c.label }))}
+          onSave={handleSave}
+          onCancel={() => setPaying(false)}
+          saving={saving}
+        />
+      )}
+
+      {/* Ficha completa expandida */}
+      {expanded && (
+        <div className="border-t border-border/50 bg-muted/5">
+          {/* Gastos por categoria */}
+          <div className="px-3 pt-3 pb-2">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-primary mb-2 flex items-center gap-1">
+              <Receipt size={10} /> Gastos da Campanha (Total Geral)
+            </p>
+            <div className="space-y-2">
+              {categorias.map(c => (
+                <CategoriaGastoCard
+                  key={c.key}
+                  catKey={c.key}
+                  label={c.label}
+                  detalhe={c.detalhe}
+                  planejado={c.planejado}
+                  pago={c.pagoTotal}
+                  pagamentos={pagamentosTodos.filter(p => p.categoria === c.key)}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Resumo total da campanha */}
+          <div className="px-3 pb-3">
+            <div className={`rounded-xl p-3 border ${saldoCampanha <= 0 ? "bg-green-500/10 border-green-500/30" : "bg-card border-border"}`}>
+              <div className="flex justify-between items-center mb-1.5">
+                <span className="text-xs font-bold text-foreground">Total da Campanha</span>
+                <span className="text-sm font-bold text-foreground">{fmt(totais.totalFinal)}</span>
+              </div>
+              <Bar pago={totalPagoGeral} total={totais.totalFinal} cor={saldoCampanha <= 0 ? "bg-green-500" : "bg-primary"} />
+              <div className="flex justify-between mt-1.5">
+                <span className="text-[11px] text-green-600 dark:text-green-400 font-bold">Pago: {fmt(totalPagoGeral)}</span>
+                <span className={`text-[11px] font-bold ${saldoCampanha > 0 ? "text-rose-500" : "text-green-500"}`}>
+                  {saldoCampanha > 0 ? `Falta: ${fmt(saldoCampanha)}` : "Quitado ✓"}
+                </span>
+              </div>
+
+              {/* Breakdown parcial */}
+              <div className="mt-2 space-y-1 border-t border-border/30 pt-2">
+                {categorias.map(c => {
+                  const falta = Math.max(0, c.planejado - c.pagoTotal);
+                  return (
+                    <div key={c.key} className="flex items-center justify-between text-[10px]">
+                      <span className="text-muted-foreground">{c.label}</span>
+                      <div className="flex gap-3">
+                        <span className="text-green-600 dark:text-green-400">{fmt(c.pagoTotal)}</span>
+                        <span className="text-muted-foreground">/ {fmt(c.planejado)}</span>
+                        {falta > 0 && <span className="text-amber-500 font-medium">-{fmt(falta)}</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Card simples: Liderança / Admin ──────────────────────────────────────────
+function PessoaSimplesCard({ tipo, id, nome, subtitulo, valorEsperado, totalPagoMes, pagamentosMes, mes, ano }: {
+  tipo: "lideranca" | "admin"; id: string; nome: string; subtitulo?: string;
   valorEsperado: number; totalPagoMes: number; pagamentosMes: Pagamento[];
-  todosPagamentos?: Pagamento[]; suplente?: Suplente; mes: number; ano: number;
+  mes: number; ano: number;
 }) {
   const qc = useQueryClient();
   const [paying, setPaying] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [showFicha, setShowFicha] = useState(false);
   const [showHist, setShowHist] = useState(false);
   const faltando = Math.max(0, valorEsperado - totalPagoMes);
-  const temAdiantamento = totalPagoMes > 0 && totalPagoMes < valorEsperado;
-  const tipoColor: Record<string, string> = { suplente: "text-pink-500 bg-pink-500/10", lideranca: "text-violet-500 bg-violet-500/10", admin: "text-blue-500 bg-blue-500/10" };
-  const tipoLabel: Record<string, string> = { suplente: "Suplente", lideranca: "Liderança", admin: "Admin" };
-  const catPadrao: Record<string, string> = { suplente: "retirada", lideranca: "retirada", admin: "salario" };
+  const pago = totalPagoMes >= valorEsperado && valorEsperado > 0;
+  const catPadrao = tipo === "lideranca" ? "retirada" : "salario";
+  const tipoColor = tipo === "lideranca" ? "text-violet-500 bg-violet-500/10" : "text-blue-500 bg-blue-500/10";
+  const tipoLabel = tipo === "lideranca" ? "Liderança" : "Admin";
 
   const handleSave = async (valor: number, obs: string) => {
     setSaving(true);
-    const payload: Record<string, unknown> = { tipo_pessoa: tipo, mes, ano, categoria: catPadrao[tipo], valor, observacao: obs || null };
-    if (tipo === "suplente") payload.suplente_id = id;
-    else if (tipo === "lideranca") payload.lideranca_id = id;
+    const payload: Record<string, unknown> = { tipo_pessoa: tipo, mes, ano, categoria: catPadrao, valor, observacao: obs || null };
+    if (tipo === "lideranca") payload.lideranca_id = id;
     else payload.admin_id = id;
     const { error } = await (supabase as any).from("pagamentos").insert(payload);
     setSaving(false);
@@ -318,147 +464,56 @@ function PendenteCard({
   };
 
   return (
-    <div className="bg-card rounded-2xl border border-amber-500/30 shadow-sm overflow-hidden">
+    <div className={`bg-card rounded-2xl border shadow-sm overflow-hidden ${pago ? "border-green-500/20" : "border-amber-500/30"}`}>
       <div className="p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-              <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md ${tipoColor[tipo]}`}>{tipoLabel[tipo]}</span>
-              {temAdiantamento && <span className="text-[9px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-md">Adiantamento</span>}
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md ${tipoColor}`}>{tipoLabel}</span>
+              {pago && <CheckCircle2 size={11} className="text-green-500" />}
             </div>
             <p className="font-bold text-foreground text-sm truncate">{nome}</p>
             {subtitulo && <p className="text-[11px] text-muted-foreground truncate">{subtitulo}</p>}
-            {temAdiantamento && (
-              <div className="mt-1.5">
-                <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
-                  <span>Pago: {fmt(totalPagoMes)}</span><span>Total: {fmt(valorEsperado)}</span>
-                </div>
-                <Bar pago={totalPagoMes} total={valorEsperado} cor="bg-amber-500" />
-              </div>
-            )}
           </div>
-          <div className="flex flex-col items-end gap-1.5 shrink-0">
-            <div className="text-right">
-              <p className="text-[10px] text-muted-foreground">Falta pagar</p>
-              <p className="text-xl font-bold text-amber-600 dark:text-amber-400 leading-tight">{fmt(faltando)}</p>
-            </div>
-            {!paying && (
-              <Button size="sm" onClick={() => setPaying(true)}
-                className="h-7 px-3 text-xs bg-gradient-to-r from-pink-500 to-rose-400 text-white font-bold">
-                Pagar
-              </Button>
+          <div className="text-right shrink-0">
+            {pago ? (
+              <>
+                <p className="text-[10px] text-green-600 dark:text-green-400 font-medium">Pago</p>
+                <p className="text-base font-bold text-green-600 dark:text-green-400">{fmt(totalPagoMes)}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-[10px] text-muted-foreground">Falta pagar</p>
+                <p className="text-xl font-bold text-amber-600 dark:text-amber-400 leading-tight">{fmt(faltando)}</p>
+              </>
             )}
           </div>
         </div>
+        {!pago && totalPagoMes > 0 && (
+          <div className="mt-2">
+            <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
+              <span>Pago parcial</span>
+              <span>{fmt(totalPagoMes)} / {fmt(valorEsperado)}</span>
+            </div>
+            <Bar pago={totalPagoMes} total={valorEsperado} cor="bg-amber-500" />
+          </div>
+        )}
       </div>
 
-      {paying && <QuickPayForm valorEsperado={faltando} onSave={handleSave} onCancel={() => setPaying(false)} saving={saving} />}
-
-      {/* Ações inferiores */}
       <div className="flex border-t border-border/30 divide-x divide-border/30">
-        {tipo === "suplente" && suplente && todosPagamentos && (
-          <button onClick={() => { setShowFicha(!showFicha); setShowHist(false); }}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-primary font-semibold hover:bg-primary/5">
-            <TrendingDown size={12} /> Ficha Completa {showFicha ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-          </button>
-        )}
+        <button onClick={() => setPaying(!paying)}
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] font-semibold ${pago ? "text-primary hover:bg-primary/5" : "text-white bg-gradient-to-r from-pink-500 to-rose-400 font-bold"}`}>
+          {pago ? "+ Extra" : <><DollarSign size={12} /> Pagar</>}
+        </button>
         {pagamentosMes.length > 0 && (
-          <button onClick={() => { setShowHist(!showHist); setShowFicha(false); }}
+          <button onClick={() => setShowHist(!showHist)}
             className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-muted-foreground hover:bg-muted/20">
             {pagamentosMes.length} pag. {showHist ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
           </button>
         )}
       </div>
 
-      {showFicha && suplente && todosPagamentos && (
-        <FichaFinanceira suplente={suplente} todosPagamentos={todosPagamentos} />
-      )}
-      {showHist && pagamentosMes.length > 0 && (
-        <div className="bg-muted/10 border-t border-border/30">
-          {pagamentosMes.map(p => <HistoricoItem key={p.id} p={p} onDelete={handleDelete} />)}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Card: pessoa paga ────────────────────────────────────────────────────────
-function PagoCard({
-  tipo, id, nome, subtitulo, valorEsperado, totalPagoMes,
-  pagamentosMes, todosPagamentos, suplente, mes, ano,
-}: {
-  tipo: "suplente" | "lideranca" | "admin"; id: string; nome: string; subtitulo?: string;
-  valorEsperado: number; totalPagoMes: number; pagamentosMes: Pagamento[];
-  todosPagamentos?: Pagamento[]; suplente?: Suplente; mes: number; ano: number;
-}) {
-  const qc = useQueryClient();
-  const [paying, setPaying] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [showFicha, setShowFicha] = useState(false);
-  const [showHist, setShowHist] = useState(false);
-  const tipoColor: Record<string, string> = { suplente: "text-pink-500 bg-pink-500/10", lideranca: "text-violet-500 bg-violet-500/10", admin: "text-blue-500 bg-blue-500/10" };
-  const tipoLabel: Record<string, string> = { suplente: "Suplente", lideranca: "Liderança", admin: "Admin" };
-  const catPadrao: Record<string, string> = { suplente: "retirada", lideranca: "retirada", admin: "salario" };
-
-  const handleSave = async (valor: number, obs: string) => {
-    setSaving(true);
-    const payload: Record<string, unknown> = { tipo_pessoa: tipo, mes, ano, categoria: catPadrao[tipo], valor, observacao: obs || null };
-    if (tipo === "suplente") payload.suplente_id = id;
-    else if (tipo === "lideranca") payload.lideranca_id = id;
-    else payload.admin_id = id;
-    const { error } = await (supabase as any).from("pagamentos").insert(payload);
-    setSaving(false);
-    if (!error) { toast({ title: "✅ Adicional registrado!" }); qc.invalidateQueries({ queryKey: ["pagamentos"] }); setPaying(false); }
-  };
-
-  const handleDelete = async (pagId: string) => {
-    if (!confirm("Excluir?")) return;
-    await supabase.from("pagamentos").delete().eq("id", pagId);
-    qc.invalidateQueries({ queryKey: ["pagamentos"] });
-  };
-
-  return (
-    <div className="bg-card rounded-2xl border border-green-500/20 shadow-sm overflow-hidden">
-      <div className="p-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md ${tipoColor[tipo]}`}>{tipoLabel[tipo]}</span>
-              <CheckCircle2 size={11} className="text-green-500" />
-            </div>
-            <p className="font-bold text-foreground text-sm truncate">{nome}</p>
-            {subtitulo && <p className="text-[11px] text-muted-foreground truncate">{subtitulo}</p>}
-          </div>
-          <div className="text-right shrink-0">
-            <p className="text-[10px] text-muted-foreground">Pago neste mês</p>
-            <p className="text-base font-bold text-green-600 dark:text-green-400">{fmt(totalPagoMes)}</p>
-            {valorEsperado > 0 && totalPagoMes > valorEsperado &&
-              <p className="text-[10px] text-primary">+{fmt(totalPagoMes - valorEsperado)} extra</p>}
-          </div>
-        </div>
-      </div>
-
-      <div className="flex border-t border-border/30 divide-x divide-border/30">
-        {tipo === "suplente" && suplente && todosPagamentos && (
-          <button onClick={() => { setShowFicha(!showFicha); setShowHist(false); }}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-primary font-semibold hover:bg-primary/5">
-            <TrendingDown size={12} /> Ficha Completa {showFicha ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-          </button>
-        )}
-        <button onClick={() => { setShowHist(!showHist); setShowFicha(false); }}
-          className="flex-1 flex items-center justify-center gap-1.5 py-2 text-[11px] text-muted-foreground hover:bg-muted/20">
-          {pagamentosMes.length} pag. {showHist ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-        </button>
-        <button onClick={() => setPaying(!paying)}
-          className="px-3 py-2 text-[11px] text-primary font-semibold hover:bg-primary/5">
-          + Extra
-        </button>
-      </div>
-
-      {paying && <QuickPayForm valorEsperado={0} onSave={handleSave} onCancel={() => setPaying(false)} saving={saving} />}
-      {showFicha && suplente && todosPagamentos && (
-        <FichaFinanceira suplente={suplente} todosPagamentos={todosPagamentos} />
-      )}
+      {paying && <QuickPayForm valorEsperado={faltando} onSave={(v, o) => handleSave(v, o)} onCancel={() => setPaying(false)} saving={saving} />}
       {showHist && (
         <div className="bg-muted/10 border-t border-border/30">
           {pagamentosMes.map(p => <HistoricoItem key={p.id} p={p} onDelete={handleDelete} />)}
@@ -476,13 +531,12 @@ export default function Pagamentos() {
   const [filtro, setFiltro] = useState<FiltroAba>("todos");
   const [busca, setBusca] = useState("");
   const [showPagos, setShowPagos] = useState(false);
-  const qc = useQueryClient();
 
   const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes"],
     queryFn: async () => {
       const { data, error } = await supabase.from("suplentes").select(
-        "id,nome,regiao_atuacao,partido,retirada_mensal_valor,retirada_mensal_meses,plotagem_qtd,plotagem_valor_unit,liderancas_qtd,liderancas_valor_unit,fiscais_qtd,fiscais_valor_unit,total_campanha"
+        "id,nome,regiao_atuacao,partido,bairro,retirada_mensal_valor,retirada_mensal_meses,plotagem_qtd,plotagem_valor_unit,liderancas_qtd,liderancas_valor_unit,fiscais_qtd,fiscais_valor_unit,total_campanha"
       ).order("nome");
       if (error) throw error;
       return data as unknown as Suplente[];
@@ -528,6 +582,8 @@ export default function Pagamentos() {
   };
 
   const pagsMes = (pagamentos || []).filter(p => p.mes === mes && p.ano === ano);
+
+  // ─── Cálculos do painel ────────────────────────────────────────────
   const supPlanejadoMes = (suplentes || []).reduce((a, s) => a + (s.retirada_mensal_valor || 0), 0);
   const lidPlanejadoMes = (liderancas || []).reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0);
   const admPlanejadoMes = (administrativo || []).reduce((a, p) => a + (p.valor_contrato || 0), 0);
@@ -537,135 +593,157 @@ export default function Pagamentos() {
   const admPagoMes = pagsMes.filter(p => p.tipo_pessoa === "admin").reduce((a, p) => a + p.valor, 0);
   const totalPagoMes = supPagoMes + lidPagoMes + admPagoMes;
   const totalFaltaMes = Math.max(0, totalPlanejadoMes - totalPagoMes);
+  const pctGeral = totalPlanejadoMes > 0 ? Math.min(100, (totalPagoMes / totalPlanejadoMes) * 100) : 0;
 
-  type PEntry = {
-    tipo: "suplente" | "lideranca" | "admin"; id: string; nome: string; subtitulo?: string;
-    valorEsperado: number; totalPagoMes: number; pagamentosMes: Pagamento[];
-    todosPagamentos?: Pagamento[]; suplente?: Suplente; pago: boolean;
-  };
+  // Contagens
+  const supComValor = (suplentes || []).filter(s => (s.retirada_mensal_valor || 0) > 0);
+  const lidComValor = (liderancas || []).filter(l => (l.retirada_mensal_valor || 0) > 0);
+  const admComValor = (administrativo || []).filter(a => (a.valor_contrato || 0) > 0);
 
-  const todasPessoas: PEntry[] = [];
+  const supPagosCount = supComValor.filter(s => pagsMes.filter(p => p.suplente_id === s.id).reduce((a, p) => a + p.valor, 0) >= (s.retirada_mensal_valor || 0)).length;
+  const lidPagosCount = lidComValor.filter(l => pagsMes.filter(p => p.lideranca_id === l.id).reduce((a, p) => a + p.valor, 0) >= (l.retirada_mensal_valor || 0)).length;
+  const admPagosCount = admComValor.filter(a => pagsMes.filter(p => p.admin_id === a.id).reduce((a, p) => a + p.valor, 0) >= (a.valor_contrato || 0)).length;
 
-  (suplentes || []).forEach(s => {
-    if ((s.retirada_mensal_valor || 0) <= 0) return;
-    const pags = pagsMes.filter(p => p.suplente_id === s.id);
-    const total = pags.reduce((a, p) => a + p.valor, 0);
-    todasPessoas.push({
-      tipo: "suplente", id: s.id, nome: s.nome,
-      subtitulo: [s.regiao_atuacao, s.partido].filter(Boolean).join(" · ") || undefined,
-      valorEsperado: s.retirada_mensal_valor, totalPagoMes: total,
-      pagamentosMes: pags,
-      todosPagamentos: (pagamentos || []).filter(p => p.suplente_id === s.id),
-      suplente: s,
-      pago: total >= s.retirada_mensal_valor,
-    });
-  });
+  const totalPessoas = supComValor.length + lidComValor.length + admComValor.length;
+  const totalPagosCount = supPagosCount + lidPagosCount + admPagosCount;
+  const totalPendentesCount = totalPessoas - totalPagosCount;
 
-  (liderancas || []).forEach(l => {
-    const val = l.retirada_mensal_valor || 0;
-    if (val <= 0) return;
-    const pags = pagsMes.filter(p => p.lideranca_id === l.id);
-    const total = pags.reduce((a, p) => a + p.valor, 0);
-    todasPessoas.push({
-      tipo: "lideranca", id: l.id, nome: l.nome,
-      subtitulo: [l.regiao, l.chave_pix ? `PIX: ${l.chave_pix}` : undefined].filter(Boolean).join(" · ") || undefined,
-      valorEsperado: val, totalPagoMes: total, pagamentosMes: pags,
-      pago: total >= val,
-    });
-  });
-
-  (administrativo || []).forEach(a => {
-    const val = a.valor_contrato || 0;
-    if (val <= 0) return;
-    const pags = pagsMes.filter(p => p.admin_id === a.id);
-    const total = pags.reduce((a, p) => a + p.valor, 0);
-    todasPessoas.push({
-      tipo: "admin", id: a.id, nome: a.nome,
-      subtitulo: a.whatsapp || undefined,
-      valorEsperado: val, totalPagoMes: total, pagamentosMes: pags,
-      pago: total >= val,
-    });
-  });
-
-  const matchBusca = (p: PEntry) => {
+  // ─── Listas filtradas ──────────────────────────────────────────────
+  const matchBusca = (nome: string, sub?: string) => {
     if (!busca.trim()) return true;
     const q = norm(busca);
-    return norm(p.nome).includes(q) || norm(p.subtitulo || "").includes(q);
+    return norm(nome).includes(q) || norm(sub || "").includes(q);
   };
-  const matchFiltro = (p: PEntry) => filtro === "todos" || (filtro === "suplentes" && p.tipo === "suplente") || (filtro === "liderancas" && p.tipo === "lideranca") || (filtro === "admin" && p.tipo === "admin");
 
-  const pendentes = todasPessoas.filter(p => !p.pago && matchFiltro(p) && matchBusca(p));
-  const pagos = todasPessoas.filter(p => p.pago && matchFiltro(p) && matchBusca(p));
-  const totalPendentes = todasPessoas.filter(p => !p.pago).length;
-  const totalPagos = todasPessoas.filter(p => p.pago).length;
+  const supFiltrados = supComValor.filter(s => matchBusca(s.nome, [s.bairro || s.regiao_atuacao, s.partido].filter(Boolean).join(" ")));
+  const lidFiltrados = lidComValor.filter(l => matchBusca(l.nome, l.regiao || ""));
+  const admFiltrados = admComValor.filter(a => matchBusca(a.nome, a.whatsapp || ""));
+
+  const isPagoSup = (s: Suplente) => pagsMes.filter(p => p.suplente_id === s.id).reduce((a, p) => a + p.valor, 0) >= (s.retirada_mensal_valor || 0);
+  const isPagoLid = (l: Lideranca) => pagsMes.filter(p => p.lideranca_id === l.id).reduce((a, p) => a + p.valor, 0) >= (l.retirada_mensal_valor || 0);
+  const isPagoAdm = (a: AdminPessoa) => pagsMes.filter(p => p.admin_id === a.id).reduce((a2, p) => a2 + p.valor, 0) >= (a.valor_contrato || 0);
+
+  // Separar pendentes e pagos
+  const pendentes: { type: "sup" | "lid" | "adm"; item: any }[] = [];
+  const pagosList: { type: "sup" | "lid" | "adm"; item: any }[] = [];
+
+  if (filtro === "todos" || filtro === "suplentes") {
+    supFiltrados.forEach(s => (isPagoSup(s) ? pagosList : pendentes).push({ type: "sup", item: s }));
+  }
+  if (filtro === "todos" || filtro === "liderancas") {
+    lidFiltrados.forEach(l => (isPagoLid(l) ? pagosList : pendentes).push({ type: "lid", item: l }));
+  }
+  if (filtro === "todos" || filtro === "admin") {
+    admFiltrados.forEach(a => (isPagoAdm(a) ? pagosList : pendentes).push({ type: "adm", item: a }));
+  }
+
+  const totalFaltaPendentes = pendentes.reduce((acc, p) => {
+    if (p.type === "sup") return acc + Math.max(0, (p.item.retirada_mensal_valor || 0) - pagsMes.filter(pg => pg.suplente_id === p.item.id).reduce((a, pg) => a + pg.valor, 0));
+    if (p.type === "lid") return acc + Math.max(0, (p.item.retirada_mensal_valor || 0) - pagsMes.filter(pg => pg.lideranca_id === p.item.id).reduce((a, pg) => a + pg.valor, 0));
+    return acc + Math.max(0, (p.item.valor_contrato || 0) - pagsMes.filter(pg => pg.admin_id === p.item.id).reduce((a, pg) => a + pg.valor, 0));
+  }, 0);
+
+  const renderCard = (entry: { type: string; item: any }) => {
+    if (entry.type === "sup") {
+      const s = entry.item as Suplente;
+      return (
+        <SuplenteCard
+          key={`sup-${s.id}`}
+          suplente={s}
+          pagamentosTodos={(pagamentos || []).filter(p => p.suplente_id === s.id)}
+          pagamentosMes={pagsMes.filter(p => p.suplente_id === s.id)}
+          mes={mes} ano={ano}
+        />
+      );
+    }
+    if (entry.type === "lid") {
+      const l = entry.item as Lideranca;
+      return (
+        <PessoaSimplesCard
+          key={`lid-${l.id}`}
+          tipo="lideranca" id={l.id} nome={l.nome}
+          subtitulo={[l.regiao, l.chave_pix ? `PIX: ${l.chave_pix}` : undefined].filter(Boolean).join(" · ")}
+          valorEsperado={l.retirada_mensal_valor || 0}
+          totalPagoMes={pagsMes.filter(p => p.lideranca_id === l.id).reduce((a, p) => a + p.valor, 0)}
+          pagamentosMes={pagsMes.filter(p => p.lideranca_id === l.id)}
+          mes={mes} ano={ano}
+        />
+      );
+    }
+    const a = entry.item as AdminPessoa;
+    return (
+      <PessoaSimplesCard
+        key={`adm-${a.id}`}
+        tipo="admin" id={a.id} nome={a.nome}
+        subtitulo={a.whatsapp || undefined}
+        valorEsperado={a.valor_contrato || 0}
+        totalPagoMes={pagsMes.filter(p => p.admin_id === a.id).reduce((acc, p) => acc + p.valor, 0)}
+        pagamentosMes={pagsMes.filter(p => p.admin_id === a.id)}
+        mes={mes} ano={ano}
+      />
+    );
+  };
 
   const abas = [
-    { id: "todos" as FiltroAba, label: "Todos", count: todasPessoas.length },
-    { id: "suplentes" as FiltroAba, label: "Suplentes", icon: <List size={12} />, count: (suplentes || []).filter(s => s.retirada_mensal_valor > 0).length },
-    { id: "liderancas" as FiltroAba, label: "Lideranças", icon: <Users size={12} />, count: (liderancas || []).filter(l => (l.retirada_mensal_valor || 0) > 0).length },
-    { id: "admin" as FiltroAba, label: "Admin", icon: <Briefcase size={12} />, count: (administrativo || []).filter(a => (a.valor_contrato || 0) > 0).length },
+    { id: "todos" as FiltroAba, label: "Todos", count: totalPessoas },
+    { id: "suplentes" as FiltroAba, label: "Suplentes", icon: <List size={12} />, count: supComValor.length },
+    { id: "liderancas" as FiltroAba, label: "Lideranças", icon: <Users size={12} />, count: lidComValor.length },
+    { id: "admin" as FiltroAba, label: "Admin", icon: <Briefcase size={12} />, count: admComValor.length },
   ];
+
+  // ─── Breakdown por categoria no painel ─────────────────────────────
+  const panelRows = [
+    { label: "Suplentes", icon: <List size={10} />, cor: "bg-pink-500", corText: "text-pink-500 bg-pink-500/10", pago: supPagoMes, planejado: supPlanejadoMes, pagosCount: supPagosCount, total: supComValor.length, show: supComValor.length > 0 },
+    { label: "Lideranças", icon: <Users size={10} />, cor: "bg-violet-500", corText: "text-violet-500 bg-violet-500/10", pago: lidPagoMes, planejado: lidPlanejadoMes, pagosCount: lidPagosCount, total: lidComValor.length, show: lidComValor.length > 0 },
+    { label: "Administrativo", icon: <Briefcase size={10} />, cor: "bg-blue-500", corText: "text-blue-500 bg-blue-500/10", pago: admPagoMes, planejado: admPlanejadoMes, pagosCount: admPagosCount, total: admComValor.length, show: admComValor.length > 0 },
+  ].filter(r => r.show);
 
   return (
     <PageTransition>
       <div className="space-y-4">
         <h1 className="text-xl font-bold text-foreground">Pagamentos</h1>
 
-        {/* Seletor de mês */}
-        <div className="bg-card rounded-2xl border border-border p-3 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navMes(-1)}><ChevronLeft size={20} /></Button>
-            <div className="text-center">
-              <p className="text-lg font-bold text-foreground">{MESES[mes - 1]} {ano}</p>
-              <p className="text-xs text-muted-foreground">Mês de referência</p>
-            </div>
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navMes(1)}><ChevronRight size={20} /></Button>
-          </div>
-        </div>
-
-        {/* Painel financeiro do chefe */}
+        {/* ─── Painel Financeiro ─────────────────────────────────────────── */}
         {!isLoading && (
           <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+            {/* Header gradient */}
             <div className="bg-gradient-to-r from-pink-500 to-rose-400 px-4 py-4">
               <div className="flex items-center gap-2 text-white/80 text-xs mb-3">
                 <Wallet size={14} /> Painel Financeiro — {MESES[mes - 1]}/{ano}
               </div>
               <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="bg-white/15 rounded-xl p-2.5 text-center">
-                  <p className="text-white/70 text-[9px] uppercase tracking-wider">Planejado</p>
+                <div className="bg-white/15 backdrop-blur rounded-xl p-2.5 text-center">
+                  <p className="text-white/70 text-[9px] uppercase tracking-wider font-medium">Planejado</p>
                   <p className="text-white font-bold text-base leading-tight">{fmt(totalPlanejadoMes)}</p>
                 </div>
-                <div className="bg-white/15 rounded-xl p-2.5 text-center">
-                  <p className="text-white/70 text-[9px] uppercase tracking-wider">Pago</p>
+                <div className="bg-white/15 backdrop-blur rounded-xl p-2.5 text-center">
+                  <p className="text-white/70 text-[9px] uppercase tracking-wider font-medium">Pago</p>
                   <p className="text-white font-bold text-base leading-tight">{fmt(totalPagoMes)}</p>
                 </div>
-                <div className="bg-black/20 rounded-xl p-2.5 text-center">
-                  <p className="text-white/70 text-[9px] uppercase tracking-wider">Falta</p>
+                <div className="bg-black/20 backdrop-blur rounded-xl p-2.5 text-center">
+                  <p className="text-white/70 text-[9px] uppercase tracking-wider font-medium">Falta</p>
                   <p className="text-white font-bold text-base leading-tight">{fmt(totalFaltaMes)}</p>
                 </div>
               </div>
               <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                <div className="h-full bg-white rounded-full transition-all duration-500"
-                  style={{ width: `${totalPlanejadoMes > 0 ? Math.min(100, (totalPagoMes / totalPlanejadoMes) * 100) : 0}%` }} />
+                <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${pctGeral}%` }} />
               </div>
               <div className="flex justify-between mt-1">
-                <span className="text-white/60 text-[9px]">{totalPagos} pagos · {totalPendentes} pendentes</span>
-                <span className="text-white/60 text-[9px]">{totalPlanejadoMes > 0 ? `${((totalPagoMes / totalPlanejadoMes) * 100).toFixed(0)}%` : "0%"}</span>
+                <span className="text-white/60 text-[9px]">{totalPagosCount} pagos · {totalPendentesCount} pendentes</span>
+                <span className="text-white/60 text-[9px]">{pctGeral.toFixed(0)}%</span>
               </div>
             </div>
 
-            {/* Breakdown por categoria */}
+            {/* Breakdown por tipo */}
             <div className="divide-y divide-border">
-              {[
-                { label: "Suplentes", icon: <List size={10} />, cor: "bg-pink-500", corText: "text-pink-500 bg-pink-500/10", pago: supPagoMes, planejado: supPlanejadoMes, pagos: (suplentes || []).filter(s => s.retirada_mensal_valor > 0 && pagsMes.filter(p => p.suplente_id === s.id).reduce((a, p) => a + p.valor, 0) >= s.retirada_mensal_valor).length, total: (suplentes || []).filter(s => s.retirada_mensal_valor > 0).length },
-                ...(lidPlanejadoMes > 0 ? [{ label: "Lideranças", icon: <Users size={10} />, cor: "bg-violet-500", corText: "text-violet-500 bg-violet-500/10", pago: lidPagoMes, planejado: lidPlanejadoMes, pagos: (liderancas || []).filter(l => (l.retirada_mensal_valor || 0) > 0 && pagsMes.filter(p => p.lideranca_id === l.id).reduce((a, p) => a + p.valor, 0) >= (l.retirada_mensal_valor || 0)).length, total: (liderancas || []).filter(l => (l.retirada_mensal_valor || 0) > 0).length }] : []),
-                ...(admPlanejadoMes > 0 ? [{ label: "Administrativo", icon: <Briefcase size={10} />, cor: "bg-blue-500", corText: "text-blue-500 bg-blue-500/10", pago: admPagoMes, planejado: admPlanejadoMes, pagos: (administrativo || []).filter(a => (a.valor_contrato || 0) > 0 && pagsMes.filter(p => p.admin_id === a.id).reduce((a, p) => a + p.valor, 0) >= (a.valor_contrato || 0)).length, total: (administrativo || []).filter(a => (a.valor_contrato || 0) > 0).length }] : []),
-              ].map(row => (
+              {panelRows.map(row => (
                 <div key={row.label} className="px-4 py-3">
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-2">
-                      <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md flex items-center gap-1 ${row.corText}`}>{row.icon}{row.label}</span>
-                      <span className="text-[11px] text-muted-foreground">{row.pagos}/{row.total} pagos</span>
+                      <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md flex items-center gap-1 ${row.corText}`}>
+                        {row.icon}{row.label}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">{row.pagosCount}/{row.total} pagos</span>
                     </div>
                     <div className="text-right">
                       <span className="text-xs font-bold text-foreground">{fmt(row.pago)}</span>
@@ -682,7 +760,19 @@ export default function Pagamentos() {
           </div>
         )}
 
-        {/* Busca */}
+        {/* ─── Seletor de mês ───────────────────────────────────────────── */}
+        <div className="bg-card rounded-2xl border border-border p-3 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navMes(-1)}><ChevronLeft size={20} /></Button>
+            <div className="text-center">
+              <p className="text-lg font-bold text-foreground">{MESES[mes - 1]} {ano}</p>
+              <p className="text-xs text-muted-foreground">Mês de referência</p>
+            </div>
+            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => navMes(1)}><ChevronRight size={20} /></Button>
+          </div>
+        </div>
+
+        {/* ─── Busca ────────────────────────────────────────────────────── */}
         <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input value={busca} onChange={e => setBusca(e.target.value)}
@@ -690,7 +780,7 @@ export default function Pagamentos() {
           {busca && <button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" onClick={() => setBusca("")}><X size={14} /></button>}
         </div>
 
-        {/* Tabs filtro */}
+        {/* ─── Tabs filtro ──────────────────────────────────────────────── */}
         <div className="flex bg-muted rounded-xl p-1 gap-1">
           {abas.map(a => (
             <button key={a.id} onClick={() => setFiltro(a.id)}
@@ -701,6 +791,7 @@ export default function Pagamentos() {
           ))}
         </div>
 
+        {/* ─── Lista ────────────────────────────────────────────────────── */}
         {isLoading ? <CardSkeletonList count={5} /> : (
           <>
             {/* PENDENTES */}
@@ -709,39 +800,43 @@ export default function Pagamentos() {
                 <div className="flex items-center gap-2">
                   <AlertCircle size={14} className="text-amber-500" />
                   <h2 className="text-sm font-bold text-foreground">Falta pagar — {pendentes.length}</h2>
-                  <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold ml-auto">
-                    {fmt(pendentes.reduce((a, p) => a + (p.valorEsperado - p.totalPagoMes), 0))}
-                  </span>
+                  <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold ml-auto">{fmt(totalFaltaPendentes)}</span>
                 </div>
-                {pendentes.map(p => <PendenteCard key={`${p.tipo}-${p.id}`} {...p} mes={mes} ano={ano} />)}
+                {pendentes.map(renderCard)}
               </div>
             )}
 
-            {pendentes.length === 0 && !busca && filtro === "todos" && pagos.length > 0 && (
+            {pendentes.length === 0 && !busca && filtro === "todos" && pagosList.length > 0 && (
               <div className="flex items-center justify-center gap-2 bg-green-500/10 border border-green-500/30 rounded-2xl py-4">
                 <CheckCircle2 size={18} className="text-green-500" />
                 <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                  Todos os pagamentos de {MESES[mes - 1]} registrados!
+                  Todos os pagamentos de {MESES[mes - 1]} registrados! 🎉
                 </p>
               </div>
             )}
 
             {/* PAGOS */}
-            {pagos.length > 0 && (
+            {pagosList.length > 0 && (
               <div className="space-y-2">
                 <button className="w-full flex items-center justify-between py-2 px-1" onClick={() => setShowPagos(!showPagos)}>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={14} className="text-green-500" />
-                    <h2 className="text-sm font-bold text-foreground">Pagos — {pagos.length}</h2>
-                    <span className="text-xs text-green-600 dark:text-green-400 font-semibold">{fmt(pagos.reduce((a, p) => a + p.totalPagoMes, 0))}</span>
+                    <h2 className="text-sm font-bold text-foreground">Pagos — {pagosList.length}</h2>
+                    <span className="text-xs text-green-600 dark:text-green-400 font-semibold">
+                      {fmt(pagosList.reduce((acc, p) => {
+                        if (p.type === "sup") return acc + pagsMes.filter(pg => pg.suplente_id === p.item.id).reduce((a, pg) => a + pg.valor, 0);
+                        if (p.type === "lid") return acc + pagsMes.filter(pg => pg.lideranca_id === p.item.id).reduce((a, pg) => a + pg.valor, 0);
+                        return acc + pagsMes.filter(pg => pg.admin_id === p.item.id).reduce((a, pg) => a + pg.valor, 0);
+                      }, 0))}
+                    </span>
                   </div>
                   {showPagos ? <ChevronUp size={15} className="text-muted-foreground" /> : <ChevronDown size={15} className="text-muted-foreground" />}
                 </button>
-                {showPagos && pagos.map(p => <PagoCard key={`${p.tipo}-${p.id}`} {...p} mes={mes} ano={ano} />)}
+                {showPagos && pagosList.map(renderCard)}
               </div>
             )}
 
-            {todasPessoas.length === 0 && (
+            {totalPessoas === 0 && (
               <div className="text-center py-12 text-muted-foreground">
                 <Wallet size={32} className="mx-auto mb-3 opacity-30" />
                 <p className="text-sm">Nenhuma pessoa com valor cadastrado</p>
