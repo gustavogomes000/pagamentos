@@ -116,8 +116,8 @@ export default function CadastroLideranca() {
             <Field label="CPF">
               <Input value={form.cpf} onChange={(e) => set("cpf", e.target.value)} placeholder="000.000.000-00" inputMode="numeric" className="bg-card shadow-sm border-border" />
             </Field>
-            <Field label="Região">
-              <Input value={form.regiao} onChange={(e) => set("regiao", e.target.value)} placeholder="Ex: Sul" className="bg-card shadow-sm border-border" />
+            <Field label="Setor">
+              <Input value={form.regiao} onChange={(e) => set("regiao", e.target.value)} placeholder="Ex: Setor 1" className="bg-card shadow-sm border-border" />
             </Field>
           </div>
 
