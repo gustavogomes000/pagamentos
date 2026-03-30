@@ -9,6 +9,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { Layout } from "@/components/Layout";
 import SplashScreen from "@/components/SplashScreen";
+import { PageTransition } from "@/components/PageTransition";
+import Cadastro from "./pages/Cadastro";
 import Index from "./pages/Index";
 import Cadastros from "./pages/Cadastros";
 import Dashboard from "./pages/Dashboard";
@@ -125,6 +127,8 @@ const App = () => {
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/cadastros" element={<ProtectedRoute><Cadastros /></ProtectedRoute>} />
+            <Route path="/cadastros/novo" element={<ProtectedRoute><PageTransition><Cadastro /></PageTransition></ProtectedRoute>} />
+            <Route path="/cadastros/:id" element={<ProtectedRoute><Cadastros /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/usuarios" element={<ProtectedRoute><Usuarios /></ProtectedRoute>} />
             <Route path="/pagamentos" element={<ProtectedRoute><Pagamentos /></ProtectedRoute>} />

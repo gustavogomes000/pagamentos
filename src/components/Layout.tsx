@@ -23,7 +23,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
   const showIOSInstall = isIOS && !isStandalone && !dismissedIOS;
 
-  // Scroll para o topo ao trocar de rota
   useEffect(() => {
     mainRef.current?.scrollTo(0, 0);
   }, [pathname]);
@@ -42,10 +41,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="h-[100dvh] flex flex-col bg-muted select-none">
-      {/* Barra gradiente topo */}
       <div className="bg-gradient-to-r from-primary via-rose-400 to-pink-300 h-1.5 shrink-0" />
 
-      {/* Header */}
       <header className="bg-card border-b border-border px-4 py-3 shrink-0 z-40">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -53,12 +50,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <span className="text-xs font-bold text-primary-foreground">FS</span>
             </div>
             <div>
-              <h1 className="text-sm font-bold text-foreground leading-tight">Painel de Pagamentos</h1>
+              <h1 className="text-sm font-bold text-foreground leading-tight">Painel Político</h1>
               <p className="text-[10px] text-muted-foreground">Dra. Fernanda Sarelli</p>
             </div>
           </div>
 
-          {/* Status indicators — small and unobtrusive */}
           <div className="flex items-center gap-1.5">
             {!isOnline && (
               <span className="text-[10px] text-destructive font-semibold flex items-center gap-1 bg-destructive/10 px-2 py-1 rounded-full border border-destructive/20">
@@ -82,7 +78,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* Conteúdo principal */}
       <main
         ref={mainRef}
         className="flex-1 overflow-y-auto overscroll-y-contain min-h-0"
@@ -101,7 +96,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       <BottomNav />
 
-      {/* Floating install card — acima da BottomNav, não bloqueia conteúdo */}
       {canInstall && !dismissedInstall && (
         <div
           className="fixed bottom-[72px] left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm"
@@ -131,7 +125,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* Floating iOS install hint */}
       {showIOSInstall && (
         <div
           className="fixed bottom-[72px] left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm"
