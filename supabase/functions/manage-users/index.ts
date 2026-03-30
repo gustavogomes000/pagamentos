@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -28,14 +28,27 @@ Deno.serve(async (req) => {
     const { action, userId, password } = body;
 
     if (action === "list") {
-      const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+      // List from usuarios table instead of auth.admin.listUsers() to avoid NULL email_change bug
+      const { data, error } = await supabaseAdmin
+        .from("usuarios")
+        .select("id, user_id, nome_usuario, email, criado_em")
+        .order("criado_em", { ascending: false });
+
       if (error) {
         return new Response(JSON.stringify({ error: error.message }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      return new Response(JSON.stringify({ users: data.users }), {
+
+      const users = (data || []).map((u: any) => ({
+        id: u.user_id,
+        email: u.email,
+        nome_usuario: u.nome_usuario,
+        created_at: u.criado_em,
+      }));
+
+      return new Response(JSON.stringify({ users }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -47,6 +60,7 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      // Delete from auth
       const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
       if (error) {
         return new Response(JSON.stringify({ error: error.message }), {
@@ -54,6 +68,9 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      // Also delete from usuarios table
+      await supabaseAdmin.from("usuarios").delete().eq("user_id", userId);
+
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
