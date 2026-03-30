@@ -503,7 +503,7 @@ export default function Pagamentos() {
   const { data: administrativo, isLoading: loadA } = useQuery({
     queryKey: ["administrativo"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("administrativo").select("id,nome,whatsapp,valor_contrato").order("nome");
+      const { data, error } = await (supabase as any).from("administrativo").select("id,nome,whatsapp,valor_contrato").order("nome");
       if (error) throw error;
       return data as unknown as AdminPessoa[];
     },
