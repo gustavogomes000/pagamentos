@@ -18,7 +18,7 @@ export function BottomNav() {
   };
 
   const navBase =
-    "flex flex-col items-center justify-center gap-0.5 text-[10px] py-2 px-1 min-w-[44px] min-h-[52px] transition-colors text-muted-foreground active:scale-90 active:opacity-70";
+    "flex flex-col items-center justify-center gap-0.5 text-[10px] py-2 px-1 min-w-[40px] min-h-[52px] transition-colors text-muted-foreground active:scale-90 active:opacity-70";
   const navActive = "text-primary font-semibold";
 
   return (
@@ -51,6 +51,13 @@ export function BottomNav() {
               Novo Admin
             </button>
             <div className="h-px bg-border my-1" />
+            <button
+              onClick={() => { navigate("/administrativo"); setShowMais(false); }}
+              className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-foreground rounded-xl active:bg-muted hover:bg-muted/50"
+            >
+              <Briefcase size={17} className="text-primary" />
+              Administrativo
+            </button>
             <button
               onClick={() => { navigate("/usuarios"); setShowMais(false); }}
               className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-foreground rounded-xl active:bg-muted hover:bg-muted/50"
