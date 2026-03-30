@@ -30,6 +30,14 @@ export function BottomNav() {
             onClick={(e) => e.stopPropagation()}
           >
             <button
+              onClick={() => { navigate("/"); setShowMais(false); }}
+              className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-foreground rounded-xl active:bg-muted hover:bg-muted/50"
+            >
+              <BarChart3 size={17} className="text-primary" />
+              Dashboard
+            </button>
+            <div className="h-px bg-border my-1" />
+            <button
               onClick={() => { navigate("/cadastros/novo"); setShowMais(false); }}
               className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-foreground rounded-xl active:bg-muted hover:bg-muted/50"
             >
@@ -51,13 +59,6 @@ export function BottomNav() {
               Novo Admin
             </button>
             <div className="h-px bg-border my-1" />
-            <button
-              onClick={() => { navigate("/administrativo"); setShowMais(false); }}
-              className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-foreground rounded-xl active:bg-muted hover:bg-muted/50"
-            >
-              <Briefcase size={17} className="text-primary" />
-              Administrativo
-            </button>
             <button
               onClick={() => { navigate("/usuarios"); setShowMais(false); }}
               className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-foreground rounded-xl active:bg-muted hover:bg-muted/50"
@@ -85,11 +86,6 @@ export function BottomNav() {
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex justify-around items-stretch max-w-lg mx-auto">
-          <NavLink to="/" end className={navBase} activeClassName={navActive}>
-            <BarChart3 size={20} strokeWidth={1.8} />
-            <span>Dashboard</span>
-          </NavLink>
-
           <NavLink to="/cadastros" className={navBase} activeClassName={navActive}>
             <List size={20} strokeWidth={1.8} />
             <span>Suplentes</span>
@@ -98,6 +94,11 @@ export function BottomNav() {
           <NavLink to="/liderancas" className={navBase} activeClassName={navActive}>
             <Users size={20} strokeWidth={1.8} />
             <span>Lideranças</span>
+          </NavLink>
+
+          <NavLink to="/administrativo" className={navBase} activeClassName={navActive}>
+            <Briefcase size={20} strokeWidth={1.8} />
+            <span>Admin</span>
           </NavLink>
 
           <NavLink to="/pagamentos" className={navBase} activeClassName={navActive}>
