@@ -34,7 +34,7 @@ export default function CadastroAdmin() {
     queryKey: ["admin_pessoa", id],
     enabled: !!id,
     queryFn: async () => {
-      const { data, error } = await supabase.from("administrativo").select("*").eq("id", id!).single();
+      const { data, error } = await (supabase as any).from("administrativo").select("*").eq("id", id!).single();
       if (error) throw error;
       return data;
     },
@@ -66,9 +66,9 @@ export default function CadastroAdmin() {
     const payload = { ...form, updated_at: new Date().toISOString() };
     let error;
     if (id) {
-      ({ error } = await supabase.from("administrativo").update(payload).eq("id", id));
+      ({ error } = await (supabase as any).from("administrativo").update(payload).eq("id", id));
     } else {
-      ({ error } = await supabase.from("administrativo").insert(payload));
+      ({ error } = await (supabase as any).from("administrativo").insert(payload));
     }
     setSaving(false);
     if (error) {

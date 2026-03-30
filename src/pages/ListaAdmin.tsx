@@ -21,7 +21,7 @@ export default function ListaAdmin() {
   const { data: funcionarios, isLoading } = useQuery({
     queryKey: ["administrativo"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("administrativo").select("*").order("nome");
+      const { data, error } = await (supabase as any).from("administrativo").select("*").order("nome");
       if (error) throw error;
       return data;
     },
@@ -36,7 +36,7 @@ export default function ListaAdmin() {
   const handleDelete = async (id: string, nome: string) => {
     if (!confirm(`Excluir "${nome}"?`)) return;
     setDeleting(id);
-    const { error } = await supabase.from("administrativo").delete().eq("id", id);
+    const { error } = await (supabase as any).from("administrativo").delete().eq("id", id);
     setDeleting(null);
     if (error) {
       toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });

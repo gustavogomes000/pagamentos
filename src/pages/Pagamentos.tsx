@@ -305,7 +305,7 @@ function PendenteCard({
     if (tipo === "suplente") payload.suplente_id = id;
     else if (tipo === "lideranca") payload.lideranca_id = id;
     else payload.admin_id = id;
-    const { error } = await supabase.from("pagamentos").insert(payload);
+    const { error } = await (supabase as any).from("pagamentos").insert(payload);
     setSaving(false);
     if (error) toast({ title: "Erro", description: error.message, variant: "destructive" });
     else { toast({ title: `✅ ${fmt(valor)} registrado!`, description: nome }); qc.invalidateQueries({ queryKey: ["pagamentos"] }); setPaying(false); }
@@ -406,7 +406,7 @@ function PagoCard({
     if (tipo === "suplente") payload.suplente_id = id;
     else if (tipo === "lideranca") payload.lideranca_id = id;
     else payload.admin_id = id;
-    const { error } = await supabase.from("pagamentos").insert(payload);
+    const { error } = await (supabase as any).from("pagamentos").insert(payload);
     setSaving(false);
     if (!error) { toast({ title: "✅ Adicional registrado!" }); qc.invalidateQueries({ queryKey: ["pagamentos"] }); setPaying(false); }
   };
@@ -493,7 +493,7 @@ export default function Pagamentos() {
   const { data: liderancas, isLoading: loadL } = useQuery({
     queryKey: ["liderancas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("liderancas").select("id,nome,regiao,retirada_mensal_valor,chave_pix").order("nome");
+      const { data, error } = await (supabase as any).from("liderancas").select("id,nome,regiao,retirada_mensal_valor,chave_pix").order("nome");
       if (error) throw error;
       return data as unknown as Lideranca[];
     },
@@ -503,7 +503,7 @@ export default function Pagamentos() {
   const { data: administrativo, isLoading: loadA } = useQuery({
     queryKey: ["administrativo"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("administrativo").select("id,nome,whatsapp,valor_contrato").order("nome");
+      const { data, error } = await (supabase as any).from("administrativo").select("id,nome,whatsapp,valor_contrato").order("nome");
       if (error) throw error;
       return data as unknown as AdminPessoa[];
     },

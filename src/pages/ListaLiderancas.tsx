@@ -22,7 +22,7 @@ export default function ListaLiderancas() {
   const { data: liderancas, isLoading } = useQuery({
     queryKey: ["liderancas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("liderancas").select("*").order("nome");
+      const { data, error } = await (supabase as any).from("liderancas").select("*").order("nome");
       if (error) throw error;
       return data;
     },
@@ -41,7 +41,7 @@ export default function ListaLiderancas() {
   const handleDelete = async (id: string, nome: string) => {
     if (!confirm(`Excluir "${nome}"?`)) return;
     setDeleting(id);
-    const { error } = await supabase.from("liderancas").delete().eq("id", id);
+    const { error } = await (supabase as any).from("liderancas").delete().eq("id", id);
     setDeleting(null);
     if (error) {
       toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
