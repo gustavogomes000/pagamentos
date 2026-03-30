@@ -78,7 +78,7 @@ export function BottomNav() {
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex justify-around items-stretch max-w-lg mx-auto">
-          <NavLink to="/" className={navBase} activeClassName={navActive}>
+          <NavLink to="/" end className={navBase} activeClassName={navActive}>
             <BarChart3 size={20} strokeWidth={1.8} />
             <span>Dashboard</span>
           </NavLink>
