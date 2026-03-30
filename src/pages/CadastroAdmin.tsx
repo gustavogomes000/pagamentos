@@ -66,7 +66,7 @@ export default function CadastroAdmin() {
     const payload = { ...form, updated_at: new Date().toISOString() };
     let error;
     if (id) {
-      ({ error } = await supabase.from("administrativo").update(payload).eq("id", id));
+      ({ error } = await (supabase as any).from("administrativo").update(payload).eq("id", id));
     } else {
       ({ error } = await supabase.from("administrativo").insert(payload));
     }
