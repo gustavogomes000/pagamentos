@@ -25,6 +25,8 @@ export default function ListaAdmin() {
       if (error) throw error;
       return data;
     },
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const filtered = funcionarios?.filter((f: any) => {

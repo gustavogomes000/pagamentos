@@ -447,7 +447,7 @@ export default function Pagamentos() {
   const [ano, setAno] = useState(now.getFullYear());
   const [abaAtiva, setAbaAtiva] = useState<"suplentes" | "liderancas" | "admin">("suplentes");
   const [busca, setBusca] = useState("");
-  const [showPagos, setShowPagos] = useState(false);
+  const [showPagos, setShowPagos] = useState(true);
 
   const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes"],
@@ -468,7 +468,8 @@ export default function Pagamentos() {
       if (error) throw error;
       return data as unknown as Lideranca[];
     },
-    staleTime: 300000,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: administrativo, isLoading: loadA } = useQuery({
@@ -478,7 +479,8 @@ export default function Pagamentos() {
       if (error) throw error;
       return data as unknown as AdminPessoa[];
     },
-    staleTime: 300000,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: pagamentos, isLoading: loadP } = useQuery({

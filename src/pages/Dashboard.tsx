@@ -49,6 +49,8 @@ export default function Dashboard() {
       if (error) throw error;
       return data as Lideranca[];
     },
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: administrativo, isLoading: loadA } = useQuery({
@@ -58,6 +60,8 @@ export default function Dashboard() {
       if (error) throw error;
       return data as AdminPessoa[];
     },
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const isLoading = loadS || loadL || loadA;

@@ -26,6 +26,8 @@ export default function ListaLiderancas() {
       if (error) throw error;
       return data;
     },
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const filtered = liderancas?.filter((l: any) => {
@@ -51,6 +53,8 @@ export default function ListaLiderancas() {
     }
   };
 
+  const totalMensal = filtered.reduce((a: number, l: any) => a + (l.retirada_mensal_valor || 0), 0);
+
   return (
     <PageTransition>
       <div className="space-y-4">
@@ -68,7 +72,7 @@ export default function ListaLiderancas() {
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome, região ou cargo..."
+            placeholder="Buscar por nome, setor ou cargo..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 bg-card border-border"
@@ -86,7 +90,10 @@ export default function ListaLiderancas() {
           </div>
         ) : (
           <>
-            <p className="text-xs text-muted-foreground">{filtered.length} registro(s)</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">{filtered.length} registro(s)</p>
+              <p className="text-xs font-bold text-primary">Total: {fmt(totalMensal)}/mês</p>
+            </div>
             <div className="space-y-3">
               {filtered.map((l: any, i: number) => (
                 <div
