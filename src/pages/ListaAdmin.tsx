@@ -21,7 +21,7 @@ export default function ListaAdmin() {
   const { data: funcionarios, isLoading } = useQuery({
     queryKey: ["administrativo"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("administrativo").select("*").order("nome");
+      const { data, error } = await (supabase as any).from("administrativo").select("*").order("nome");
       if (error) throw error;
       return data;
     },
