@@ -447,7 +447,7 @@ export default function Pagamentos() {
   const [ano, setAno] = useState(now.getFullYear());
   const [abaAtiva, setAbaAtiva] = useState<"suplentes" | "liderancas" | "admin">("suplentes");
   const [busca, setBusca] = useState("");
-  const [showPagos, setShowPagos] = useState(false);
+  const [showPagos, setShowPagos] = useState(true);
 
   const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes"],
