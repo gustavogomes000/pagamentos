@@ -9,7 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { PageTransition } from "@/components/PageTransition";
 
 function usernameFromEmail(email: string) {
-  return email.replace("@painel.sarelli.com", "");
+  return email.replace("@painel.sarelli.com", "").replace("@sistema.local", "");
 }
 
 export default function Usuarios() {
