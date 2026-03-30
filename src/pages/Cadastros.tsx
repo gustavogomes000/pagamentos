@@ -125,8 +125,16 @@ export default function Cadastros() {
     <PageTransition>
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-2">
-          <h1 className="text-xl font-bold text-foreground">Fichas Cadastradas</h1>
+          <h1 className="text-xl font-bold text-foreground">Suplentes</h1>
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => navigate("/cadastros/novo")}
+              className="text-xs gap-1.5 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-bold active:scale-95 transition-transform"
+            >
+              <Plus size={14} />
+              Novo
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -135,7 +143,7 @@ export default function Cadastros() {
               className="text-xs gap-1.5 active:scale-95 transition-transform"
             >
               <FileDown size={14} />
-              Exportar
+              PDF
             </Button>
           </div>
         </div>
