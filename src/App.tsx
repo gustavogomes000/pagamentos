@@ -9,6 +9,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { Layout } from "@/components/Layout";
 import SplashScreen from "@/components/SplashScreen";
+import { PageTransition } from "@/components/PageTransition";
+import Cadastro from "./pages/Cadastro";
 import Index from "./pages/Index";
 import Cadastros from "./pages/Cadastros";
 import Dashboard from "./pages/Dashboard";
