@@ -42,7 +42,7 @@ export default function CadastroLideranca() {
     queryKey: ["lideranca", id],
     enabled: !!id,
     queryFn: async () => {
-      const { data, error } = await supabase.from("liderancas").select("*").eq("id", id!).single();
+      const { data, error } = await (supabase as any).from("liderancas").select("*").eq("id", id!).single();
       if (error) throw error;
       return data;
     },
