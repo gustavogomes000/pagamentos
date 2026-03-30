@@ -78,7 +78,7 @@ export default function CadastroLideranca() {
     const payload = { ...form, updated_at: new Date().toISOString() };
     let error;
     if (id) {
-      ({ error } = await supabase.from("liderancas").update(payload).eq("id", id));
+      ({ error } = await (supabase as any).from("liderancas").update(payload).eq("id", id));
     } else {
       ({ error } = await supabase.from("liderancas").insert(payload));
     }
