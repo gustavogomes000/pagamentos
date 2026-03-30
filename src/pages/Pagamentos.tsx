@@ -406,7 +406,7 @@ function PagoCard({
     if (tipo === "suplente") payload.suplente_id = id;
     else if (tipo === "lideranca") payload.lideranca_id = id;
     else payload.admin_id = id;
-    const { error } = await supabase.from("pagamentos").insert(payload);
+    const { error } = await (supabase as any).from("pagamentos").insert(payload);
     setSaving(false);
     if (!error) { toast({ title: "✅ Adicional registrado!" }); qc.invalidateQueries({ queryKey: ["pagamentos"] }); setPaying(false); }
   };
