@@ -493,7 +493,7 @@ export default function Pagamentos() {
   const { data: liderancas, isLoading: loadL } = useQuery({
     queryKey: ["liderancas"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("liderancas").select("id,nome,regiao,retirada_mensal_valor,chave_pix").order("nome");
+      const { data, error } = await (supabase as any).from("liderancas").select("id,nome,regiao,retirada_mensal_valor,chave_pix").order("nome");
       if (error) throw error;
       return data as unknown as Lideranca[];
     },
