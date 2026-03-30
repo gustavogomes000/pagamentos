@@ -468,7 +468,8 @@ export default function Pagamentos() {
       if (error) throw error;
       return data as unknown as Lideranca[];
     },
-    staleTime: 300000,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const { data: administrativo, isLoading: loadA } = useQuery({
