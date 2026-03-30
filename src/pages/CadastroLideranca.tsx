@@ -5,9 +5,13 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { Save, Loader2, ArrowLeft } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
+
+const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
 interface FormData {
   nome: string;
@@ -17,6 +21,7 @@ interface FormData {
   rede_social: string;
   ligacao_politica: string;
   retirada_mensal_valor: number;
+  retirada_ate_mes: number;
   chave_pix: string;
 }
 
@@ -28,6 +33,7 @@ const defaultForm: FormData = {
   rede_social: "",
   ligacao_politica: "",
   retirada_mensal_valor: 0,
+  retirada_ate_mes: 10,
   chave_pix: "",
 };
 
@@ -61,6 +67,7 @@ export default function CadastroLideranca() {
       rede_social: existing.rede_social || "",
       ligacao_politica: existing.ligacao_politica || "",
       retirada_mensal_valor: existing.retirada_mensal_valor || 0,
+      retirada_ate_mes: existing.retirada_ate_mes || 10,
       chave_pix: existing.chave_pix || "",
     });
     setInitialized(true);
@@ -94,6 +101,8 @@ export default function CadastroLideranca() {
 
   if (isLoading) return <div className="flex items-center justify-center h-40"><Loader2 className="animate-spin text-primary" /></div>;
 
+  const totalContrato = (form.retirada_mensal_valor || 0) * (form.retirada_ate_mes || 0);
+
   return (
     <PageTransition>
       <div className="space-y-6">
@@ -104,7 +113,6 @@ export default function CadastroLideranca() {
           <h1 className="text-xl font-bold text-foreground">{id ? "Editar Liderança" : "Nova Liderança"}</h1>
         </div>
 
-        {/* Dados pessoais */}
         <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
           <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Dados da Liderança</h2>
 
@@ -135,23 +143,40 @@ export default function CadastroLideranca() {
           </Field>
         </section>
 
-        {/* Financeiro */}
         <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
           <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Retirada Mensal</h2>
 
-          <Field label="Valor Mensal (R$)">
-            <Input
-              type="number" inputMode="numeric"
-              value={form.retirada_mensal_valor || ""}
-              onChange={(e) => set("retirada_mensal_valor", parseFloat(e.target.value) || 0)}
-              placeholder="0"
-              className="bg-card shadow-sm border-border"
-            />
-          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Valor Mensal (R$)">
+              <Input
+                type="number" inputMode="numeric"
+                value={form.retirada_mensal_valor || ""}
+                onChange={(e) => set("retirada_mensal_valor", parseFloat(e.target.value) || 0)}
+                placeholder="0"
+                className="bg-card shadow-sm border-border"
+              />
+            </Field>
+            <Field label="Retirada até (mês)">
+              <Select value={String(form.retirada_ate_mes)} onValueChange={(v) => set("retirada_ate_mes", parseInt(v))}>
+                <SelectTrigger className="bg-card shadow-sm border-border"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {MESES.map((m, i) => (
+                    <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
 
-          <div className="flex items-center justify-between bg-primary/5 rounded-xl p-3">
-            <span className="text-sm font-semibold text-foreground">Retirada Mensal</span>
-            <span className="text-base font-bold text-primary">{fmt(form.retirada_mensal_valor)}</span>
+          <div className="space-y-2 bg-primary/5 rounded-xl p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-foreground">Retirada Mensal</span>
+              <span className="text-base font-bold text-primary">{fmt(form.retirada_mensal_valor)}/mês</span>
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>Até {MESES[(form.retirada_ate_mes || 10) - 1]} ({form.retirada_ate_mes} meses)</span>
+              <span className="font-bold text-foreground">Total: {fmt(totalContrato)}</span>
+            </div>
           </div>
 
           <Field label="Chave PIX">

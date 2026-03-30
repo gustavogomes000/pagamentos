@@ -1,5 +1,5 @@
-import Dashboard from "./Dashboard";
+import { Navigate } from "react-router-dom";
 
 export default function Index() {
-  return <Dashboard />;
+  return <Navigate to="/cadastros" replace />;
 }

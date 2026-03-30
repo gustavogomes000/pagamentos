@@ -5,15 +5,20 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { Save, Loader2, ArrowLeft } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
+
+const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 
 interface FormData {
   nome: string;
   cpf: string;
   whatsapp: string;
   valor_contrato: number;
+  contrato_ate_mes: number;
 }
 
 const defaultForm: FormData = {
@@ -21,6 +26,7 @@ const defaultForm: FormData = {
   cpf: "",
   whatsapp: "",
   valor_contrato: 0,
+  contrato_ate_mes: 10,
 };
 
 const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -50,6 +56,7 @@ export default function CadastroAdmin() {
       cpf: existing.cpf || "",
       whatsapp: existing.whatsapp || "",
       valor_contrato: existing.valor_contrato || 0,
+      contrato_ate_mes: existing.contrato_ate_mes || 10,
     });
     setInitialized(true);
   }
@@ -82,6 +89,8 @@ export default function CadastroAdmin() {
 
   if (isLoading) return <div className="flex items-center justify-center h-40"><Loader2 className="animate-spin text-primary" /></div>;
 
+  const totalContrato = (form.valor_contrato || 0) * (form.contrato_ate_mes || 0);
+
   return (
     <PageTransition>
       <div className="space-y-6">
@@ -92,7 +101,6 @@ export default function CadastroAdmin() {
           <h1 className="text-xl font-bold text-foreground">{id ? "Editar Funcionário" : "Novo Funcionário"}</h1>
         </div>
 
-        {/* Dados */}
         <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
           <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Dados do Funcionário</h2>
 
@@ -110,23 +118,40 @@ export default function CadastroAdmin() {
           </div>
         </section>
 
-        {/* Contrato */}
         <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
           <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Valor do Contrato</h2>
 
-          <Field label="Valor Mensal (R$)" required>
-            <Input
-              type="number" inputMode="numeric"
-              value={form.valor_contrato || ""}
-              onChange={(e) => set("valor_contrato", parseFloat(e.target.value) || 0)}
-              placeholder="0"
-              className="bg-card shadow-sm border-border"
-            />
-          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Valor Mensal (R$)" required>
+              <Input
+                type="number" inputMode="numeric"
+                value={form.valor_contrato || ""}
+                onChange={(e) => set("valor_contrato", parseFloat(e.target.value) || 0)}
+                placeholder="0"
+                className="bg-card shadow-sm border-border"
+              />
+            </Field>
+            <Field label="Contrato até (mês)">
+              <Select value={String(form.contrato_ate_mes)} onValueChange={(v) => set("contrato_ate_mes", parseInt(v))}>
+                <SelectTrigger className="bg-card shadow-sm border-border"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {MESES.map((m, i) => (
+                    <SelectItem key={i + 1} value={String(i + 1)}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
 
-          <div className="flex items-center justify-between bg-primary/5 rounded-xl p-3">
-            <span className="text-sm font-semibold text-foreground">Salário / Contrato</span>
-            <span className="text-base font-bold text-primary">{fmt(form.valor_contrato)}/mês</span>
+          <div className="space-y-2 bg-primary/5 rounded-xl p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-foreground">Salário / Contrato</span>
+              <span className="text-base font-bold text-primary">{fmt(form.valor_contrato)}/mês</span>
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>Até {MESES[(form.contrato_ate_mes || 10) - 1]} ({form.contrato_ate_mes} meses)</span>
+              <span className="font-bold text-foreground">Total: {fmt(totalContrato)}</span>
+            </div>
           </div>
         </section>
 
