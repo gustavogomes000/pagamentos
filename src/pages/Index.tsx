@@ -1,10 +1,10 @@
-import Cadastro from "./Cadastro";
+import Dashboard from "./Dashboard";
 import { PageTransition } from "@/components/PageTransition";
 
 export default function Index() {
   return (
     <PageTransition>
-      <Cadastro />
+      <Dashboard />
     </PageTransition>
   );
 }

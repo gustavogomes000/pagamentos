@@ -1,5 +1,5 @@
 import { NavLink } from "@/components/NavLink";
-import { Wallet, List, Users, Briefcase, MoreHorizontal, BarChart3, UserCog, LogOut } from "lucide-react";
+import { Wallet, List, Users, Briefcase, MoreHorizontal, BarChart3, UserCog, LogOut, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -23,7 +23,6 @@ export function BottomNav() {
 
   return (
     <>
-      {/* Menu "Mais" overlay */}
       {showMais && (
         <div className="fixed inset-0 z-[60]" onClick={() => setShowMais(false)}>
           <div
@@ -31,12 +30,27 @@ export function BottomNav() {
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={() => { navigate("/dashboard"); setShowMais(false); }}
+              onClick={() => { navigate("/cadastros/novo"); setShowMais(false); }}
               className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-foreground rounded-xl active:bg-muted hover:bg-muted/50"
             >
-              <BarChart3 size={17} className="text-primary" />
-              Dashboard
+              <Plus size={17} className="text-primary" />
+              Novo Suplente
             </button>
+            <button
+              onClick={() => { navigate("/liderancas/novo"); setShowMais(false); }}
+              className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-foreground rounded-xl active:bg-muted hover:bg-muted/50"
+            >
+              <Users size={17} className="text-primary" />
+              Nova Liderança
+            </button>
+            <button
+              onClick={() => { navigate("/administrativo/novo"); setShowMais(false); }}
+              className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-foreground rounded-xl active:bg-muted hover:bg-muted/50"
+            >
+              <Briefcase size={17} className="text-primary" />
+              Novo Admin
+            </button>
+            <div className="h-px bg-border my-1" />
             <button
               onClick={() => { navigate("/usuarios"); setShowMais(false); }}
               className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-foreground rounded-xl active:bg-muted hover:bg-muted/50"
@@ -64,9 +78,9 @@ export function BottomNav() {
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex justify-around items-stretch max-w-lg mx-auto">
-          <NavLink to="/pagamentos" className={navBase} activeClassName={navActive}>
-            <Wallet size={20} strokeWidth={1.8} />
-            <span>Pagamentos</span>
+          <NavLink to="/" className={navBase} activeClassName={navActive}>
+            <BarChart3 size={20} strokeWidth={1.8} />
+            <span>Dashboard</span>
           </NavLink>
 
           <NavLink to="/cadastros" className={navBase} activeClassName={navActive}>
@@ -79,9 +93,9 @@ export function BottomNav() {
             <span>Lideranças</span>
           </NavLink>
 
-          <NavLink to="/administrativo" className={navBase} activeClassName={navActive}>
-            <Briefcase size={20} strokeWidth={1.8} />
-            <span>Administrativo</span>
+          <NavLink to="/pagamentos" className={navBase} activeClassName={navActive}>
+            <Wallet size={20} strokeWidth={1.8} />
+            <span>Pagamentos</span>
           </NavLink>
 
           <button
