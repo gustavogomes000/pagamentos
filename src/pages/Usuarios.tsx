@@ -110,7 +110,7 @@ export default function Usuarios() {
               className="bg-card shadow-sm border-border"
             />
             <p className="text-[11px] text-muted-foreground">
-              Login: <span className="font-medium text-foreground">{username.trim().toLowerCase().replace(/\s+/g, "") || "..."}</span>
+              Login: <span className="font-medium text-foreground">{username.trim().toLowerCase().replace(/\s+/g, "") || "..."}</span>@painel.sarelli.com
             </p>
           </div>
 
