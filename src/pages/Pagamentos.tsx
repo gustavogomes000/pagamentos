@@ -821,7 +821,6 @@ export default function Pagamentos() {
                 <span className="block mt-1 text-[11px] text-muted-foreground">
                   Retiradas: até o último dia do mês · Salários: até dia 10 do mês seguinte
                 </span>
-                </span>
                 <div className="mt-3 space-y-2 max-h-60 overflow-y-auto">
                   {supAtrasados.length > 0 && (
                     <div>
