@@ -106,18 +106,7 @@ const App = () => {
   const handleSplashFinish = useCallback(() => setShowSplash(false), []);
 
   return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{
-        persister,
-        buster: "rq_cache_v2_real_data",
-        maxAge: 1000 * 60 * 60 * 24,
-        dehydrateOptions: {
-          shouldDehydrateQuery: (query) =>
-            query.state.status === "success",
-        },
-      }}
-    >
+    <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <GlobalOfflineSync />
         <InstallPWA />
