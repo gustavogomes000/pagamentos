@@ -137,6 +137,16 @@ export default function Cadastros() {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => exportExcel(filtered)}
+              disabled={filtered.length === 0}
+              className="text-xs gap-1.5 active:scale-95 transition-transform"
+            >
+              <FileDown size={14} />
+              Excel
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => exportFichasLotePDF(filtered)}
               disabled={filtered.length === 0}
               className="text-xs gap-1.5 active:scale-95 transition-transform"

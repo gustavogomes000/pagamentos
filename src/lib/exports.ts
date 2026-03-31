@@ -498,6 +498,57 @@ export function exportExcel(list: any[], filters?: ExportFilters) {
   XLSX.writeFile(wb, `Planilha_Suplentes${suffix}.xlsx`);
 }
 
+// ─── EXCEL LIDERANÇAS ──────────────────────────────────────────────────────
+
+export function exportLiderancasExcel(list: any[]) {
+  const data = list.map((l, i) => ({
+    "#": i + 1,
+    "Nome": l.nome || "",
+    "Região / Setor": l.regiao || "",
+    "WhatsApp": l.whatsapp || "",
+    "CPF": l.cpf || "",
+    "Ligação Política": l.ligacao_politica || "",
+    "Rede Social": l.rede_social || "",
+    "Chave PIX": l.chave_pix || "",
+    "Retirada Mensal (R$)": l.retirada_mensal_valor || 0,
+    "Meses": l.retirada_ate_mes || 10,
+    "Total Contrato (R$)": (l.retirada_mensal_valor || 0) * (l.retirada_ate_mes || 10),
+  }));
+
+  data.push({
+    "#": "" as any,
+    "Nome": "TOTAL",
+    "Região / Setor": "",
+    "WhatsApp": "",
+    "CPF": "",
+    "Ligação Política": "",
+    "Rede Social": "",
+    "Chave PIX": "",
+    "Retirada Mensal (R$)": list.reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0),
+    "Meses": "" as any,
+    "Total Contrato (R$)": list.reduce((a, l) => a + (l.retirada_mensal_valor || 0) * (l.retirada_ate_mes || 10), 0),
+  });
+
+  const wb = XLSX.utils.book_new();
+  const headerRows: any[][] = [
+    ["Dra. Fernanda Sarelli — Painel de Lideranças"],
+    [`Gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`],
+    [],
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(headerRows);
+  XLSX.utils.sheet_add_json(ws, data, { origin: headerRows.length });
+
+  ws["!cols"] = [
+    { wch: 4 }, { wch: 28 }, { wch: 22 }, { wch: 16 }, { wch: 16 },
+    { wch: 20 }, { wch: 18 }, { wch: 20 }, { wch: 14 }, { wch: 8 }, { wch: 16 },
+  ];
+  ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }];
+
+  XLSX.utils.book_append_sheet(wb, ws, "Lideranças");
+  XLSX.writeFile(wb, "Planilha_Liderancas.xlsx");
+}
+
 // ─── LIDERANÇA PDF (Contrato) ──────────────────────────────────────────────
 
 export function exportLiderancaPDF(l: any) {
