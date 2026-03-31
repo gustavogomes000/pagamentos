@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Search, Plus, MapPin, Phone, Trash2, ChevronRight, Loader2, FileDown } from "lucide-react";
-import { exportLiderancaPDF } from "@/lib/exports";
+import { exportLiderancaPDF, exportLiderancasExcel } from "@/lib/exports";
 import { PageTransition } from "@/components/PageTransition";
 import { CardSkeletonList } from "@/components/CardSkeleton";
 
@@ -61,13 +61,25 @@ export default function ListaLiderancas() {
       <div className="space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-xl font-bold text-foreground">Lideranças</h1>
-          <Button
-            size="sm"
-            onClick={() => navigate("/liderancas/novo")}
-            className="bg-gradient-to-r from-pink-500 to-rose-400 text-white gap-1.5 active:scale-95 transition-transform"
-          >
-            <Plus size={15} /> Nova
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => navigate("/liderancas/novo")}
+              className="bg-gradient-to-r from-pink-500 to-rose-400 text-white gap-1.5 active:scale-95 transition-transform"
+            >
+              <Plus size={15} /> Nova
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportLiderancasExcel(filtered)}
+              disabled={filtered.length === 0}
+              className="text-xs gap-1.5 active:scale-95 transition-transform"
+            >
+              <FileDown size={14} />
+              Excel
+            </Button>
+          </div>
         </div>
 
         <div className="relative">

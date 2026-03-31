@@ -7,7 +7,7 @@ import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown, Loader2, Plu
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Cadastro from "./Cadastro";
-import { exportFichasLotePDF, exportSuplentePDF } from "@/lib/exports";
+import { exportFichasLotePDF, exportSuplentePDF, exportExcel } from "@/lib/exports";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 import { validateAllFinancials } from "@/lib/validateFinancials";
 import { validateRequiredData } from "@/lib/validateRequiredData";
@@ -133,6 +133,16 @@ export default function Cadastros() {
             >
               <Plus size={14} />
               Novo
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => exportExcel(filtered)}
+              disabled={filtered.length === 0}
+              className="text-xs gap-1.5 active:scale-95 transition-transform"
+            >
+              <FileDown size={14} />
+              Excel
             </Button>
             <Button
               variant="outline"
