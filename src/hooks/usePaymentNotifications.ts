@@ -67,10 +67,9 @@ export function usePaymentNotifications(pending: PendingInfo | null) {
         icon: "/icon-192.png",
         badge: "/icon-192.png",
         tag: "payment-reminder",
-        renotify: true,
-      });
+      } as NotificationOptions);
     } catch {
-      // Fallback: some browsers don't support Notification constructor in SW context
+      // Fallback: some browsers don't support Notification constructor
     }
   }, [pending]);
 }
