@@ -285,7 +285,7 @@ export default function Dashboard() {
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Buscar por nome ou região..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-card border-border" />
+              <Input placeholder="Buscar por nome, nome de urna ou setor..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-card border-border" />
               {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"><X size={14} /></button>}
             </div>
             <Button variant={showFilters || activeFiltersCount > 0 ? "default" : "outline"} size="icon" className="h-10 w-10 shrink-0 relative" onClick={() => setShowFilters(!showFilters)}>
