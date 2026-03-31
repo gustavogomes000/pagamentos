@@ -641,7 +641,7 @@ export default function Pagamentos() {
     queryKey: ["suplentes"],
     queryFn: async () => {
       const { data, error } = await supabase.from("suplentes").select(
-        "id,nome,numero_urna,bairro,regiao_atuacao,partido,retirada_mensal_valor,retirada_mensal_meses,plotagem_qtd,plotagem_valor_unit,liderancas_qtd,liderancas_valor_unit,fiscais_qtd,fiscais_valor_unit,total_campanha"
+        "id,nome,numero_urna,bairro,regiao_atuacao,partido,base_politica,retirada_mensal_valor,retirada_mensal_meses,plotagem_qtd,plotagem_valor_unit,liderancas_qtd,liderancas_valor_unit,fiscais_qtd,fiscais_valor_unit,total_campanha"
       ).order("nome");
       if (error) throw error;
       return data as unknown as Suplente[];
