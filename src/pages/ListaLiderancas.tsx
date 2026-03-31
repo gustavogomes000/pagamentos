@@ -5,7 +5,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { Search, Plus, MapPin, Phone, Trash2, ChevronRight, Loader2 } from "lucide-react";
+import { Search, Plus, MapPin, Phone, Trash2, ChevronRight, Loader2, FileDown } from "lucide-react";
+import { exportLiderancaPDF } from "@/lib/exports";
 import { PageTransition } from "@/components/PageTransition";
 import { CardSkeletonList } from "@/components/CardSkeleton";
 
@@ -135,7 +136,13 @@ export default function ListaLiderancas() {
                       </div>
                     </div>
                   </button>
-                  <div className="flex border-t border-border">
+                  <div className="flex border-t border-border divide-x divide-border">
+                    <button
+                      onClick={() => exportLiderancaPDF(l)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs text-primary active:bg-primary/10"
+                    >
+                      <FileDown size={13} /> PDF
+                    </button>
                     <button
                       onClick={() => handleDelete(l.id, l.nome)}
                       disabled={deleting === l.id}

@@ -2,7 +2,7 @@
 
 export type OfflineOp = {
   id: string;
-  table: "suplentes" | "pagamentos";
+  table: "suplentes" | "pagamentos" | "liderancas" | "administrativo";
   operation: "insert" | "update" | "delete";
   data: Record<string, unknown>;
   filter?: { column: string; value: string }; // para update/delete
