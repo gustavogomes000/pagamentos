@@ -188,7 +188,7 @@ export default function Cadastros() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           {s.numero_urna ? (
-                            <p className="font-black text-foreground text-sm uppercase truncate">{s.base_politica || s.nome}</p>
+                            <p className="font-black text-foreground text-sm uppercase truncate">{s.nome}</p>
                           ) : (
                             <p className="font-bold text-foreground text-sm truncate">{s.nome}</p>
                           )}
