@@ -163,7 +163,8 @@ export default function Cadastro({ initial, onSaved }: Props) {
       }
     }
 
-    const payload = { ...form, total_campanha: totalCampanha };
+    const { nome_urna, ...rest } = form;
+    const payload = { ...rest, numero_urna: nome_urna || rest.numero_urna || "", total_campanha: totalCampanha };
 
     let error;
     if (initial?.id) {
