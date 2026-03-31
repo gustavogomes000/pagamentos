@@ -1,4 +1,4 @@
-﻿import { useState, useCallback } from "react";
+import { useState, useCallback, lazy, Suspense } from "react";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
@@ -9,19 +9,19 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { Layout } from "@/components/Layout";
 import SplashScreen from "@/components/SplashScreen";
-import { PageTransition } from "@/components/PageTransition";
-import Cadastro from "./pages/Cadastro";
-import Index from "./pages/Index";
-import Cadastros from "./pages/Cadastros";
-import Dashboard from "./pages/Dashboard";
-import Login from "./pages/Login";
-import NotFound from "./pages/NotFound";
-import Usuarios from "./pages/Usuarios";
-import Pagamentos from "./pages/Pagamentos";
-import ListaLiderancas from "./pages/ListaLiderancas";
-import CadastroLideranca from "./pages/CadastroLideranca";
-import ListaAdmin from "./pages/ListaAdmin";
-import CadastroAdmin from "./pages/CadastroAdmin";
+
+// ─── Lazy-loaded pages ─────────────────────────────────────────────────
+const Login = lazy(() => import("./pages/Login"));
+const Cadastro = lazy(() => import("./pages/Cadastro"));
+const Cadastros = lazy(() => import("./pages/Cadastros"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Usuarios = lazy(() => import("./pages/Usuarios"));
+const Pagamentos = lazy(() => import("./pages/Pagamentos"));
+const ListaLiderancas = lazy(() => import("./pages/ListaLiderancas"));
+const CadastroLideranca = lazy(() => import("./pages/CadastroLideranca"));
+const ListaAdmin = lazy(() => import("./pages/ListaAdmin"));
+const CadastroAdmin = lazy(() => import("./pages/CadastroAdmin"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 // ─── QueryClient com suporte offline ───────────────────────────────────
 const queryClient = new QueryClient({
@@ -52,6 +52,15 @@ const persister = createSyncStoragePersister({
   throttleTime: 1000,
 });
 
+// ─── Fallback de carregamento leve ──────────────────────────────────────
+function PageFallback() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+    </div>
+  );
+}
+
 // ─── Rotas protegidas ────────────────────────────────────────────────────
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -59,10 +68,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-3 bg-muted">
-        <div className="relative">
-          <div className="w-12 h-12 rounded-full border-2 border-primary/20" />
-          <div className="w-12 h-12 rounded-full border-2 border-primary border-t-transparent animate-spin absolute inset-0" />
-        </div>
+        <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
         <p className="text-sm text-muted-foreground animate-pulse">Carregando...</p>
       </div>
     );
@@ -87,6 +93,10 @@ import { useOfflineSync } from "./hooks/useOfflineSync";
 function GlobalOfflineSync() {
   useOfflineSync();
   return null;
+}
+
+function Index() {
+  return <Navigate to="/pagamentos" replace />;
 }
 
 const App = () => {
@@ -114,28 +124,30 @@ const App = () => {
       <TooltipProvider>
         <GlobalOfflineSync />
         <InstallPWA />
-      <VersionMonitor />
+        <VersionMonitor />
         <Toaster />
         <Sonner />
         {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
         <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/cadastros" element={<ProtectedRoute><Cadastros /></ProtectedRoute>} />
-            <Route path="/cadastros/novo" element={<ProtectedRoute><PageTransition><Cadastro /></PageTransition></ProtectedRoute>} />
-            <Route path="/cadastros/:id" element={<ProtectedRoute><Cadastros /></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/usuarios" element={<ProtectedRoute><Usuarios /></ProtectedRoute>} />
-            <Route path="/pagamentos" element={<ProtectedRoute><Pagamentos /></ProtectedRoute>} />
-            <Route path="/liderancas" element={<ProtectedRoute><ListaLiderancas /></ProtectedRoute>} />
-            <Route path="/liderancas/novo" element={<ProtectedRoute><CadastroLideranca /></ProtectedRoute>} />
-            <Route path="/liderancas/:id" element={<ProtectedRoute><CadastroLideranca /></ProtectedRoute>} />
-            <Route path="/administrativo" element={<ProtectedRoute><ListaAdmin /></ProtectedRoute>} />
-            <Route path="/administrativo/novo" element={<ProtectedRoute><CadastroAdmin /></ProtectedRoute>} />
-            <Route path="/administrativo/:id" element={<ProtectedRoute><CadastroAdmin /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <Suspense fallback={<PageFallback />}>
+            <Routes>
+              <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/cadastros" element={<ProtectedRoute><Cadastros /></ProtectedRoute>} />
+              <Route path="/cadastros/novo" element={<ProtectedRoute><Cadastro /></ProtectedRoute>} />
+              <Route path="/cadastros/:id" element={<ProtectedRoute><Cadastros /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/usuarios" element={<ProtectedRoute><Usuarios /></ProtectedRoute>} />
+              <Route path="/pagamentos" element={<ProtectedRoute><Pagamentos /></ProtectedRoute>} />
+              <Route path="/liderancas" element={<ProtectedRoute><ListaLiderancas /></ProtectedRoute>} />
+              <Route path="/liderancas/novo" element={<ProtectedRoute><CadastroLideranca /></ProtectedRoute>} />
+              <Route path="/liderancas/:id" element={<ProtectedRoute><CadastroLideranca /></ProtectedRoute>} />
+              <Route path="/administrativo" element={<ProtectedRoute><ListaAdmin /></ProtectedRoute>} />
+              <Route path="/administrativo/novo" element={<ProtectedRoute><CadastroAdmin /></ProtectedRoute>} />
+              <Route path="/administrativo/:id" element={<ProtectedRoute><CadastroAdmin /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
       </TooltipProvider>
     </PersistQueryClientProvider>
@@ -143,4 +155,3 @@ const App = () => {
 };
 
 export default App;
-

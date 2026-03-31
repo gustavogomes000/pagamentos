@@ -8,12 +8,9 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
   const [phase, setPhase] = useState<"enter" | "hold" | "exit">("enter");
 
   useEffect(() => {
-    // Enter animation completes → hold
-    const enterTimer = setTimeout(() => setPhase("hold"), 800);
-    // Hold → start exit
-    const holdTimer = setTimeout(() => setPhase("exit"), 2000);
-    // Exit animation completes → finish
-    const exitTimer = setTimeout(() => onFinish(), 2600);
+    const enterTimer = setTimeout(() => setPhase("hold"), 400);
+    const holdTimer = setTimeout(() => setPhase("exit"), 1000);
+    const exitTimer = setTimeout(() => onFinish(), 1400);
 
     return () => {
       clearTimeout(enterTimer);
@@ -28,10 +25,9 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
       style={{
         background: "linear-gradient(135deg, #070510 0%, #1a0a1a 50%, #070510 100%)",
         opacity: phase === "exit" ? 0 : 1,
-        transition: "opacity 0.6s ease-out",
+        transition: "opacity 0.4s ease-out",
       }}
     >
-      {/* Radial glow behind logo */}
       <div
         className="absolute"
         style={{
@@ -41,21 +37,20 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
           background: "radial-gradient(circle, hsl(340 82% 55% / 0.25) 0%, transparent 70%)",
           opacity: phase === "enter" ? 0 : 1,
           transform: phase === "enter" ? "scale(0.5)" : "scale(1)",
-          transition: "all 1s ease-out",
+          transition: "all 0.5s ease-out",
         }}
       />
 
-      {/* Animated ring */}
       <div
         style={{
-          width: 120,
-          height: 120,
+          width: 100,
+          height: 100,
           borderRadius: "50%",
           padding: 3,
           background: "linear-gradient(135deg, hsl(340 82% 55%), hsl(350 80% 60%))",
           opacity: phase === "enter" ? 0 : 1,
           transform: phase === "enter" ? "scale(0.3) rotate(-180deg)" : "scale(1) rotate(0deg)",
-          transition: "all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}
       >
         <div
@@ -64,31 +59,22 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
         >
           <span
             className="font-bold text-white tracking-tight"
-            style={{
-              fontSize: 44,
-              opacity: phase === "enter" ? 0 : 1,
-              transform: phase === "enter" ? "translateY(10px)" : "translateY(0)",
-              transition: "all 0.6s ease-out 0.3s",
-            }}
+            style={{ fontSize: 38 }}
           >
             FS
           </span>
         </div>
       </div>
 
-      {/* Title */}
       <div
-        className="mt-6 text-center"
+        className="mt-5 text-center"
         style={{
           opacity: phase === "enter" ? 0 : 1,
-          transform: phase === "enter" ? "translateY(20px)" : "translateY(0)",
-          transition: "all 0.6s ease-out 0.5s",
+          transform: phase === "enter" ? "translateY(15px)" : "translateY(0)",
+          transition: "all 0.4s ease-out 0.2s",
         }}
       >
-        <p
-          className="text-white font-bold tracking-tight"
-          style={{ fontSize: 18 }}
-        >
+        <p className="text-white font-bold tracking-tight" style={{ fontSize: 17 }}>
           Dra. Fernanda Sarelli
         </p>
         <p
@@ -98,35 +84,6 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
           Painel de Suplentes
         </p>
       </div>
-
-      {/* Loading dots */}
-      <div
-        className="flex gap-1.5 mt-8"
-        style={{
-          opacity: phase === "enter" ? 0 : 1,
-          transition: "opacity 0.4s ease-out 0.7s",
-        }}
-      >
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="rounded-full"
-            style={{
-              width: 6,
-              height: 6,
-              background: "hsl(340 82% 55%)",
-              animation: `splashPulse 1.2s ease-in-out ${i * 0.2}s infinite`,
-            }}
-          />
-        ))}
-      </div>
-
-      <style>{`
-        @keyframes splashPulse {
-          0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
-          40% { opacity: 1; transform: scale(1.2); }
-        }
-      `}</style>
     </div>
   );
 }
