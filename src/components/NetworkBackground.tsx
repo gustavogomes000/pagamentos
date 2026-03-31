@@ -1,27 +1,25 @@
 import { useEffect, useRef } from "react";
 
-interface Node {
+interface Particle {
   x: number;
   y: number;
   vx: number;
   vy: number;
   radius: number;
-  color: string;
+  baseAlpha: number;
+  pulse: number;
+  pulseSpeed: number;
+  color: [number, number, number];
 }
 
-const COLORS = [
-  "rgba(236, 72, 153, 0.5)",   // pink
-  "rgba(200, 170, 100, 0.4)",  // gold
-  "rgba(236, 72, 153, 0.3)",   // soft pink
-  "rgba(180, 150, 80, 0.35)",  // dark gold
-];
+const PINK: [number, number, number] = [236, 72, 153];
+const GOLD: [number, number, number] = [200, 170, 100];
+const ROSE: [number, number, number] = [244, 114, 182];
+const WARM: [number, number, number] = [180, 140, 70];
 
-const LINE_COLORS = [
-  "rgba(236, 72, 153,",  // pink
-  "rgba(200, 170, 100,", // gold
-];
+const PALETTE = [PINK, GOLD, ROSE, WARM, PINK, GOLD];
 
-export default function NetworkBackground({ light = false }: { light?: boolean }) {
+export default function NetworkBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -31,9 +29,10 @@ export default function NetworkBackground({ light = false }: { light?: boolean }
     if (!ctx) return;
 
     let animId: number;
-    let nodes: Node[] = [];
-    const NODE_COUNT = 50;
-    const MAX_DIST = 140;
+    let particles: Particle[] = [];
+    let time = 0;
+    const COUNT = 80;
+    const MAX_DIST = 160;
 
     const resize = () => {
       canvas.width = window.innerWidth;
@@ -42,52 +41,89 @@ export default function NetworkBackground({ light = false }: { light?: boolean }
 
     const init = () => {
       resize();
-      nodes = Array.from({ length: NODE_COUNT }, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-        radius: Math.random() * 2 + 0.8,
-        color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      }));
+      particles = Array.from({ length: COUNT }, () => {
+        const color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+        return {
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          vx: (Math.random() - 0.5) * 0.35,
+          vy: (Math.random() - 0.5) * 0.35,
+          radius: Math.random() * 2.5 + 0.8,
+          baseAlpha: Math.random() * 0.3 + 0.3,
+          pulse: Math.random() * Math.PI * 2,
+          pulseSpeed: Math.random() * 0.02 + 0.008,
+          color,
+        };
+      });
     };
 
     const draw = () => {
+      time++;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[i].x - nodes[j].x;
-          const dy = nodes[i].y - nodes[j].y;
+      // Flowing gradient waves
+      const wave1X = Math.sin(time * 0.003) * canvas.width * 0.3 + canvas.width * 0.3;
+      const wave1Y = Math.cos(time * 0.002) * canvas.height * 0.2 + canvas.height * 0.3;
+      const wave2X = Math.cos(time * 0.004) * canvas.width * 0.3 + canvas.width * 0.7;
+      const wave2Y = Math.sin(time * 0.003) * canvas.height * 0.2 + canvas.height * 0.7;
+
+      const g1 = ctx.createRadialGradient(wave1X, wave1Y, 0, wave1X, wave1Y, canvas.width * 0.5);
+      g1.addColorStop(0, "rgba(236, 72, 153, 0.06)");
+      g1.addColorStop(0.5, "rgba(200, 170, 100, 0.03)");
+      g1.addColorStop(1, "transparent");
+      ctx.fillStyle = g1;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const g2 = ctx.createRadialGradient(wave2X, wave2Y, 0, wave2X, wave2Y, canvas.width * 0.4);
+      g2.addColorStop(0, "rgba(200, 170, 100, 0.05)");
+      g2.addColorStop(0.5, "rgba(236, 72, 153, 0.025)");
+      g2.addColorStop(1, "transparent");
+      ctx.fillStyle = g2;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Connections
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < MAX_DIST) {
-            const alpha = (1 - dist / MAX_DIST) * 0.2;
-            const lineColor = LINE_COLORS[i % LINE_COLORS.length];
-            ctx.strokeStyle = `${lineColor} ${alpha})`;
-            ctx.lineWidth = 0.5;
+            const alpha = (1 - dist / MAX_DIST) * 0.18;
+            const [r, g, b] = particles[i].color;
+            ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            ctx.lineWidth = 0.6;
             ctx.beginPath();
-            ctx.moveTo(nodes[i].x, nodes[i].y);
-            ctx.lineTo(nodes[j].x, nodes[j].y);
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
             ctx.stroke();
           }
         }
       }
 
-      for (const node of nodes) {
+      // Particles with glow + pulse
+      for (const p of particles) {
+        p.pulse += p.pulseSpeed;
+        const alpha = p.baseAlpha * (0.6 + 0.4 * Math.sin(p.pulse));
+        const [r, g, b] = p.color;
+
+        // Outer glow
+        const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 6);
+        glow.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${alpha * 0.25})`);
+        glow.addColorStop(1, "transparent");
+        ctx.fillStyle = glow;
+        ctx.fillRect(p.x - p.radius * 6, p.y - p.radius * 6, p.radius * 12, p.radius * 12);
+
+        // Core
         ctx.beginPath();
-        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-        ctx.fillStyle = node.color;
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
         ctx.fill();
 
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, node.radius + 3, 0, Math.PI * 2);
-        ctx.fillStyle = node.color.replace(/[\d.]+\)$/, "0.08)");
-        ctx.fill();
-
-        node.x += node.vx;
-        node.y += node.vy;
-        if (node.x < 0 || node.x > canvas.width) node.vx *= -1;
-        if (node.y < 0 || node.y > canvas.height) node.vy *= -1;
+        // Move
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
       }
 
       animId = requestAnimationFrame(draw);

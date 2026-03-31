@@ -72,7 +72,7 @@ export default function Login() {
       style={{ background: '#fefefe' }}
     >
       {/* Animated network background */}
-      <NetworkBackground light />
+      <NetworkBackground />
 
       {/* Soft gradient overlays */}
       <div
@@ -126,16 +126,19 @@ export default function Login() {
         {/* Login form — frosted glass */}
         <form
           onSubmit={handleLogin}
-          className="space-y-4 p-6 rounded-2xl border"
+          className="space-y-4 p-6 rounded-3xl"
           style={{
-            background: 'rgba(255, 255, 255, 0.45)',
-            backdropFilter: 'blur(20px) saturate(1.4)',
-            WebkitBackdropFilter: 'blur(20px) saturate(1.4)',
-            borderColor: 'rgba(200, 170, 100, 0.2)',
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.18) 100%)',
+            backdropFilter: 'blur(24px) saturate(1.6)',
+            WebkitBackdropFilter: 'blur(24px) saturate(1.6)',
+            border: '1px solid rgba(255, 255, 255, 0.5)',
+            borderTop: '1px solid rgba(255, 255, 255, 0.7)',
+            borderLeft: '1px solid rgba(255, 255, 255, 0.6)',
             boxShadow: `
-              0 8px 32px rgba(0, 0, 0, 0.06),
-              0 1px 0 rgba(255, 255, 255, 0.6) inset,
-              0 -1px 0 rgba(200, 170, 100, 0.1) inset
+              0 8px 32px rgba(0, 0, 0, 0.08),
+              0 2px 16px rgba(200, 170, 100, 0.08),
+              inset 0 1px 0 rgba(255, 255, 255, 0.6),
+              inset 0 -1px 0 rgba(200, 170, 100, 0.05)
             `,
             ...anim(0.3),
           }}
