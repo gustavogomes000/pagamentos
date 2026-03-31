@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
-import { Download, WifiOff, X, RefreshCw } from "lucide-react";
+import { requestNotificationPermission } from "@/hooks/usePaymentNotifications";
+import { Download, WifiOff, X, RefreshCw, Bell, BellOff } from "lucide-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
