@@ -342,16 +342,31 @@ function HistoricoItem({ p, onDelete }: { p: Pagamento; onDelete: (id: string) =
   );
 
   return (
-    <div className="flex items-center justify-between px-3 py-1.5">
-      <div className="min-w-0">
+    <div className="flex items-center justify-between gap-3 px-3 py-2">
+      <div className="min-w-0 flex-1">
         <span className="text-xs font-medium text-foreground">{CAT_LABEL[p.categoria] || p.categoria}</span>
         {p.observacao && <span className="text-[10px] text-muted-foreground ml-2">{p.observacao}</span>}
         <p className="text-[10px] text-muted-foreground">{new Date(p.created_at).toLocaleDateString("pt-BR")}</p>
       </div>
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center gap-2 shrink-0">
         <span className="text-sm font-bold text-green-600 dark:text-green-400">{fmt(p.valor)}</span>
-        <button onClick={() => setEditing(true)} className="p-1 text-muted-foreground"><Pencil size={11} /></button>
-        <button onClick={() => onDelete(p.id)} className="p-1 text-destructive"><Trash2 size={11} /></button>
+        <button
+          onClick={() => setEditing(true)}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          aria-label="Editar pagamento"
+          title="Editar pagamento"
+        >
+          <Pencil size={12} />
+        </button>
+        <button
+          onClick={() => onDelete(p.id)}
+          className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-destructive/30 px-2 text-destructive transition-colors hover:bg-destructive/10"
+          aria-label="Apagar pagamento"
+          title="Apagar pagamento"
+        >
+          <Trash2 size={12} />
+          <span className="text-[10px] font-semibold">Apagar</span>
+        </button>
       </div>
     </div>
   );
