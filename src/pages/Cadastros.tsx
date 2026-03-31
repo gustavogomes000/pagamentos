@@ -190,17 +190,26 @@ export default function Cadastros() {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <p className="font-bold text-foreground text-sm truncate">{s.nome}</p>
+                          {s.numero_urna ? (
+                            <p className="font-black text-foreground text-sm uppercase truncate">{s.base_politica || s.nome}</p>
+                          ) : (
+                            <p className="font-bold text-foreground text-sm truncate">{s.nome}</p>
+                          )}
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                            {s.bairro && (
+                            {s.partido && <span className="text-[10px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">{s.partido}</span>}
+                            {s.situacao && <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{s.situacao}</span>}
+                            {s.numero_urna && <span className="text-[10px] font-mono bg-muted text-foreground px-1.5 py-0.5 rounded-md">Nº {s.numero_urna}</span>}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                            {s.regiao_atuacao && (
                               <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                                <MapPin size={10} className="text-primary shrink-0" /> {s.bairro}
+                                <MapPin size={10} className="text-primary shrink-0" /> {s.regiao_atuacao}
                               </span>
                             )}
-                            {s.partido && <span className="text-[11px] text-muted-foreground">{s.partido}</span>}
-                            {s.numero_urna && <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">#{s.numero_urna}</span>}
-                            {s.situacao && <span className="text-[10px] font-medium uppercase tracking-wider text-primary">{s.situacao}</span>}
                           </div>
+                          {s.numero_urna && (
+                            <p className="text-[10px] text-muted-foreground mt-0.5">{s.nome}</p>
+                          )}
                         </div>
                         <p className="text-sm font-bold text-primary whitespace-nowrap">{fmt(calcTotaisFinanceiros(s).totalFinal)}</p>
                       </div>
