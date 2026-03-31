@@ -528,8 +528,22 @@ export default function Pagamentos() {
   const lidPago = pagsMes.filter(p => p.tipo_pessoa === "lideranca").reduce((a, p) => a + p.valor, 0);
   const admPago = pagsMes.filter(p => p.tipo_pessoa === "admin").reduce((a, p) => a + p.valor, 0);
   const totalPago = supPago + lidPago + admPago;
-  const totalFalta = Math.max(0, totalPlanejado - totalPago);
-  const pctGeral = totalPlanejado > 0 ? Math.min(100, (totalPago / totalPlanejado) * 100) : 0;
+
+  // Calcular "falta" por pessoa (não permite que excesso de um compense falta de outro)
+  const supFaltaReal = supComValor.reduce((a, s) => {
+    const pago = pagsMes.filter(p => p.suplente_id === s.id).reduce((acc, p) => acc + p.valor, 0);
+    return a + Math.max(0, (s.retirada_mensal_valor || 0) - pago);
+  }, 0);
+  const lidFaltaReal = lidComValor.reduce((a, l) => {
+    const pago = pagsMes.filter(p => p.lideranca_id === l.id).reduce((acc, p) => acc + p.valor, 0);
+    return a + Math.max(0, (l.retirada_mensal_valor || 0) - pago);
+  }, 0);
+  const admFaltaReal = admComValor.reduce((a, ad) => {
+    const pago = pagsMes.filter(p => p.admin_id === ad.id).reduce((acc, p) => acc + p.valor, 0);
+    return a + Math.max(0, (ad.valor_contrato || 0) - pago);
+  }, 0);
+  const totalFalta = supFaltaReal + lidFaltaReal + admFaltaReal;
+  const pctGeral = totalPlanejado > 0 ? Math.min(100, ((totalPlanejado - totalFalta) / totalPlanejado) * 100) : 0;
 
   // Contagens pagos
   const supPagosN = supComValor.filter(s => pagsMes.filter(p => p.suplente_id === s.id).reduce((a, p) => a + p.valor, 0) >= (s.retirada_mensal_valor || 0)).length;
