@@ -38,11 +38,8 @@ export default function Cadastros() {
   const filtered = suplentes?.filter((s: any) => {
     if (!search.trim()) return true;
     const term = normalizeStr(search);
-    const nome = normalizeStr(s.nome || "");
-    const bairro = normalizeStr(s.bairro || "");
-    const regiao = normalizeStr(s.regiao_atuacao || "");
-    const urna = (s.numero_urna || "").toLowerCase();
-    return nome.includes(term) || bairro.includes(term) || regiao.includes(term) || urna.includes(term);
+    const fields = [s.nome, s.bairro, s.regiao_atuacao, s.numero_urna, s.partido, s.base_politica, s.situacao];
+    return fields.some(f => f && normalizeStr(f).includes(term));
   }) ?? [];
 
   const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -191,7 +188,7 @@ export default function Cadastros() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           {s.numero_urna ? (
-                            <p className="font-black text-foreground text-sm uppercase truncate">{s.base_politica || s.nome}</p>
+                            <p className="font-black text-foreground text-sm uppercase truncate">{s.nome}</p>
                           ) : (
                             <p className="font-bold text-foreground text-sm truncate">{s.nome}</p>
                           )}
@@ -219,11 +216,11 @@ export default function Cadastros() {
                     <div className="grid grid-cols-3 border-t border-border divide-x divide-border bg-muted/40">
                       <div className="py-2 px-1 text-center">
                         <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Votos</p>
-                        <p className="text-sm font-bold text-foreground">{fmtN(s.total_votos)}</p>
+                        <p className="text-sm font-bold text-foreground">{s.total_votos ? fmtN(s.total_votos) : "—"}</p>
                       </div>
                       <div className="py-2 px-1 text-center">
                         <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Expect.</p>
-                        <p className="text-sm font-bold text-foreground">{fmtN(s.expectativa_votos)}</p>
+                        <p className="text-sm font-bold text-foreground">{s.expectativa_votos ? fmtN(s.expectativa_votos) : "—"}</p>
                       </div>
                       <div className="py-2 px-1 text-center">
                         <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Pessoas</p>
