@@ -45,10 +45,19 @@ const queryClient = new QueryClient({
   },
 });
 
+// ─── Limpa cache antigo com dados inconsistentes ────────────────────────
+const CACHE_VERSION = "rq_cache_v3";
+try {
+  const oldKey = "rq_cache_v2";
+  if (window.localStorage.getItem(oldKey)) {
+    window.localStorage.removeItem(oldKey);
+  }
+} catch {}
+
 // ─── Persiste o cache do React Query no localStorage ────────────────────
 const persister = createSyncStoragePersister({
   storage: window.localStorage,
-  key: "rq_cache_v2",
+  key: CACHE_VERSION,
   throttleTime: 1000,
 });
 
