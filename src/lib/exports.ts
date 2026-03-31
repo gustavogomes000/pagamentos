@@ -418,76 +418,118 @@ export function exportAllPDF(list: any[], filters?: ExportFilters) {
 }
 
 export function exportExcel(list: any[], filters?: ExportFilters) {
-  const data = list.map((s, i) => ({
-    "#": i + 1,
-    "Nome": s.nome,
-    "Região": s.regiao_atuacao || "",
-    "Telefone": s.telefone || "",
-    "Cargo": s.cargo_disputado || "",
-    "Partido": s.partido || "",
-    "Situação": s.situacao || "",
-    "Votos Eleição Passada": s.total_votos || 0,
-    "Expectativa Votos": s.expectativa_votos || 0,
-    "Retirada Mensal (R$)": s.retirada_mensal_valor || 0,
-    "Meses": s.retirada_mensal_meses || 0,
-    "Plotagem Qtd": s.plotagem_qtd || 0,
-    "Plotagem Unit. (R$)": s.plotagem_valor_unit || 0,
-    "Lideranças Qtd": s.liderancas_qtd || 0,
-    "Lideranças Unit. (R$)": s.liderancas_valor_unit || 0,
-    "Fiscais Qtd": s.fiscais_qtd || 0,
-    "Fiscais Unit. (R$)": s.fiscais_valor_unit || 0,
-    "Total Pessoas": (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0),
-    "Total Campanha (R$)": calcTotaisFinanceiros(s).totalFinal,
-  }));
+  const wb = XLSX.utils.book_new();
+  const now = `${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`;
+  const filterLabel = getFilterLabel(filters);
 
-  // TOTAL row
-  data.push({
-    "#": "" as any,
-    "Nome": "TOTAL",
-    "Região": "",
-    "Telefone": "",
-    "Cargo": "",
-    "Partido": "",
-    "Situação": "",
-    "Votos Eleição Passada": list.reduce((a, s) => a + (s.total_votos || 0), 0),
-    "Expectativa Votos": list.reduce((a, s) => a + (s.expectativa_votos || 0), 0),
-    "Retirada Mensal (R$)": "" as any,
-    "Meses": "" as any,
-    "Plotagem Qtd": list.reduce((a, s) => a + (s.plotagem_qtd || 0), 0),
-    "Plotagem Unit. (R$)": "" as any,
-    "Lideranças Qtd": list.reduce((a, s) => a + (s.liderancas_qtd || 0), 0),
-    "Lideranças Unit. (R$)": "" as any,
-    "Fiscais Qtd": list.reduce((a, s) => a + (s.fiscais_qtd || 0), 0),
-    "Fiscais Unit. (R$)": "" as any,
-    "Total Pessoas": list.reduce((a, s) => a + (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0), 0),
-    "Total Campanha (R$)": list.reduce((a, s) => a + calcTotaisFinanceiros(s).totalFinal, 0),
+  // ── Totalizadores ──
+  const totalVotos = list.reduce((a, s) => a + (s.total_votos || 0), 0);
+  const totalExpect = list.reduce((a, s) => a + (s.expectativa_votos || 0), 0);
+  const totalPessoas = list.reduce((a, s) => a + (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0), 0);
+  const totalCampanha = list.reduce((a, s) => a + calcTotaisFinanceiros(s).totalFinal, 0);
+  const totalRetirada = list.reduce((a, s) => a + (s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0), 0);
+  const totalPlotagem = list.reduce((a, s) => a + (s.plotagem_qtd || 0) * (s.plotagem_valor_unit || 0), 0);
+  const totalLiderancas = list.reduce((a, s) => a + (s.liderancas_qtd || 0) * (s.liderancas_valor_unit || 0), 0);
+  const totalFiscais = list.reduce((a, s) => a + (s.fiscais_qtd || 0) * (s.fiscais_valor_unit || 0), 0);
+
+  // ── Cabeçalho e Resumo ──
+  const rows: any[][] = [
+    ["DRA. FERNANDA SARELLI — PAINEL DE SUPLENTES"],
+    [`Pré-candidata Dep. Estadual GO 2026 — Aparecida de Goiânia`],
+    [`Gerado em ${now}`],
+    filterLabel ? [`Filtros: ${filterLabel}`] : [],
+    [],
+    ["RESUMO EXECUTIVO"],
+    ["Total de Candidatos", list.length, "", "Total Votos", totalVotos, "", "Total Expect.", totalExpect],
+    ["Total Pessoas de Campo", totalPessoas, "", "Total Retiradas", totalRetirada, "", "Total Campanhas", totalCampanha],
+    ["Total Plotagem", totalPlotagem, "", "Total Lideranças", totalLiderancas, "", "Total Fiscais", totalFiscais],
+    [],
+    ["DADOS DETALHADOS"],
+    [
+      "#", "Nome", "Região", "Telefone", "Cargo", "Partido", "Situação",
+      "Votos", "Expectativa", "Retirada (R$)", "Meses", "Retirada Total",
+      "Plotagem Qtd", "Plotagem Unit.", "Plotagem Total",
+      "Lideranças Qtd", "Lideranças Unit.", "Lideranças Total",
+      "Fiscais Qtd", "Fiscais Unit.", "Fiscais Total",
+      "Total Pessoas", "TOTAL CAMPANHA (R$)"
+    ],
+  ];
+
+  // ── Dados ──
+  list.forEach((s, i) => {
+    const t = calcTotaisFinanceiros(s);
+    rows.push([
+      i + 1,
+      s.nome || "",
+      s.regiao_atuacao || "",
+      s.telefone || "",
+      s.cargo_disputado || "",
+      s.partido || "",
+      s.situacao || "",
+      s.total_votos || 0,
+      s.expectativa_votos || 0,
+      s.retirada_mensal_valor || 0,
+      s.retirada_mensal_meses || 0,
+      t.retirada,
+      s.plotagem_qtd || 0,
+      s.plotagem_valor_unit || 0,
+      t.plotagem,
+      s.liderancas_qtd || 0,
+      s.liderancas_valor_unit || 0,
+      t.liderancas,
+      s.fiscais_qtd || 0,
+      s.fiscais_valor_unit || 0,
+      t.fiscais,
+      (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0),
+      t.totalFinal,
+    ]);
   });
 
-  // Build workbook with header rows
-  const wb = XLSX.utils.book_new();
-  const headerRows: any[][] = [
-    ["Dra. Fernanda Sarelli — Painel de Suplentes"],
-    [`Gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`],
-  ];
+  // ── Linha TOTAL ──
+  rows.push([
+    "", "TOTAL GERAL", "", "", "", "", "",
+    totalVotos, totalExpect,
+    "", "", totalRetirada,
+    "", "", totalPlotagem,
+    "", "", totalLiderancas,
+    "", "", totalFiscais,
+    totalPessoas, totalCampanha,
+  ]);
 
-  const filterLabel = getFilterLabel(filters);
-  if (filterLabel) {
-    headerRows.push([`Filtros: ${filterLabel}`]);
-  }
-  headerRows.push([]); // blank row
+  const ws = XLSX.utils.aoa_to_sheet(rows);
 
-  const ws = XLSX.utils.aoa_to_sheet(headerRows);
-  XLSX.utils.sheet_add_json(ws, data, { origin: headerRows.length });
-
+  // Larguras
   ws["!cols"] = [
-    { wch: 4 }, { wch: 28 }, { wch: 22 }, { wch: 16 }, { wch: 12 },
-    { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 14 },
-    { wch: 6 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 14 },
-    { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 16 },
+    { wch: 4 }, { wch: 30 }, { wch: 22 }, { wch: 16 }, { wch: 12 },
+    { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 10 },
+    { wch: 14 }, { wch: 6 }, { wch: 14 },
+    { wch: 8 }, { wch: 12 }, { wch: 14 },
+    { wch: 8 }, { wch: 12 }, { wch: 14 },
+    { wch: 8 }, { wch: 12 }, { wch: 14 },
+    { wch: 8 }, { wch: 16 },
   ];
 
-  // Merge title row
-  ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 18 } }];
+  // Merges
+  const lastCol = 22;
+  ws["!merges"] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: lastCol } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: lastCol } },
+    { s: { r: 2, c: 0 }, e: { r: 2, c: lastCol } },
+    { s: { r: 5, c: 0 }, e: { r: 5, c: lastCol } },
+    { s: { r: 10, c: 0 }, e: { r: 10, c: lastCol } },
+  ];
+
+  // Formatos numéricos BRL nas colunas financeiras
+  const dataStartRow = 12; // 0-indexed row where data starts
+  const brlCols = [9, 11, 13, 14, 16, 17, 19, 20, 22]; // columns with R$ values
+  for (let r = dataStartRow; r < rows.length; r++) {
+    brlCols.forEach(c => {
+      const addr = XLSX.utils.encode_cell({ r, c });
+      if (ws[addr] && typeof ws[addr].v === "number") {
+        ws[addr].z = '#,##0.00';
+      }
+    });
+  }
 
   XLSX.utils.book_append_sheet(wb, ws, "Suplentes");
 
@@ -501,49 +543,76 @@ export function exportExcel(list: any[], filters?: ExportFilters) {
 // ─── EXCEL LIDERANÇAS ──────────────────────────────────────────────────────
 
 export function exportLiderancasExcel(list: any[]) {
-  const data = list.map((l, i) => ({
-    "#": i + 1,
-    "Nome": l.nome || "",
-    "Região / Setor": l.regiao || "",
-    "WhatsApp": l.whatsapp || "",
-    "CPF": l.cpf || "",
-    "Ligação Política": l.ligacao_politica || "",
-    "Rede Social": l.rede_social || "",
-    "Chave PIX": l.chave_pix || "",
-    "Retirada Mensal (R$)": l.retirada_mensal_valor || 0,
-    "Meses": l.retirada_ate_mes || 10,
-    "Total Contrato (R$)": (l.retirada_mensal_valor || 0) * (l.retirada_ate_mes || 10),
-  }));
+  const wb = XLSX.utils.book_new();
+  const now = `${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`;
 
-  data.push({
-    "#": "" as any,
-    "Nome": "TOTAL",
-    "Região / Setor": "",
-    "WhatsApp": "",
-    "CPF": "",
-    "Ligação Política": "",
-    "Rede Social": "",
-    "Chave PIX": "",
-    "Retirada Mensal (R$)": list.reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0),
-    "Meses": "" as any,
-    "Total Contrato (R$)": list.reduce((a, l) => a + (l.retirada_mensal_valor || 0) * (l.retirada_ate_mes || 10), 0),
+  const totalMensal = list.reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0);
+  const totalContrato = list.reduce((a, l) => a + (l.retirada_mensal_valor || 0) * (l.retirada_ate_mes || 10), 0);
+
+  const rows: any[][] = [
+    ["DRA. FERNANDA SARELLI — PAINEL DE LIDERANÇAS"],
+    ["Pré-candidata Dep. Estadual GO 2026 — Aparecida de Goiânia"],
+    [`Gerado em ${now}`],
+    [],
+    ["RESUMO EXECUTIVO"],
+    ["Total de Lideranças", list.length, "", "Total Mensal (R$)", totalMensal, "", "Total Contratos (R$)", totalContrato],
+    [],
+    ["DADOS DETALHADOS"],
+    [
+      "#", "Nome", "Região / Setor", "WhatsApp", "CPF",
+      "Ligação Política", "Rede Social", "Chave PIX",
+      "Retirada Mensal (R$)", "Meses", "Total Contrato (R$)"
+    ],
+  ];
+
+  list.forEach((l, i) => {
+    rows.push([
+      i + 1,
+      l.nome || "",
+      l.regiao || "",
+      l.whatsapp || "",
+      l.cpf || "",
+      l.ligacao_politica || "",
+      l.rede_social || "",
+      l.chave_pix || "",
+      l.retirada_mensal_valor || 0,
+      l.retirada_ate_mes || 10,
+      (l.retirada_mensal_valor || 0) * (l.retirada_ate_mes || 10),
+    ]);
   });
 
-  const wb = XLSX.utils.book_new();
-  const headerRows: any[][] = [
-    ["Dra. Fernanda Sarelli — Painel de Lideranças"],
-    [`Gerado em ${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`],
-    [],
-  ];
+  // TOTAL
+  rows.push([
+    "", "TOTAL GERAL", "", "", "", "", "", "",
+    totalMensal, "", totalContrato,
+  ]);
 
-  const ws = XLSX.utils.aoa_to_sheet(headerRows);
-  XLSX.utils.sheet_add_json(ws, data, { origin: headerRows.length });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
 
   ws["!cols"] = [
-    { wch: 4 }, { wch: 28 }, { wch: 22 }, { wch: 16 }, { wch: 16 },
-    { wch: 20 }, { wch: 18 }, { wch: 20 }, { wch: 14 }, { wch: 8 }, { wch: 16 },
+    { wch: 4 }, { wch: 30 }, { wch: 22 }, { wch: 16 }, { wch: 16 },
+    { wch: 22 }, { wch: 18 }, { wch: 22 }, { wch: 16 }, { wch: 8 }, { wch: 18 },
   ];
-  ws["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }];
+
+  const lastCol = 10;
+  ws["!merges"] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: lastCol } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: lastCol } },
+    { s: { r: 2, c: 0 }, e: { r: 2, c: lastCol } },
+    { s: { r: 4, c: 0 }, e: { r: 4, c: lastCol } },
+    { s: { r: 7, c: 0 }, e: { r: 7, c: lastCol } },
+  ];
+
+  // Formatos BRL
+  const dataStart = 9;
+  for (let r = dataStart; r < rows.length; r++) {
+    [8, 10].forEach(c => {
+      const addr = XLSX.utils.encode_cell({ r, c });
+      if (ws[addr] && typeof ws[addr].v === "number") {
+        ws[addr].z = '#,##0.00';
+      }
+    });
+  }
 
   XLSX.utils.book_append_sheet(wb, ws, "Lideranças");
   XLSX.writeFile(wb, "Planilha_Liderancas.xlsx");
