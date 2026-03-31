@@ -364,7 +364,7 @@ export default function Dashboard() {
             {/* ═══════════════════════════════════════════════ */}
             {activeView === "resumo" && (
               <div className="space-y-4">
-                {/* Big hero card */}
+                {/* Big hero card with progress bar */}
                 <div className="bg-gradient-to-br from-pink-500 via-rose-500 to-pink-600 rounded-2xl p-5 shadow-lg text-white">
                   <div className="flex items-center gap-2 text-sm text-white/80 mb-1">
                     <DollarSign size={16} /> Orçamento Total da Operação
@@ -384,7 +384,16 @@ export default function Dashboard() {
                       <p className="text-sm font-bold">{orcamentoTotal > 0 ? ((totalPagoAno / orcamentoTotal) * 100).toFixed(1) : 0}%</p>
                     </div>
                   </div>
-                  <MiniBar pago={totalPagoAno} total={orcamentoTotal} cor="bg-white" />
+                  <div className="mt-3 space-y-1">
+                    <div className="h-3 bg-white/20 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full bg-white transition-all duration-700" style={{ width: `${orcamentoTotal > 0 ? Math.min(100, (totalPagoAno / orcamentoTotal) * 100) : 0}%` }} />
+                    </div>
+                    <div className="flex justify-between text-[9px] text-white/60">
+                      <span>0%</span>
+                      <span>{orcamentoTotal > 0 ? ((totalPagoAno / orcamentoTotal) * 100).toFixed(1) : 0}% pago</span>
+                      <span>100%</span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* ─── RESUMO GERAL — claro e descritivo ───────────── */}
