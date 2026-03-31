@@ -301,7 +301,7 @@ export default function Dashboard() {
                 {activeFiltersCount > 0 && <button onClick={clearFilters} className="text-[10px] text-destructive font-semibold flex items-center gap-1"><X size={10} /> Limpar</button>}
               </div>
               <div className="space-y-1">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Região / Bairro</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Setor</p>
                 <div className="flex flex-wrap gap-1.5">
                   {regioes.map(r => (
                     <button key={r} onClick={() => setFiltroRegiao(filtroRegiao === r ? "" : r)}
