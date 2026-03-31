@@ -40,7 +40,7 @@ const MESES_FULL = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junh
 
 // Start months per category
 const MES_INICIO_LID = 2;
-const MES_INICIO_SUP = 3;
+const MES_INICIO_SUP = 2;
 const MES_INICIO_ADM = 3;
 const MES_FIM = 9;
 
