@@ -77,7 +77,7 @@ const CAT_FIELDS: Record<string, { qtdField: string; valField: string } | { valF
 
 function PayForm({ pessoaNome, categorias, onSave, onCancel, saving, suplenteId, onFieldsUpdated }: {
   pessoaNome: string;
-  categorias: { key: string; label: string; planejado: number; pago: number; detalhe: string; qtd: number; valorUnit: number }[];
+  categorias: { key: string; label: string; planejado: number; pago: number; detalhe: string; qtd: number; valorUnit: number; faltaMes?: number }[];
   onSave: (valor: number, obs: string, cat: string) => Promise<void>;
   onCancel: () => void; saving: boolean;
   suplenteId?: string;
@@ -85,7 +85,10 @@ function PayForm({ pessoaNome, categorias, onSave, onCancel, saving, suplenteId,
 }) {
   const [cat, setCat] = useState(categorias[0]?.key || "retirada");
   const catAtual = categorias.find(c => c.key === cat) || categorias[0];
-  const faltaCat = catAtual ? Math.max(0, catAtual.planejado - catAtual.pago) : 0;
+  // Para retirada, usar faltaMes (só o mês) em vez de falta total
+  const faltaCat = catAtual
+    ? (catAtual.faltaMes != null ? catAtual.faltaMes : Math.max(0, catAtual.planejado - catAtual.pago))
+    : 0;
   const [valor, setValor] = useState(faltaCat > 0 ? String(faltaCat) : "");
   const [obs, setObs] = useState("");
   const valorNum = parseFloat(valor.replace(",", ".")) || 0;
@@ -100,7 +103,7 @@ function PayForm({ pessoaNome, categorias, onSave, onCancel, saving, suplenteId,
     setCat(newCat);
     const c = categorias.find(x => x.key === newCat);
     if (c) {
-      const f = Math.max(0, c.planejado - c.pago);
+      const f = c.faltaMes != null ? c.faltaMes : Math.max(0, c.planejado - c.pago);
       setValor(f > 0 ? String(f) : "");
     }
   };
@@ -389,8 +392,9 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
   const totais = calcTotaisFinanceiros(s);
   const totalPagoGeral = pagsTodos.reduce((a, p) => a + p.valor, 0);
 
+  const pagoRetiradaMes = pagsMes.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0);
   const categorias = [
-    { key: "retirada", label: "Retirada", planejado: totais.retirada, pago: pagsTodos.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0), detalhe: `${fmt(retiradaMes)} × ${s.retirada_mensal_meses || 0}m`, qtd: retiradaMes, valorUnit: s.retirada_mensal_meses || 0 },
+    { key: "retirada", label: "Retirada", planejado: totais.retirada, pago: pagsTodos.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0), detalhe: `${fmt(retiradaMes)} × ${s.retirada_mensal_meses || 0}m`, qtd: retiradaMes, valorUnit: s.retirada_mensal_meses || 0, faltaMes: Math.max(0, retiradaMes - pagoRetiradaMes) },
     { key: "plotagem", label: "Plotagem", planejado: totais.plotagem, pago: pagsTodos.filter(p => p.categoria === "plotagem").reduce((a, p) => a + p.valor, 0), detalhe: `${s.plotagem_qtd || 0} × ${fmt(s.plotagem_valor_unit || 0)}`, qtd: s.plotagem_qtd || 0, valorUnit: s.plotagem_valor_unit || 0 },
     { key: "liderancas", label: "Lideranças", planejado: totais.liderancas, pago: pagsTodos.filter(p => p.categoria === "liderancas").reduce((a, p) => a + p.valor, 0), detalhe: `${s.liderancas_qtd || 0} × ${fmt(s.liderancas_valor_unit || 0)}`, qtd: s.liderancas_qtd || 0, valorUnit: s.liderancas_valor_unit || 0 },
     { key: "fiscais", label: "Fiscais", planejado: totais.fiscais, pago: pagsTodos.filter(p => p.categoria === "fiscais").reduce((a, p) => a + p.valor, 0), detalhe: `${s.fiscais_qtd || 0} × ${fmt(s.fiscais_valor_unit || 0)}`, qtd: s.fiscais_qtd || 0, valorUnit: s.fiscais_valor_unit || 0 },
