@@ -513,13 +513,22 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
                 </div>
                 {catPags.length > 0 && (
                   <div className="mt-1.5 border-t border-border/30 pt-1">
-                    {catPags.slice(0, 3).map(p => (
-                      <div key={p.id} className="flex justify-between text-[10px] py-0.5">
+                    {catPags.map(p => (
+                      <div key={p.id} className="flex items-center justify-between text-[10px] py-1 group">
                         <span className="text-muted-foreground">{new Date(p.created_at).toLocaleDateString("pt-BR")} {p.observacao && `— ${p.observacao}`}</span>
-                        <span className="font-medium text-foreground">{fmt(p.valor)}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground">{fmt(p.valor)}</span>
+                          <button
+                            onClick={() => handleDelete(p.id)}
+                            className="inline-flex h-6 items-center gap-1 rounded border border-destructive/30 px-1.5 text-destructive transition-colors hover:bg-destructive/10"
+                            title="Apagar"
+                          >
+                            <Trash2 size={10} />
+                            <span className="text-[9px] font-semibold">Apagar</span>
+                          </button>
+                        </div>
                       </div>
                     ))}
-                    {catPags.length > 3 && <p className="text-[9px] text-muted-foreground">+{catPags.length - 3} pagamentos</p>}
                   </div>
                 )}
               </div>
