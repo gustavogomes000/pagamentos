@@ -489,7 +489,7 @@ export function exportExcel(list: any[], filters?: ExportFilters) {
 
   // ── Linha TOTAL ──
   rows.push([
-    "", "TOTAL GERAL", "", "", "", "", "",
+    "", "TOTAL GERAL", "", "", "", "", "", "", "",
     totalVotos, totalExpect,
     "", "", totalRetirada,
     "", "", totalPlotagem,
