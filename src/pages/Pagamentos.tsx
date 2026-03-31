@@ -403,15 +403,14 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
       <div className="p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="font-bold text-foreground text-sm truncate uppercase">{s.nome}</p>
-            {s.numero_urna && s.numero_urna.toLowerCase() !== s.nome.toLowerCase() && (
-              <p className="text-[11px] text-muted-foreground truncate">Urna: {s.numero_urna}</p>
+            <p className="font-bold text-foreground text-sm truncate">{s.nome}</p>
+            {s.numero_urna && (
+              <p className="text-[10px] text-muted-foreground truncate">Urna: <span className="font-semibold">{s.numero_urna}</span></p>
             )}
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {s.partido && <span className="text-[10px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">{s.partido}</span>}
               {(s.bairro || s.regiao_atuacao) && <span className="text-[11px] text-muted-foreground">📍 {s.bairro || s.regiao_atuacao}</span>}
             </div>
-            {s.base_politica && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">🏛 {s.base_politica}</p>}
           </div>
           <div className="text-right shrink-0">
             {pago ? (
