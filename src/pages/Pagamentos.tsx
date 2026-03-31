@@ -980,13 +980,13 @@ export default function Pagamentos() {
     return (
       <>
         <div className="bg-card rounded-xl border border-border p-3">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-blue-500 bg-blue-500/10 flex items-center gap-1"><Briefcase size={10} />Admin</span>
-              {admPagosN}/{admComValor.length} pagos
-            </span>
-            <span className="text-xs font-bold text-foreground">{fmt(admPago)} / {fmt(admPlanejado)}</span>
-          </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-blue-500 bg-blue-500/10 flex items-center gap-1"><Briefcase size={10} />Admin</span>
+                {admPagosN}/{admComValor.length} pagos
+              </span>
+              <span className="text-[10px] sm:text-xs font-bold text-foreground">{fmt(admPago)} / {fmt(admPlanejado)}</span>
+            </div>
           <Bar pago={admPago} total={admPlanejado} cor="bg-blue-500" />
           {admFaltaReal > 0 && <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(admFaltaReal)}</p>}
         </div>
