@@ -177,14 +177,114 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="relative">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome ou região..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 bg-card border-border"
-          />
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome ou região..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 bg-card border-border"
+              />
+              {search && (
+                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <Button
+              variant={showFilters || activeFiltersCount > 0 ? "default" : "outline"}
+              size="icon"
+              className="h-10 w-10 shrink-0 relative"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter size={16} />
+              {activeFiltersCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </Button>
+          </div>
+
+          {showFilters && (
+            <div className="bg-card rounded-2xl border border-border p-3 space-y-2.5 shadow-sm animate-fade-in">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                  <Filter size={10} /> Filtros
+                </p>
+                {activeFiltersCount > 0 && (
+                  <button onClick={clearFilters} className="text-[10px] text-destructive font-semibold flex items-center gap-1">
+                    <X size={10} /> Limpar
+                  </button>
+                )}
+              </div>
+
+              {/* Região */}
+              <div className="space-y-1">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Região / Bairro</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {regioes.map(r => (
+                    <button key={r} onClick={() => setFiltroRegiao(filtroRegiao === r ? "" : r)}
+                      className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all ${filtroRegiao === r ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                      {r}
+                    </button>
+                  ))}
+                  {regioes.length === 0 && <span className="text-[10px] text-muted-foreground italic">Nenhuma região</span>}
+                </div>
+              </div>
+
+              {/* Partido */}
+              <div className="space-y-1">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Partido</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {partidos.map(p => (
+                    <button key={p} onClick={() => setFiltroPartido(filtroPartido === p ? "" : p)}
+                      className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all ${filtroPartido === p ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                      {p}
+                    </button>
+                  ))}
+                  {partidos.length === 0 && <span className="text-[10px] text-muted-foreground italic">Nenhum partido</span>}
+                </div>
+              </div>
+
+              {/* Situação */}
+              <div className="space-y-1">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Situação</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {situacoes.map(s => (
+                    <button key={s} onClick={() => setFiltroSituacao(filtroSituacao === s ? "" : s)}
+                      className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all ${filtroSituacao === s ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                      {s}
+                    </button>
+                  ))}
+                  {situacoes.length === 0 && <span className="text-[10px] text-muted-foreground italic">Nenhuma situação</span>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tags dos filtros ativos */}
+          {activeFiltersCount > 0 && !showFilters && (
+            <div className="flex flex-wrap gap-1.5">
+              {filtroRegiao && (
+                <span className="text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-lg flex items-center gap-1">
+                  {filtroRegiao} <button onClick={() => setFiltroRegiao("")}><X size={10} /></button>
+                </span>
+              )}
+              {filtroPartido && (
+                <span className="text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-lg flex items-center gap-1">
+                  {filtroPartido} <button onClick={() => setFiltroPartido("")}><X size={10} /></button>
+                </span>
+              )}
+              {filtroSituacao && (
+                <span className="text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-lg flex items-center gap-1">
+                  {filtroSituacao} <button onClick={() => setFiltroSituacao("")}><X size={10} /></button>
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {isLoading ? (
