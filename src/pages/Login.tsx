@@ -72,7 +72,7 @@ export default function Login() {
       style={{ background: '#fefefe' }}
     >
       {/* Animated network background */}
-      <NetworkBackground light />
+      <NetworkBackground />
 
       {/* Soft gradient overlays */}
       <div
