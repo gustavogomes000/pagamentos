@@ -136,7 +136,13 @@ export default function ListaLiderancas() {
                       </div>
                     </div>
                   </button>
-                  <div className="flex border-t border-border">
+                  <div className="flex border-t border-border divide-x divide-border">
+                    <button
+                      onClick={() => exportLiderancaPDF(l)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs text-primary active:bg-primary/10"
+                    >
+                      <FileDown size={13} /> PDF
+                    </button>
                     <button
                       onClick={() => handleDelete(l.id, l.nome)}
                       disabled={deleting === l.id}

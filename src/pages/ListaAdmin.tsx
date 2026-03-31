@@ -114,7 +114,13 @@ export default function ListaAdmin() {
                       </div>
                     </div>
                   </button>
-                  <div className="flex border-t border-border">
+                  <div className="flex border-t border-border divide-x divide-border">
+                    <button
+                      onClick={() => exportAdminPDF(f)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs text-primary active:bg-primary/10"
+                    >
+                      <FileDown size={13} /> PDF
+                    </button>
                     <button
                       onClick={() => handleDelete(f.id, f.nome)}
                       disabled={deleting === f.id}
