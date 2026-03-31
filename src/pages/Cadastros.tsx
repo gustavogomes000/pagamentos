@@ -216,11 +216,11 @@ export default function Cadastros() {
                     <div className="grid grid-cols-3 border-t border-border divide-x divide-border bg-muted/40">
                       <div className="py-2 px-1 text-center">
                         <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Votos</p>
-                        <p className="text-sm font-bold text-foreground">{fmtN(s.total_votos)}</p>
+                        <p className="text-sm font-bold text-foreground">{s.total_votos ? fmtN(s.total_votos) : "—"}</p>
                       </div>
                       <div className="py-2 px-1 text-center">
                         <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Expect.</p>
-                        <p className="text-sm font-bold text-foreground">{fmtN(s.expectativa_votos)}</p>
+                        <p className="text-sm font-bold text-foreground">{s.expectativa_votos ? fmtN(s.expectativa_votos) : "—"}</p>
                       </div>
                       <div className="py-2 px-1 text-center">
                         <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Pessoas</p>
