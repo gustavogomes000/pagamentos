@@ -648,11 +648,11 @@ export default function Dashboard() {
                 {/* Resumo Geral — PRIMEIRO */}
                 <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl border border-primary/20 p-4 space-y-2">
                   <p className="text-xs font-semibold text-primary uppercase tracking-wider">Resumo Geral</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    <div className="text-center"><p className="text-[10px] text-muted-foreground uppercase">Votos</p><p className="text-sm font-bold text-foreground">{fmtN(totalVotos)}</p></div>
-                    <div className="text-center"><p className="text-[10px] text-muted-foreground uppercase">Expectativa</p><p className="text-sm font-bold text-foreground">{fmtN(totalExpectativa)}</p></div>
-                    <div className="text-center"><p className="text-[10px] text-muted-foreground uppercase">Pessoas</p><p className="text-sm font-bold text-foreground">{fmtN(totalPessoas)}</p></div>
-                    <div className="text-center"><p className="text-[10px] text-muted-foreground uppercase">Plotagem</p><p className="text-sm font-bold text-foreground">{fmtN(totalPlotagem)}</p></div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="text-center"><p className="text-[9px] text-muted-foreground uppercase leading-tight">Votos Eleição 2024</p><p className="text-sm font-bold text-foreground">{fmtN(totalVotos)}</p></div>
+                    <div className="text-center"><p className="text-[9px] text-muted-foreground uppercase leading-tight">Expectativa 2026</p><p className="text-sm font-bold text-foreground">{fmtN(totalExpectativa)}</p></div>
+                    <div className="text-center"><p className="text-[9px] text-muted-foreground uppercase leading-tight">Pessoas de Campo</p><p className="text-sm font-bold text-foreground">{fmtN(totalPessoas)}</p></div>
+                    <div className="text-center"><p className="text-[9px] text-muted-foreground uppercase leading-tight">Plotagem</p><p className="text-sm font-bold text-foreground">{fmtN(totalPlotagem)}</p></div>
                   </div>
                   <div className="space-y-1 pt-1 border-t border-primary/20">
                     <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Suplentes (mensal)</span><span className="font-bold text-foreground">{fmt(totalRetiradaMensalSup)}</span></div>
