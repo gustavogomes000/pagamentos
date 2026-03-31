@@ -30,7 +30,7 @@ export function BottomNav() {
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              onClick={() => { navigate("/"); setShowMais(false); }}
+              onClick={() => { navigate("/dashboard"); setShowMais(false); }}
               className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-foreground rounded-xl active:bg-muted hover:bg-muted/50"
             >
               <BarChart3 size={17} className="text-primary" />
