@@ -435,7 +435,7 @@ export function exportExcel(list: any[], filters?: ExportFilters) {
   // ── Cabeçalho e Resumo ──
   const rows: any[][] = [
     ["DRA. FERNANDA SARELLI — PAINEL DE SUPLENTES"],
-    [`Pré-candidata Dep. Estadual GO 2026 — Aparecida de Goiânia`],
+    [`Pré-candidata Dep. Estadual GO 2026 — Goiânia`],
     [`Gerado em ${now}`],
     filterLabel ? [`Filtros: ${filterLabel}`] : [],
     [],
