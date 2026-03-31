@@ -140,7 +140,7 @@ export default function Dashboard() {
     let all = suplentes ?? [];
     if (search.trim()) {
       const q = normalizeStr(search);
-      all = all.filter((s: any) => normalizeStr(s.nome || "").includes(q) || normalizeStr(s.regiao_atuacao || "").includes(q));
+      all = all.filter((s: any) => normalizeStr(s.nome || "").includes(q) || normalizeStr(s.nome_urna || "").includes(q) || normalizeStr(s.regiao_atuacao || "").includes(q));
     }
     if (filtroRegiao) all = all.filter((s: any) => s.regiao_atuacao === filtroRegiao || s.bairro === filtroRegiao);
     if (filtroPartido) all = all.filter((s: any) => s.partido === filtroPartido);
@@ -285,7 +285,7 @@ export default function Dashboard() {
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Buscar por nome ou região..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-card border-border" />
+              <Input placeholder="Buscar por nome, nome de urna ou setor..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-card border-border" />
               {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"><X size={14} /></button>}
             </div>
             <Button variant={showFilters || activeFiltersCount > 0 ? "default" : "outline"} size="icon" className="h-10 w-10 shrink-0 relative" onClick={() => setShowFilters(!showFilters)}>
@@ -680,6 +680,7 @@ export default function Dashboard() {
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
                               <p className="font-semibold text-foreground text-sm truncate">{s.nome}</p>
+                              {s.nome_urna && <p className="text-[11px] text-muted-foreground font-medium">Nome de urna: {s.nome_urna}</p>}
                               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                                 {s.numero_urna && <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">#{s.numero_urna}</span>}
                                 {s.regiao_atuacao && <span className="text-[11px] text-muted-foreground flex items-center gap-0.5"><MapPin size={9} className="text-primary" />{s.regiao_atuacao}</span>}
