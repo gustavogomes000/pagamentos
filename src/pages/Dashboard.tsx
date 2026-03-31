@@ -699,9 +699,9 @@ export default function Dashboard() {
                           </div>
                         </div>
                         <div className="grid grid-cols-3 border-t border-border divide-x divide-border bg-muted/40">
-                          <div className="py-2 px-1 text-center"><p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Votos</p><p className="text-sm font-bold text-foreground">{fmtN(s.total_votos || 0)}</p></div>
-                          <div className="py-2 px-1 text-center"><p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Expectativa</p><p className="text-sm font-bold text-foreground">{fmtN(s.expectativa_votos || 0)}</p></div>
-                          <div className="py-2 px-1 text-center"><p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Pessoas</p><p className="text-sm font-bold text-foreground">{fmtN(pessoas)}</p></div>
+                          <div className="py-2 px-1 text-center"><p className="text-[8px] uppercase tracking-wider text-muted-foreground font-medium leading-tight">Votos 2024</p><p className="text-sm font-bold text-foreground">{fmtN(s.total_votos || 0)}</p></div>
+                          <div className="py-2 px-1 text-center"><p className="text-[8px] uppercase tracking-wider text-muted-foreground font-medium leading-tight">Expect. 2026</p><p className="text-sm font-bold text-foreground">{fmtN(s.expectativa_votos || 0)}</p></div>
+                          <div className="py-2 px-1 text-center"><p className="text-[8px] uppercase tracking-wider text-muted-foreground font-medium leading-tight">Pessoas Campo</p><p className="text-sm font-bold text-foreground">{fmtN(pessoas)}</p></div>
                         </div>
                         <div className="grid grid-cols-4 border-t border-border divide-x divide-border bg-muted/40">
                           <div className="py-2 px-1 text-center"><p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Lideranças</p><p className="text-sm font-bold text-foreground">{fmtN(liderancas)}</p><p className="text-[9px] text-muted-foreground">{fmt(liderancas * (s.liderancas_valor_unit || 0))}</p></div>
