@@ -439,7 +439,7 @@ export default function Dashboard() {
                       <div className="bg-muted/50 rounded-xl p-3">
                         <p className="text-[10px] text-muted-foreground mb-0.5">Pessoas de campo (total)</p>
                         <p className="text-xl font-bold text-foreground">{fmtN(totalPessoas)}</p>
-                        <p className="text-[9px] text-muted-foreground">{fmtN(totalLiderancasQtd)} líderes + {fmtN(totalFiscais)} fiscais</p>
+                        <p className="text-[9px] text-muted-foreground">{fmtN(totalLiderancasQtd)} lideranças + {fmtN(totalFiscais)} fiscais</p>
                       </div>
                     </div>
                   </div>
