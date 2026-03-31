@@ -128,17 +128,17 @@ export default function Login() {
           onSubmit={handleLogin}
           className="space-y-4 p-6 rounded-3xl"
           style={{
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.18) 100%)',
-            backdropFilter: 'blur(24px) saturate(1.6)',
-            WebkitBackdropFilter: 'blur(24px) saturate(1.6)',
-            border: '1px solid rgba(255, 255, 255, 0.5)',
-            borderTop: '1px solid rgba(255, 255, 255, 0.7)',
-            borderLeft: '1px solid rgba(255, 255, 255, 0.6)',
+            background: 'linear-gradient(145deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.08) 100%)',
+            backdropFilter: 'blur(28px) saturate(1.8)',
+            WebkitBackdropFilter: 'blur(28px) saturate(1.8)',
+            border: '1px solid rgba(255, 255, 255, 0.35)',
+            borderTop: '1.5px solid rgba(255, 255, 255, 0.55)',
+            borderLeft: '1.5px solid rgba(255, 255, 255, 0.45)',
             boxShadow: `
-              0 8px 32px rgba(0, 0, 0, 0.08),
-              0 2px 16px rgba(200, 170, 100, 0.08),
-              inset 0 1px 0 rgba(255, 255, 255, 0.6),
-              inset 0 -1px 0 rgba(200, 170, 100, 0.05)
+              0 8px 40px rgba(236, 72, 153, 0.08),
+              0 4px 20px rgba(0, 0, 0, 0.06),
+              inset 0 1px 0 rgba(255, 255, 255, 0.5),
+              inset 0 -1px 0 rgba(200, 170, 100, 0.08)
             `,
             ...anim(0.3),
           }}
