@@ -909,12 +909,12 @@ export default function Pagamentos() {
       return (
         <>
           <div className="bg-card rounded-xl border border-border p-3">
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
               <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-violet-500 bg-violet-500/10 flex items-center gap-1"><Users size={10} />Lideranças</span>
                 {lidPagosN}/{lidComValor.length} pagos
               </span>
-              <span className="text-xs font-bold text-foreground">{fmt(lidPago)} / {fmt(lidPlanejado)}</span>
+              <span className="text-[10px] sm:text-xs font-bold text-foreground">{fmt(lidPago)} / {fmt(lidPlanejado)}</span>
             </div>
             <Bar pago={lidPago} total={lidPlanejado} cor="bg-violet-500" />
             {lidFaltaReal > 0 && <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(lidFaltaReal)}</p>}
