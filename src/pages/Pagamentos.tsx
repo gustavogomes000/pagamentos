@@ -440,6 +440,11 @@ function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes,
   );
 }
 
+// ─── Meses iniciais por tipo ──────────────────────────────────────────────────
+const MES_INICIO_SUPLENTES = 3; // Suplentes: pagamentos a partir de Março
+const MES_INICIO_LIDERANCAS = 2; // Lideranças: pagamentos a partir de Fevereiro
+// Administrativo: sem restrição de mês inicial
+
 // ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
 export default function Pagamentos() {
   const now = new Date();
@@ -503,8 +508,9 @@ export default function Pagamentos() {
   const pagsMes = (pagamentos || []).filter(p => p.mes === mes && p.ano === ano);
 
   // Cálculos
-  const supComValor = (suplentes || []).filter(s => (s.retirada_mensal_valor || 0) > 0);
-  const lidComValor = (liderancas || []).filter(l => (l.retirada_mensal_valor || 0) > 0);
+  // Filtra por mês inicial: suplentes a partir do mês 3, lideranças a partir do mês 2
+  const supComValor = (suplentes || []).filter(s => (s.retirada_mensal_valor || 0) > 0 && mes >= MES_INICIO_SUPLENTES);
+  const lidComValor = (liderancas || []).filter(l => (l.retirada_mensal_valor || 0) > 0 && mes >= MES_INICIO_LIDERANCAS);
   const admComValor = (administrativo || []).filter(a => (a.valor_contrato || 0) > 0);
 
   const supPlanejado = supComValor.reduce((a, s) => a + (s.retirada_mensal_valor || 0), 0);
