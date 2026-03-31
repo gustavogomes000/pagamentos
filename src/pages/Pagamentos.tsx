@@ -847,12 +847,12 @@ export default function Pagamentos() {
         <>
           {/* Resumo suplentes */}
           <div className="bg-card rounded-xl border border-border p-3">
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
               <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-pink-500 bg-pink-500/10 flex items-center gap-1"><List size={10} />Suplentes</span>
                 {supPagosN}/{supComValor.length} pagos
               </span>
-              <span className="text-xs font-bold text-foreground">{fmt(supPago)} / {fmt(supPlanejado)}</span>
+              <span className="text-[10px] sm:text-xs font-bold text-foreground">{fmt(supPago)} / {fmt(supPlanejado)}</span>
             </div>
             <Bar pago={supPago} total={supPlanejado} cor="bg-pink-500" />
             {supFaltaReal > 0 && <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(supFaltaReal)}</p>}
@@ -909,12 +909,12 @@ export default function Pagamentos() {
       return (
         <>
           <div className="bg-card rounded-xl border border-border p-3">
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
               <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-violet-500 bg-violet-500/10 flex items-center gap-1"><Users size={10} />Lideranças</span>
                 {lidPagosN}/{lidComValor.length} pagos
               </span>
-              <span className="text-xs font-bold text-foreground">{fmt(lidPago)} / {fmt(lidPlanejado)}</span>
+              <span className="text-[10px] sm:text-xs font-bold text-foreground">{fmt(lidPago)} / {fmt(lidPlanejado)}</span>
             </div>
             <Bar pago={lidPago} total={lidPlanejado} cor="bg-violet-500" />
             {lidFaltaReal > 0 && <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(lidFaltaReal)}</p>}
@@ -980,13 +980,13 @@ export default function Pagamentos() {
     return (
       <>
         <div className="bg-card rounded-xl border border-border p-3">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-blue-500 bg-blue-500/10 flex items-center gap-1"><Briefcase size={10} />Admin</span>
-              {admPagosN}/{admComValor.length} pagos
-            </span>
-            <span className="text-xs font-bold text-foreground">{fmt(admPago)} / {fmt(admPlanejado)}</span>
-          </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-blue-500 bg-blue-500/10 flex items-center gap-1"><Briefcase size={10} />Admin</span>
+                {admPagosN}/{admComValor.length} pagos
+              </span>
+              <span className="text-[10px] sm:text-xs font-bold text-foreground">{fmt(admPago)} / {fmt(admPlanejado)}</span>
+            </div>
           <Bar pago={admPago} total={admPlanejado} cor="bg-blue-500" />
           {admFaltaReal > 0 && <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(admFaltaReal)}</p>}
         </div>
@@ -1126,18 +1126,18 @@ export default function Pagamentos() {
             <div className="flex items-center gap-2 text-white/80 text-xs mb-3">
               <Wallet size={14} /> Painel Financeiro — {MESES[mes - 1]}/{ano}
             </div>
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              <div className="bg-white/15 backdrop-blur rounded-xl p-2.5 text-center">
-                <p className="text-white/70 text-[9px] uppercase tracking-wider font-medium">Planejado</p>
-                <p className="text-white font-bold text-base leading-tight">{fmt(totalPlanejado)}</p>
+            <div className="grid grid-cols-3 gap-1.5 mb-3">
+              <div className="bg-white/15 backdrop-blur rounded-xl p-2 text-center min-w-0">
+                <p className="text-white/70 text-[8px] uppercase tracking-wider font-medium">Planejado</p>
+                <p className="text-white font-bold text-xs sm:text-base leading-tight truncate">{fmt(totalPlanejado)}</p>
               </div>
-              <div className="bg-white/15 backdrop-blur rounded-xl p-2.5 text-center">
-                <p className="text-white/70 text-[9px] uppercase tracking-wider font-medium">Pago</p>
-                <p className="text-white font-bold text-base leading-tight">{fmt(totalPago)}</p>
+              <div className="bg-white/15 backdrop-blur rounded-xl p-2 text-center min-w-0">
+                <p className="text-white/70 text-[8px] uppercase tracking-wider font-medium">Pago</p>
+                <p className="text-white font-bold text-xs sm:text-base leading-tight truncate">{fmt(totalPago)}</p>
               </div>
-              <div className="bg-black/20 backdrop-blur rounded-xl p-2.5 text-center">
-                <p className="text-white/70 text-[9px] uppercase tracking-wider font-medium">Falta</p>
-                <p className="text-white font-bold text-base leading-tight">{fmt(totalFalta)}</p>
+              <div className="bg-black/20 backdrop-blur rounded-xl p-2 text-center min-w-0">
+                <p className="text-white/70 text-[8px] uppercase tracking-wider font-medium">Falta</p>
+                <p className="text-white font-bold text-xs sm:text-base leading-tight truncate">{fmt(totalFalta)}</p>
               </div>
             </div>
             <div className="h-2 bg-white/20 rounded-full overflow-hidden">
