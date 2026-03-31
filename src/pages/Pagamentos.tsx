@@ -456,6 +456,8 @@ export default function Pagamentos() {
   const [abaAtiva, setAbaAtiva] = useState<"suplentes" | "liderancas" | "admin">("suplentes");
   const [busca, setBusca] = useState("");
   const [showPagos, setShowPagos] = useState(true);
+  const [showAlertaAtraso, setShowAlertaAtraso] = useState(false);
+  const [alertaDismissed, setAlertaDismissed] = useState(false);
 
   const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes"],
