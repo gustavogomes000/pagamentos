@@ -305,8 +305,7 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
         <div className="p-3 border-t border-border/30">
           <PayForm
             pessoaNome={s.nome}
-            valorSugerido={faltaMes}
-            categorias={categorias.map(c => ({ key: c.key, label: c.label }))}
+            categorias={categorias}
             onSave={handleSave}
             onCancel={() => setPaying(false)}
             saving={saving}
