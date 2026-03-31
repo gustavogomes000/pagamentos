@@ -565,51 +565,6 @@ export default function Dashboard() {
             {/* ═══════════════════════════════════════════════ */}
             {activeView === "mensal" && (
               <div className="space-y-4">
-                {/* Gráfico de barras empilhadas */}
-                <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-                  <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5 mb-3">
-                    <BarChart3 size={14} /> Gastos Mensais (Fev–Out 2026)
-                  </h2>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={fluxoMensal.filter(m => m.mes >= 2)} barSize={22}>
-                      <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 9 }} tickFormatter={fmtK} width={40} />
-                      <Tooltip formatter={tooltipFmt} labelFormatter={(l) => `Mês: ${l}`} />
-                      <Bar dataKey="suplentes" name="Suplentes" stackId="a" fill={COLORS_CAT.suplentes} radius={[0, 0, 0, 0]} />
-                      <Bar dataKey="liderancas" name="Lideranças" stackId="a" fill={COLORS_CAT.liderancas} />
-                      <Bar dataKey="admin" name="Administrativo" stackId="a" fill={COLORS_CAT.admin} radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <div className="flex justify-center gap-4 mt-1">
-                    <div className="flex items-center gap-1 text-[10px]"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: COLORS_CAT.suplentes }} /><span className="text-muted-foreground">Suplentes</span></div>
-                    <div className="flex items-center gap-1 text-[10px]"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: COLORS_CAT.liderancas }} /><span className="text-muted-foreground">Lideranças</span></div>
-                    <div className="flex items-center gap-1 text-[10px]"><span className="w-2.5 h-2.5 rounded-sm" style={{ background: COLORS_CAT.admin }} /><span className="text-muted-foreground">Admin</span></div>
-                  </div>
-                </div>
-
-                {/* Evolução acumulada */}
-                <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-                  <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5 mb-3">
-                    <TrendingUp size={14} /> Acumulado no Ano
-                  </h2>
-                  <ResponsiveContainer width="100%" height={180}>
-                    <AreaChart data={fluxoMensal.filter(m => m.mes >= 2).map((m, i, arr) => ({
-                      ...m,
-                      acumulado: arr.slice(0, i + 1).reduce((a, x) => a + x.total, 0),
-                      pagoAcum: arr.slice(0, i + 1).reduce((a, x) => a + x.pago, 0),
-                    }))}>
-                      <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 9 }} tickFormatter={fmtK} width={40} />
-                      <Tooltip formatter={tooltipFmt} />
-                      <Area type="monotone" dataKey="acumulado" name="Previsto" stroke="hsl(330, 81%, 60%)" fill="hsl(330, 81%, 60%)" fillOpacity={0.15} strokeWidth={2} />
-                      <Area type="monotone" dataKey="pagoAcum" name="Pago" stroke="hsl(142, 71%, 45%)" fill="hsl(142, 71%, 45%)" fillOpacity={0.15} strokeWidth={2} />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                  <div className="flex justify-center gap-4 mt-1">
-                    <div className="flex items-center gap-1 text-[10px]"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "hsl(330, 81%, 60%)" }} /><span className="text-muted-foreground">Previsto</span></div>
-                    <div className="flex items-center gap-1 text-[10px]"><span className="w-2.5 h-2.5 rounded-full" style={{ background: "hsl(142, 71%, 45%)" }} /><span className="text-muted-foreground">Pago</span></div>
-                  </div>
-                </div>
 
                 {/* Tabela mensal detalhada */}
                 <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
