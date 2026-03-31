@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, LogIn, Lock, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import NetworkBackground from "@/components/NetworkBackground";
 
 const EMAIL_DOMAIN = "@painel.sarelli.com";
 
