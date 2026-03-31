@@ -705,7 +705,7 @@ export default function Pagamentos() {
               <span className="text-xs font-bold text-foreground">{fmt(lidPago)} / {fmt(lidPlanejado)}</span>
             </div>
             <Bar pago={lidPago} total={lidPlanejado} cor="bg-violet-500" />
-            {lidPlanejado > lidPago && <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(lidPlanejado - lidPago)}</p>}
+            {lidFaltaReal > 0 && <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(lidFaltaReal)}</p>}
           </div>
 
           {pendentes.length > 0 && (
