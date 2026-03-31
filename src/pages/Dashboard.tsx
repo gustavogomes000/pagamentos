@@ -616,13 +616,20 @@ export default function Dashboard() {
                               </div>
                             )}
                           </div>
-                          {m.pago > 0 && (
+                          <div className="space-y-1">
                             <div className="flex items-center justify-between text-[10px]">
                               <span className="text-muted-foreground">Pago neste mês</span>
                               <span className="font-bold text-green-600 dark:text-green-400">{fmt(m.pago)}</span>
                             </div>
-                          )}
-                          <MiniBar pago={m.pago} total={m.total} cor="bg-green-500" />
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span className="text-muted-foreground">Falta pagar</span>
+                              <span className="font-medium text-foreground">{fmt(Math.max(0, m.total - m.pago))}</span>
+                            </div>
+                            <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                              <div className="h-full rounded-full bg-green-500 transition-all duration-700" style={{ width: `${m.total > 0 ? Math.min(100, (m.pago / m.total) * 100) : 0}%` }} />
+                            </div>
+                            <p className="text-[9px] text-muted-foreground text-right">{m.total > 0 ? ((m.pago / m.total) * 100).toFixed(0) : 0}% pago</p>
+                          </div>
                         </div>
                       );
                     })}
