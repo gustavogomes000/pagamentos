@@ -847,12 +847,12 @@ export default function Pagamentos() {
         <>
           {/* Resumo suplentes */}
           <div className="bg-card rounded-xl border border-border p-3">
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-1.5">
               <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-pink-500 bg-pink-500/10 flex items-center gap-1"><List size={10} />Suplentes</span>
                 {supPagosN}/{supComValor.length} pagos
               </span>
-              <span className="text-xs font-bold text-foreground">{fmt(supPago)} / {fmt(supPlanejado)}</span>
+              <span className="text-[10px] sm:text-xs font-bold text-foreground">{fmt(supPago)} / {fmt(supPlanejado)}</span>
             </div>
             <Bar pago={supPago} total={supPlanejado} cor="bg-pink-500" />
             {supFaltaReal > 0 && <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(supFaltaReal)}</p>}
