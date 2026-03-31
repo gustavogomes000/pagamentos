@@ -497,3 +497,195 @@ export function exportExcel(list: any[], filters?: ExportFilters) {
   const suffix = filterParts.length ? `_${filterParts.join("_").replace(/\s+/g, "_")}` : "";
   XLSX.writeFile(wb, `Planilha_Suplentes${suffix}.xlsx`);
 }
+
+// ─── LIDERANÇA PDF (Contrato) ──────────────────────────────────────────────
+
+export function exportLiderancaPDF(l: any) {
+  const doc = new jsPDF("p", "mm", "a4");
+  const w = doc.internal.pageSize.getWidth();
+
+  addHeader(doc, "CONTRATO DE LIDERANÇA");
+
+  let y = 44;
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...DARK);
+  doc.text(l.nome || "", 14, y);
+  y += 8;
+
+  if (l.regiao) {
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...GRAY);
+    doc.text(`Setor: ${l.regiao}`, 14, y);
+    y += 6;
+  }
+
+  doc.setDrawColor(...PINK);
+  doc.setLineWidth(0.5);
+  doc.line(14, y, w - 14, y);
+  y += 8;
+
+  const infoData = [
+    ["CPF", l.cpf || "—"],
+    ["WhatsApp", l.whatsapp || "—"],
+    ["Rede Social", l.rede_social || "—"],
+    ["Ligação Política", l.ligacao_politica || "—"],
+    ["Chave PIX", l.chave_pix || "—"],
+  ];
+
+  doc.setFontSize(9);
+  infoData.forEach(([label, value]) => {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...GRAY);
+    doc.text(label, 14, y);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...DARK);
+    doc.text(value, 80, y);
+    y += 6;
+  });
+
+  y += 6;
+
+  // Financial
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...PINK);
+  doc.text("VALORES DO CONTRATO", 14, y);
+  y += 4;
+
+  const valorMensal = l.retirada_mensal_valor || 0;
+  const ateMes = l.retirada_ate_mes || 10;
+  const total = valorMensal * ateMes;
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Item", "Detalhe", "Valor"]],
+    body: [
+      ["Retirada Mensal", `${fmt(valorMensal)} × ${ateMes} meses`, fmt(total)],
+    ],
+    foot: [["TOTAL DO CONTRATO", "", fmt(total)]],
+    margin: { left: 14, right: 14 },
+    headStyles: { fillColor: [...PINK], textColor: [...WHITE], fontStyle: "bold", fontSize: 8 },
+    bodyStyles: { fontSize: 8, textColor: [...DARK] },
+    footStyles: { fillColor: [252, 231, 243], textColor: [...PINK], fontStyle: "bold", fontSize: 9 },
+    theme: "grid",
+    styles: { cellPadding: 3 },
+  });
+
+  // Assinatura
+  const finalY = (doc as any).lastAutoTable?.finalY || 200;
+  if (l.assinatura) {
+    let sigY = finalY + 16;
+    const pageH = doc.internal.pageSize.getHeight();
+    if (sigY + 40 > pageH - 20) { doc.addPage(); sigY = 30; }
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...PINK);
+    doc.text("ASSINATURA", 14, sigY);
+    sigY += 4;
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(14, sigY + 28, w - 14, sigY + 28);
+    try { doc.addImage(l.assinatura, "PNG", 14, sigY, 80, 26); } catch (e) {}
+    sigY += 32;
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...GRAY);
+    doc.text(l.nome || "", 14, sigY);
+  }
+
+  addFooter(doc);
+  doc.save(`Contrato_Lideranca_${(l.nome || "lideranca").replace(/\s+/g, "_")}.pdf`);
+}
+
+// ─── ADMINISTRATIVO PDF (Contrato) ─────────────────────────────────────────
+
+export function exportAdminPDF(a: any) {
+  const doc = new jsPDF("p", "mm", "a4");
+  const w = doc.internal.pageSize.getWidth();
+
+  addHeader(doc, "CONTRATO ADMINISTRATIVO");
+
+  let y = 44;
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...DARK);
+  doc.text(a.nome || "", 14, y);
+  y += 10;
+
+  doc.setDrawColor(...PINK);
+  doc.setLineWidth(0.5);
+  doc.line(14, y, w - 14, y);
+  y += 8;
+
+  const infoData = [
+    ["CPF", a.cpf || "—"],
+    ["WhatsApp", a.whatsapp || "—"],
+  ];
+
+  doc.setFontSize(9);
+  infoData.forEach(([label, value]) => {
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...GRAY);
+    doc.text(label, 14, y);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...DARK);
+    doc.text(value, 80, y);
+    y += 6;
+  });
+
+  y += 6;
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...PINK);
+  doc.text("VALORES DO CONTRATO", 14, y);
+  y += 4;
+
+  const valorMensal = a.valor_contrato || 0;
+  const ateMes = a.contrato_ate_mes || 10;
+  const total = valorMensal * ateMes;
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Item", "Detalhe", "Valor"]],
+    body: [
+      ["Salário / Contrato Mensal", `${fmt(valorMensal)} × ${ateMes} meses`, fmt(total)],
+    ],
+    foot: [["TOTAL DO CONTRATO", "", fmt(total)]],
+    margin: { left: 14, right: 14 },
+    headStyles: { fillColor: [...PINK], textColor: [...WHITE], fontStyle: "bold", fontSize: 8 },
+    bodyStyles: { fontSize: 8, textColor: [...DARK] },
+    footStyles: { fillColor: [252, 231, 243], textColor: [...PINK], fontStyle: "bold", fontSize: 9 },
+    theme: "grid",
+    styles: { cellPadding: 3 },
+  });
+
+  // Assinatura
+  const finalY = (doc as any).lastAutoTable?.finalY || 200;
+  if (a.assinatura) {
+    let sigY = finalY + 16;
+    const pageH = doc.internal.pageSize.getHeight();
+    if (sigY + 40 > pageH - 20) { doc.addPage(); sigY = 30; }
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...PINK);
+    doc.text("ASSINATURA", 14, sigY);
+    sigY += 4;
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(14, sigY + 28, w - 14, sigY + 28);
+    try { doc.addImage(a.assinatura, "PNG", 14, sigY, 80, 26); } catch (e) {}
+    sigY += 32;
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...GRAY);
+    doc.text(a.nome || "", 14, sigY);
+  }
+
+  addFooter(doc);
+  doc.save(`Contrato_Admin_${(a.nome || "admin").replace(/\s+/g, "_")}.pdf`);
+}
