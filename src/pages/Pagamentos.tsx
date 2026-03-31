@@ -386,6 +386,8 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
             onSave={handleSave}
             onCancel={() => setPaying(false)}
             saving={saving}
+            suplenteId={s.id}
+            onFieldsUpdated={() => qc.invalidateQueries({ queryKey: ["suplentes"] })}
           />
         </div>
       )}
