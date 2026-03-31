@@ -551,7 +551,7 @@ export function exportLiderancasExcel(list: any[]) {
 
   const rows: any[][] = [
     ["DRA. FERNANDA SARELLI — PAINEL DE LIDERANÇAS"],
-    ["Pré-candidata Dep. Estadual GO 2026 — Aparecida de Goiânia"],
+    ["Pré-candidata Dep. Estadual GO 2026 — Goiânia"],
     [`Gerado em ${now}`],
     [],
     ["RESUMO EXECUTIVO"],
