@@ -502,7 +502,7 @@ export function exportExcel(list: any[], filters?: ExportFilters) {
 
   // Larguras
   ws["!cols"] = [
-    { wch: 4 }, { wch: 30 }, { wch: 22 }, { wch: 16 }, { wch: 12 },
+    { wch: 4 }, { wch: 30 }, { wch: 20 }, { wch: 28 }, { wch: 22 }, { wch: 16 }, { wch: 12 },
     { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 10 },
     { wch: 14 }, { wch: 6 }, { wch: 14 },
     { wch: 8 }, { wch: 12 }, { wch: 14 },
@@ -511,8 +511,7 @@ export function exportExcel(list: any[], filters?: ExportFilters) {
     { wch: 8 }, { wch: 16 },
   ];
 
-  // Merges
-  const lastCol = 22;
+  const lastCol = 24;
   ws["!merges"] = [
     { s: { r: 0, c: 0 }, e: { r: 0, c: lastCol } },
     { s: { r: 1, c: 0 }, e: { r: 1, c: lastCol } },
@@ -521,9 +520,8 @@ export function exportExcel(list: any[], filters?: ExportFilters) {
     { s: { r: 10, c: 0 }, e: { r: 10, c: lastCol } },
   ];
 
-  // Formatos numéricos BRL nas colunas financeiras
-  const dataStartRow = 12; // 0-indexed row where data starts
-  const brlCols = [9, 11, 13, 14, 16, 17, 19, 20, 22]; // columns with R$ values
+  const dataStartRow = 12;
+  const brlCols = [11, 13, 15, 16, 18, 19, 21, 22, 24];
   for (let r = dataStartRow; r < rows.length; r++) {
     brlCols.forEach(c => {
       const addr = XLSX.utils.encode_cell({ r, c });
