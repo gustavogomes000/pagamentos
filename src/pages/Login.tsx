@@ -137,7 +137,7 @@ export default function Login() {
               Dra. Fernanda Sarelli
             </h1>
             <p className="text-xs font-medium text-primary uppercase tracking-widest mt-1">
-              Painel de Suplentes
+              Painel de Pagamentos
             </p>
           </div>
 
