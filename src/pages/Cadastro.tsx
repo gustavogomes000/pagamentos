@@ -162,6 +162,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
               setForm((prev) => ({
                 ...prev,
                 nome: c.nome,
+                nome_urna: c.nomeUrna || "",
                 partido: c.partido,
                 cargo_disputado: c.cargo === "Vereador" ? "Vereador" : c.cargo === "Deputado Estadual" ? "Deputado Estadual" : c.cargo === "Deputado Federal" ? "Deputado Federal" : prev.cargo_disputado,
                 situacao: c.situacao.includes("Suplente") ? "Suplente" : c.situacao.includes("Eleito") ? "Eleito" : "Não Eleito",
