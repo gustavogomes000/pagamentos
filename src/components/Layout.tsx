@@ -66,6 +66,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-1.5">
+            {"Notification" in window && notifPermission !== "granted" && (
+              <button
+                onClick={handleEnableNotifications}
+                className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1 bg-muted px-2 py-1 rounded-full active:opacity-70"
+                title="Ativar notificações"
+              >
+                <BellOff size={9} />
+              </button>
+            )}
+            {"Notification" in window && notifPermission === "granted" && (
+              <span className="text-[10px] text-primary flex items-center">
+                <Bell size={9} />
+              </span>
+            )}
             {!isOnline && (
               <span className="text-[10px] text-destructive font-semibold flex items-center gap-1 bg-destructive/10 px-2 py-1 rounded-full border border-destructive/20">
                 <WifiOff size={9} /> Offline
