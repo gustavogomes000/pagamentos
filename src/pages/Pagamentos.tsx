@@ -643,7 +643,7 @@ export default function Pagamentos() {
               <span className="text-xs font-bold text-foreground">{fmt(supPago)} / {fmt(supPlanejado)}</span>
             </div>
             <Bar pago={supPago} total={supPlanejado} cor="bg-pink-500" />
-            {supPlanejado > supPago && <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(supPlanejado - supPago)}</p>}
+            {supFaltaReal > 0 && <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(supFaltaReal)}</p>}
           </div>
 
           {pendentes.length > 0 && (
