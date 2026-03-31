@@ -140,7 +140,7 @@ export default function Dashboard() {
     let all = suplentes ?? [];
     if (search.trim()) {
       const q = normalizeStr(search);
-      all = all.filter((s: any) => normalizeStr(s.nome || "").includes(q) || normalizeStr(s.regiao_atuacao || "").includes(q));
+      all = all.filter((s: any) => normalizeStr(s.nome || "").includes(q) || normalizeStr(s.nome_urna || "").includes(q) || normalizeStr(s.regiao_atuacao || "").includes(q));
     }
     if (filtroRegiao) all = all.filter((s: any) => s.regiao_atuacao === filtroRegiao || s.bairro === filtroRegiao);
     if (filtroPartido) all = all.filter((s: any) => s.partido === filtroPartido);
