@@ -1126,18 +1126,18 @@ export default function Pagamentos() {
             <div className="flex items-center gap-2 text-white/80 text-xs mb-3">
               <Wallet size={14} /> Painel Financeiro — {MESES[mes - 1]}/{ano}
             </div>
-            <div className="grid grid-cols-3 gap-2 mb-3">
-              <div className="bg-white/15 backdrop-blur rounded-xl p-2.5 text-center">
-                <p className="text-white/70 text-[9px] uppercase tracking-wider font-medium">Planejado</p>
-                <p className="text-white font-bold text-base leading-tight">{fmt(totalPlanejado)}</p>
+            <div className="grid grid-cols-3 gap-1.5 mb-3">
+              <div className="bg-white/15 backdrop-blur rounded-xl p-2 text-center min-w-0">
+                <p className="text-white/70 text-[8px] uppercase tracking-wider font-medium">Planejado</p>
+                <p className="text-white font-bold text-xs sm:text-base leading-tight truncate">{fmt(totalPlanejado)}</p>
               </div>
-              <div className="bg-white/15 backdrop-blur rounded-xl p-2.5 text-center">
-                <p className="text-white/70 text-[9px] uppercase tracking-wider font-medium">Pago</p>
-                <p className="text-white font-bold text-base leading-tight">{fmt(totalPago)}</p>
+              <div className="bg-white/15 backdrop-blur rounded-xl p-2 text-center min-w-0">
+                <p className="text-white/70 text-[8px] uppercase tracking-wider font-medium">Pago</p>
+                <p className="text-white font-bold text-xs sm:text-base leading-tight truncate">{fmt(totalPago)}</p>
               </div>
-              <div className="bg-black/20 backdrop-blur rounded-xl p-2.5 text-center">
-                <p className="text-white/70 text-[9px] uppercase tracking-wider font-medium">Falta</p>
-                <p className="text-white font-bold text-base leading-tight">{fmt(totalFalta)}</p>
+              <div className="bg-black/20 backdrop-blur rounded-xl p-2 text-center min-w-0">
+                <p className="text-white/70 text-[8px] uppercase tracking-wider font-medium">Falta</p>
+                <p className="text-white font-bold text-xs sm:text-base leading-tight truncate">{fmt(totalFalta)}</p>
               </div>
             </div>
             <div className="h-2 bg-white/20 rounded-full overflow-hidden">
