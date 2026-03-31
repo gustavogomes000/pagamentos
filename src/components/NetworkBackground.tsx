@@ -6,9 +6,22 @@ interface Node {
   vx: number;
   vy: number;
   radius: number;
+  color: string;
 }
 
-export default function NetworkBackground() {
+const COLORS = [
+  "rgba(236, 72, 153, 0.5)",   // pink
+  "rgba(200, 170, 100, 0.4)",  // gold
+  "rgba(236, 72, 153, 0.3)",   // soft pink
+  "rgba(180, 150, 80, 0.35)",  // dark gold
+];
+
+const LINE_COLORS = [
+  "rgba(236, 72, 153,",  // pink
+  "rgba(200, 170, 100,", // gold
+];
+
+export default function NetworkBackground({ light = false }: { light?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -19,8 +32,8 @@ export default function NetworkBackground() {
 
     let animId: number;
     let nodes: Node[] = [];
-    const NODE_COUNT = 60;
-    const MAX_DIST = 150;
+    const NODE_COUNT = 50;
+    const MAX_DIST = 140;
 
     const resize = () => {
       canvas.width = window.innerWidth;
@@ -32,25 +45,26 @@ export default function NetworkBackground() {
       nodes = Array.from({ length: NODE_COUNT }, () => ({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        vx: (Math.random() - 0.5) * 0.4,
-        vy: (Math.random() - 0.5) * 0.4,
-        radius: Math.random() * 2 + 1,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        radius: Math.random() * 2 + 0.8,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
       }));
     };
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw connections
       for (let i = 0; i < nodes.length; i++) {
         for (let j = i + 1; j < nodes.length; j++) {
           const dx = nodes[i].x - nodes[j].x;
           const dy = nodes[i].y - nodes[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < MAX_DIST) {
-            const alpha = (1 - dist / MAX_DIST) * 0.35;
-            ctx.strokeStyle = `rgba(236, 72, 153, ${alpha})`;
-            ctx.lineWidth = 0.6;
+            const alpha = (1 - dist / MAX_DIST) * 0.2;
+            const lineColor = LINE_COLORS[i % LINE_COLORS.length];
+            ctx.strokeStyle = `${lineColor} ${alpha})`;
+            ctx.lineWidth = 0.5;
             ctx.beginPath();
             ctx.moveTo(nodes[i].x, nodes[i].y);
             ctx.lineTo(nodes[j].x, nodes[j].y);
@@ -59,20 +73,17 @@ export default function NetworkBackground() {
         }
       }
 
-      // Draw nodes
       for (const node of nodes) {
         ctx.beginPath();
         ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(236, 72, 153, 0.7)`;
+        ctx.fillStyle = node.color;
         ctx.fill();
 
-        // Glow
         ctx.beginPath();
-        ctx.arc(node.x, node.y, node.radius + 2, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(236, 72, 153, 0.15)`;
+        ctx.arc(node.x, node.y, node.radius + 3, 0, Math.PI * 2);
+        ctx.fillStyle = node.color.replace(/[\d.]+\)$/, "0.08)");
         ctx.fill();
 
-        // Move
         node.x += node.vx;
         node.y += node.vy;
         if (node.x < 0 || node.x > canvas.width) node.vx *= -1;
