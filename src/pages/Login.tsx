@@ -246,14 +246,6 @@ export default function Login() {
         </div>
       </div>
 
-      <style>{`
-        @keyframes loginStreak {
-          0%, 100% { transform: translateY(-100%); opacity: 0; }
-          30% { opacity: 1; }
-          70% { opacity: 1; }
-          100% { transform: translateY(250%); opacity: 0; }
-        }
-      `}</style>
     </div>
   );
 }
