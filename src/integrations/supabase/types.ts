@@ -23,6 +23,7 @@ export type Database = {
           nome: string
           updated_at: string
           valor_contrato: number | null
+          valor_contrato_meses: number | null
           whatsapp: string | null
         }
         Insert: {
@@ -33,6 +34,7 @@ export type Database = {
           nome: string
           updated_at?: string
           valor_contrato?: number | null
+          valor_contrato_meses?: number | null
           whatsapp?: string | null
         }
         Update: {
@@ -43,6 +45,7 @@ export type Database = {
           nome?: string
           updated_at?: string
           valor_contrato?: number | null
+          valor_contrato_meses?: number | null
           whatsapp?: string | null
         }
         Relationships: []
@@ -58,6 +61,7 @@ export type Database = {
           rede_social: string | null
           regiao: string | null
           retirada_ate_mes: number | null
+          retirada_mensal_meses: number | null
           retirada_mensal_valor: number | null
           updated_at: string
           whatsapp: string | null
@@ -72,6 +76,7 @@ export type Database = {
           rede_social?: string | null
           regiao?: string | null
           retirada_ate_mes?: number | null
+          retirada_mensal_meses?: number | null
           retirada_mensal_valor?: number | null
           updated_at?: string
           whatsapp?: string | null
@@ -86,6 +91,7 @@ export type Database = {
           rede_social?: string | null
           regiao?: string | null
           retirada_ate_mes?: number | null
+          retirada_mensal_meses?: number | null
           retirada_mensal_valor?: number | null
           updated_at?: string
           whatsapp?: string | null
