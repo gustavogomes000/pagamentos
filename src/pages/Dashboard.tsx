@@ -32,6 +32,10 @@ export default function Dashboard() {
   const [expandedLid, setExpandedLid] = useState(false);
   const [expandedAdm, setExpandedAdm] = useState(false);
   const [search, setSearch] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filtroRegiao, setFiltroRegiao] = useState<string>("");
+  const [filtroPartido, setFiltroPartido] = useState<string>("");
+  const [filtroSituacao, setFiltroSituacao] = useState<string>("");
 
   const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes"],
@@ -69,22 +73,54 @@ export default function Dashboard() {
   const normalizeStr = (str: string) =>
     str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
+  // Opções únicas para filtros
+  const regioes = useMemo(() => {
+    const set = new Set<string>();
+    (suplentes ?? []).forEach((s: any) => { if (s.regiao_atuacao) set.add(s.regiao_atuacao); if (s.bairro) set.add(s.bairro); });
+    (liderancas ?? []).forEach(l => { if (l.regiao) set.add(l.regiao); });
+    return Array.from(set).sort();
+  }, [suplentes, liderancas]);
+
+  const partidos = useMemo(() => {
+    const set = new Set<string>();
+    (suplentes ?? []).forEach((s: any) => { if (s.partido) set.add(s.partido); });
+    return Array.from(set).sort();
+  }, [suplentes]);
+
+  const situacoes = useMemo(() => {
+    const set = new Set<string>();
+    (suplentes ?? []).forEach((s: any) => { if (s.situacao) set.add(s.situacao); });
+    return Array.from(set).sort();
+  }, [suplentes]);
+
+  const activeFiltersCount = [filtroRegiao, filtroPartido, filtroSituacao].filter(Boolean).length;
+
+  const clearFilters = () => { setFiltroRegiao(""); setFiltroPartido(""); setFiltroSituacao(""); };
+
   const supList = useMemo(() => {
-    const all = suplentes ?? [];
-    if (!search.trim()) return all;
-    const q = normalizeStr(search);
-    return all.filter((s: any) =>
-      normalizeStr(s.nome || "").includes(q) ||
-      normalizeStr(s.regiao_atuacao || "").includes(q)
-    );
-  }, [suplentes, search]);
+    let all = suplentes ?? [];
+    if (search.trim()) {
+      const q = normalizeStr(search);
+      all = all.filter((s: any) =>
+        normalizeStr(s.nome || "").includes(q) ||
+        normalizeStr(s.regiao_atuacao || "").includes(q)
+      );
+    }
+    if (filtroRegiao) all = all.filter((s: any) => s.regiao_atuacao === filtroRegiao || s.bairro === filtroRegiao);
+    if (filtroPartido) all = all.filter((s: any) => s.partido === filtroPartido);
+    if (filtroSituacao) all = all.filter((s: any) => s.situacao === filtroSituacao);
+    return all;
+  }, [suplentes, search, filtroRegiao, filtroPartido, filtroSituacao]);
 
   const lidList = useMemo(() => {
-    const all = liderancas ?? [];
-    if (!search.trim()) return all;
-    const q = normalizeStr(search);
-    return all.filter(l => normalizeStr(l.nome || "").includes(q) || normalizeStr(l.regiao || "").includes(q));
-  }, [liderancas, search]);
+    let all = liderancas ?? [];
+    if (search.trim()) {
+      const q = normalizeStr(search);
+      all = all.filter(l => normalizeStr(l.nome || "").includes(q) || normalizeStr(l.regiao || "").includes(q));
+    }
+    if (filtroRegiao) all = all.filter(l => l.regiao === filtroRegiao);
+    return all;
+  }, [liderancas, search, filtroRegiao]);
 
   const admList = useMemo(() => {
     const all = administrativo ?? [];
