@@ -30,6 +30,8 @@ export default function Cadastros() {
       if (error) throw error;
       return data;
     },
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const normalizeStr = (str: string) =>
