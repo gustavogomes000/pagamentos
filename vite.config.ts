@@ -89,4 +89,18 @@ export default defineConfig(({ mode }) => ({
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          query: ["@tanstack/react-query"],
+          supabase: ["@supabase/supabase-js"],
+          ui: ["recharts", "lucide-react"],
+        },
+      },
+    },
+    target: "esnext",
+    minify: "esbuild",
+  },
 }));
