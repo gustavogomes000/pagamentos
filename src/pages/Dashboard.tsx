@@ -478,7 +478,7 @@ export default function Dashboard() {
                         <span className="font-medium text-foreground">{fmt(totalRetiradaSup)}</span>
                       </div>
                       <div className="flex justify-between text-[11px]">
-                        <span className="text-muted-foreground">Líderes de campo ({fmtN(totalLiderancasQtd)} pessoas)</span>
+                        <span className="text-muted-foreground">Lideranças de campo ({fmtN(totalLiderancasQtd)} pessoas)</span>
                         <span className="font-medium text-foreground">{fmt(totalLiderancasVal)}</span>
                       </div>
                       <div className="flex justify-between text-[11px]">
