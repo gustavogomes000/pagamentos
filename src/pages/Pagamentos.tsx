@@ -554,7 +554,9 @@ function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes,
 
   const handleDelete = async (pagId: string) => {
     if (!confirm("Excluir pagamento?")) return;
-    await supabase.from("pagamentos").delete().eq("id", pagId);
+    const { error } = await supabase.from("pagamentos").delete().eq("id", pagId);
+    if (error) { toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "✅ Pagamento excluído" });
     qc.invalidateQueries({ queryKey: ["pagamentos"] });
   };
 
