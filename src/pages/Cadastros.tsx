@@ -38,11 +38,8 @@ export default function Cadastros() {
   const filtered = suplentes?.filter((s: any) => {
     if (!search.trim()) return true;
     const term = normalizeStr(search);
-    const nome = normalizeStr(s.nome || "");
-    const bairro = normalizeStr(s.bairro || "");
-    const regiao = normalizeStr(s.regiao_atuacao || "");
-    const urna = (s.numero_urna || "").toLowerCase();
-    return nome.includes(term) || bairro.includes(term) || regiao.includes(term) || urna.includes(term);
+    const fields = [s.nome, s.bairro, s.regiao_atuacao, s.numero_urna, s.partido, s.base_politica, s.situacao];
+    return fields.some(f => f && normalizeStr(f).includes(term));
   }) ?? [];
 
   const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
