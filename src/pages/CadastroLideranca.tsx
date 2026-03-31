@@ -72,7 +72,7 @@ export default function CadastroLideranca() {
       rede_social: existing.rede_social || "",
       ligacao_politica: existing.ligacao_politica || "",
       retirada_mensal_valor: existing.retirada_mensal_valor || 0,
-      retirada_ate_mes: existing.retirada_ate_mes || 10,
+      retirada_ate_mes: existing.retirada_ate_mes || 9,
       chave_pix: existing.chave_pix || "",
       assinatura: existing.assinatura || "",
     });
