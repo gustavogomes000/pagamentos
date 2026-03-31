@@ -542,24 +542,44 @@ export default function Pagamentos() {
     return norm(nome).includes(q) || norm(extra || "").includes(q);
   };
 
-  // ─── Alerta de atraso (dia > 4, retirada/salário pendente) ──────────────────
-  const DEADLINE_DAY = 4;
+  // ─── Alerta de atraso ────────────────────────────────────────────────────────
+  // Salário (admin): prazo até dia 10 do mês SEGUINTE
+  // Retirada (suplentes/lideranças): prazo até último dia do mês de referência
   const diaAtual = now.getDate();
   const mesAtual = now.getMonth() + 1;
   const anoAtual = now.getFullYear();
-  const isCurrentMonth = mes === mesAtual && ano === anoAtual;
-  const isPassedDeadline = isCurrentMonth && diaAtual > DEADLINE_DAY;
 
-  // Pessoas com retirada/salário pendente no mês atual
-  const supAtrasados = isPassedDeadline ? supComValor.filter(s => {
+  // Retiradas atrasadas: se já passou o mês de referência (ou estamos no mesmo mês mas passou o último dia — impossível, então basta mes < mesAtual)
+  const retiradaAtrasada = (mesRef: number, anoRef: number) => {
+    if (anoRef < anoAtual) return true;
+    if (anoRef === anoAtual && mesRef < mesAtual) return true;
+    return false;
+  };
+
+  // Salário atrasado: prazo é dia 10 do mês seguinte ao de referência
+  const salarioAtrasado = (mesRef: number, anoRef: number) => {
+    let mesPrazo = mesRef + 1, anoPrazo = anoRef;
+    if (mesPrazo > 12) { mesPrazo = 1; anoPrazo++; }
+    if (anoPrazo < anoAtual) return true;
+    if (anoPrazo === anoAtual && mesPrazo < mesAtual) return true;
+    if (anoPrazo === anoAtual && mesPrazo === mesAtual && diaAtual > 10) return true;
+    return false;
+  };
+
+  const isRetiradaAtrasada = retiradaAtrasada(mes, ano);
+  const isSalarioAtrasado = salarioAtrasado(mes, ano);
+
+  // Suplentes e Lideranças usam retirada (último dia do mês)
+  const supAtrasados = isRetiradaAtrasada ? supComValor.filter(s => {
     const pago = pagsMes.filter(p => p.suplente_id === s.id).reduce((a, p) => a + p.valor, 0);
     return pago < (s.retirada_mensal_valor || 0);
   }) : [];
-  const lidAtrasados = isPassedDeadline ? lidComValor.filter(l => {
+  const lidAtrasados = isRetiradaAtrasada ? lidComValor.filter(l => {
     const pago = pagsMes.filter(p => p.lideranca_id === l.id).reduce((a, p) => a + p.valor, 0);
     return pago < (l.retirada_mensal_valor || 0);
   }) : [];
-  const admAtrasados = isPassedDeadline ? admComValor.filter(a => {
+  // Admin usa salário (dia 10 do mês seguinte)
+  const admAtrasados = isSalarioAtrasado ? admComValor.filter(a => {
     const pago = pagsMes.filter(p => p.admin_id === a.id).reduce((a2, p) => a2 + p.valor, 0);
     return pago < (a.valor_contrato || 0);
   }) : [];
