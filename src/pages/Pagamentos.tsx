@@ -392,8 +392,9 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
   const totais = calcTotaisFinanceiros(s);
   const totalPagoGeral = pagsTodos.reduce((a, p) => a + p.valor, 0);
 
+  const pagoRetiradaMes = pagsMes.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0);
   const categorias = [
-    { key: "retirada", label: "Retirada", planejado: totais.retirada, pago: pagsTodos.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0), detalhe: `${fmt(retiradaMes)} × ${s.retirada_mensal_meses || 0}m`, qtd: retiradaMes, valorUnit: s.retirada_mensal_meses || 0 },
+    { key: "retirada", label: "Retirada", planejado: totais.retirada, pago: pagsTodos.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0), detalhe: `${fmt(retiradaMes)} × ${s.retirada_mensal_meses || 0}m`, qtd: retiradaMes, valorUnit: s.retirada_mensal_meses || 0, faltaMes: Math.max(0, retiradaMes - pagoRetiradaMes) },
     { key: "plotagem", label: "Plotagem", planejado: totais.plotagem, pago: pagsTodos.filter(p => p.categoria === "plotagem").reduce((a, p) => a + p.valor, 0), detalhe: `${s.plotagem_qtd || 0} × ${fmt(s.plotagem_valor_unit || 0)}`, qtd: s.plotagem_qtd || 0, valorUnit: s.plotagem_valor_unit || 0 },
     { key: "liderancas", label: "Lideranças", planejado: totais.liderancas, pago: pagsTodos.filter(p => p.categoria === "liderancas").reduce((a, p) => a + p.valor, 0), detalhe: `${s.liderancas_qtd || 0} × ${fmt(s.liderancas_valor_unit || 0)}`, qtd: s.liderancas_qtd || 0, valorUnit: s.liderancas_valor_unit || 0 },
     { key: "fiscais", label: "Fiscais", planejado: totais.fiscais, pago: pagsTodos.filter(p => p.categoria === "fiscais").reduce((a, p) => a + p.valor, 0), detalhe: `${s.fiscais_qtd || 0} × ${fmt(s.fiscais_valor_unit || 0)}`, qtd: s.fiscais_qtd || 0, valorUnit: s.fiscais_valor_unit || 0 },
