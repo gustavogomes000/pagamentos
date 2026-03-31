@@ -787,6 +787,69 @@ export default function Pagamentos() {
   return (
     <PageTransition>
       <div className="space-y-4">
+        {/* Dialog de alerta de atraso */}
+        <Dialog open={showAlertaAtraso} onOpenChange={(open) => { setShowAlertaAtraso(open); if (!open) setAlertaDismissed(true); }}>
+          <DialogContent className="max-w-sm rounded-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <Bell size={20} /> Pagamentos Atrasados!
+              </DialogTitle>
+              <DialogDescription className="text-left">
+                <span className="block mt-2 text-sm text-foreground font-medium">
+                  O prazo de pagamento (dia {DEADLINE_DAY}) já passou e ainda há <strong>{totalAtrasados}</strong> pessoa{totalAtrasados > 1 ? "s" : ""} com retirada/salário pendente em {MESES[mes - 1]}:
+                </span>
+                <div className="mt-3 space-y-2 max-h-60 overflow-y-auto">
+                  {supAtrasados.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-pink-500 mb-1">Suplentes ({supAtrasados.length})</p>
+                      {supAtrasados.map(s => {
+                        const pago = pagsMes.filter(p => p.suplente_id === s.id).reduce((a, p) => a + p.valor, 0);
+                        return (
+                          <div key={s.id} className="flex justify-between text-xs py-0.5">
+                            <span className="text-foreground">{s.nome}</span>
+                            <span className="text-destructive font-bold">{fmt(Math.max(0, (s.retirada_mensal_valor || 0) - pago))}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {lidAtrasados.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-violet-500 mb-1">Lideranças ({lidAtrasados.length})</p>
+                      {lidAtrasados.map(l => {
+                        const pago = pagsMes.filter(p => p.lideranca_id === l.id).reduce((a, p) => a + p.valor, 0);
+                        return (
+                          <div key={l.id} className="flex justify-between text-xs py-0.5">
+                            <span className="text-foreground">{l.nome}</span>
+                            <span className="text-destructive font-bold">{fmt(Math.max(0, (l.retirada_mensal_valor || 0) - pago))}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {admAtrasados.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-blue-500 mb-1">Administrativo ({admAtrasados.length})</p>
+                      {admAtrasados.map(a => {
+                        const pago = pagsMes.filter(p => p.admin_id === a.id).reduce((a2, p) => a2 + p.valor, 0);
+                        return (
+                          <div key={a.id} className="flex justify-between text-xs py-0.5">
+                            <span className="text-foreground">{a.nome}</span>
+                            <span className="text-destructive font-bold">{fmt(Math.max(0, (a.valor_contrato || 0) - pago))}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            <Button onClick={() => { setShowAlertaAtraso(false); setAlertaDismissed(true); }} className="w-full mt-2">
+              Entendi
+            </Button>
+          </DialogContent>
+        </Dialog>
+
         <h1 className="text-xl font-bold text-foreground">Pagamentos</h1>
 
         {/* Painel financeiro geral */}
