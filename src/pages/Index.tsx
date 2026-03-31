@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom";
 
 export default function Index() {
-  return <Navigate to="/cadastros" replace />;
+  return <Navigate to="/pagamentos" replace />;
 }
