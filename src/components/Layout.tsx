@@ -24,6 +24,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
   const showIOSInstall = isIOS && !isStandalone && !dismissedIOS;
 
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
+    "Notification" in window ? Notification.permission : "denied"
+  );
+
+  const handleEnableNotifications = async () => {
+    const granted = await requestNotificationPermission();
+    setNotifPermission(granted ? "granted" : "denied");
+  };
+
   useEffect(() => {
     mainRef.current?.scrollTo(0, 0);
   }, [pathname]);
