@@ -776,7 +776,7 @@ export default function Pagamentos() {
             <span className="text-xs font-bold text-foreground">{fmt(admPago)} / {fmt(admPlanejado)}</span>
           </div>
           <Bar pago={admPago} total={admPlanejado} cor="bg-blue-500" />
-          {admPlanejado > admPago && <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(admPlanejado - admPago)}</p>}
+          {admFaltaReal > 0 && <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">Falta: {fmt(admFaltaReal)}</p>}
         </div>
 
         {pendentes.length > 0 && (
