@@ -29,7 +29,7 @@ const queryClient = new QueryClient({
     queries: {
       networkMode: "offlineFirst",
       staleTime: 0,
-      gcTime: 1000 * 60 * 60 * 24,
+      gcTime: 1000 * 60 * 5,
       refetchOnMount: "always",
       refetchOnReconnect: true,
       refetchOnWindowFocus: true,
@@ -45,21 +45,10 @@ const queryClient = new QueryClient({
   },
 });
 
-// ─── Limpa cache antigo com dados inconsistentes ────────────────────────
-const CACHE_VERSION = "rq_cache_v3";
+// ─── Limpa cache persistido a cada acesso — sempre dados reais ──────────
 try {
-  const oldKey = "rq_cache_v2";
-  if (window.localStorage.getItem(oldKey)) {
-    window.localStorage.removeItem(oldKey);
-  }
+  ["rq_cache_v2", "rq_cache_v3"].forEach(k => window.localStorage.removeItem(k));
 } catch {}
-
-// ─── Persiste o cache do React Query no localStorage ────────────────────
-const persister = createSyncStoragePersister({
-  storage: window.localStorage,
-  key: CACHE_VERSION,
-  throttleTime: 1000,
-});
 
 // ─── Fallback de carregamento leve ──────────────────────────────────────
 function PageFallback() {
