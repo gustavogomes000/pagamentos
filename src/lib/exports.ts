@@ -44,7 +44,7 @@ function addHeader(doc: jsPDF, title: string, filters?: ExportFilters) {
   doc.text("Dra. Fernanda Sarelli", 14, 13);
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
-  doc.text("Pré-candidata Dep. Estadual GO 2026 — Aparecida de Goiânia", 14, 21);
+  doc.text("Pré-candidata Dep. Estadual GO 2026 — Goiânia", 14, 21);
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
@@ -435,7 +435,7 @@ export function exportExcel(list: any[], filters?: ExportFilters) {
   // ── Cabeçalho e Resumo ──
   const rows: any[][] = [
     ["DRA. FERNANDA SARELLI — PAINEL DE SUPLENTES"],
-    [`Pré-candidata Dep. Estadual GO 2026 — Aparecida de Goiânia`],
+    [`Pré-candidata Dep. Estadual GO 2026 — Goiânia`],
     [`Gerado em ${now}`],
     filterLabel ? [`Filtros: ${filterLabel}`] : [],
     [],
@@ -551,7 +551,7 @@ export function exportLiderancasExcel(list: any[]) {
 
   const rows: any[][] = [
     ["DRA. FERNANDA SARELLI — PAINEL DE LIDERANÇAS"],
-    ["Pré-candidata Dep. Estadual GO 2026 — Aparecida de Goiânia"],
+    ["Pré-candidata Dep. Estadual GO 2026 — Goiânia"],
     [`Gerado em ${now}`],
     [],
     ["RESUMO EXECUTIVO"],
