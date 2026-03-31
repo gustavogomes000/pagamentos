@@ -202,14 +202,9 @@ export default function Cadastro({ initial, onSaved }: Props) {
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Bairro">
-            <Input value={form.bairro} onChange={(e) => set("bairro", e.target.value)} placeholder="Ex: Garavelo" className="bg-card shadow-sm border-border" />
-          </Field>
-          <Field label="Setor">
-            <Input value={form.regiao_atuacao} onChange={(e) => set("regiao_atuacao", e.target.value)} placeholder="Ex: Setor 1" className="bg-card shadow-sm border-border" />
-          </Field>
-        </div>
+        <Field label="Setor">
+          <Input value={form.regiao_atuacao} onChange={(e) => set("regiao_atuacao", e.target.value)} placeholder="Ex: Goiânia, Setor 1, Garavelo..." className="bg-card shadow-sm border-border" />
+        </Field>
 
         <Field label="Telefone">
           <Input value={form.telefone} onChange={(e) => set("telefone", e.target.value)} placeholder="(62) 99999-9999" className="bg-card shadow-sm border-border" />
