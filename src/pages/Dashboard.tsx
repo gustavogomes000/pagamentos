@@ -168,10 +168,10 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="text-xs gap-1.5 active:scale-95 transition-transform" onClick={() => exportAllPDF(supList)} disabled={supList.length === 0}>
+            <Button variant="outline" size="sm" className="text-xs gap-1.5 active:scale-95 transition-transform" onClick={() => exportAllPDF(supList, { regiao: filtroRegiao, partido: filtroPartido, situacao: filtroSituacao, busca: search })} disabled={supList.length === 0}>
               <FileDown size={14} /> PDF
             </Button>
-            <Button variant="outline" size="sm" className="text-xs gap-1.5 active:scale-95 transition-transform" onClick={() => exportExcel(supList)} disabled={supList.length === 0}>
+            <Button variant="outline" size="sm" className="text-xs gap-1.5 active:scale-95 transition-transform" onClick={() => exportExcel(supList, { regiao: filtroRegiao, partido: filtroPartido, situacao: filtroSituacao, busca: search })} disabled={supList.length === 0}>
               <FileSpreadsheet size={14} /> Excel
             </Button>
           </div>
