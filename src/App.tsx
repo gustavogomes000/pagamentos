@@ -43,12 +43,16 @@ const queryClient = new QueryClient({
   },
 });
 
-// ─── Limpa todo cache persistido — sempre dados reais ───────────────────
+// ─── Limpa todo cache persistido — sempre dados reais do Supabase ────────
 try {
-  const keysToRemove = Object.keys(window.localStorage).filter(k =>
-    k.startsWith("rq_cache") || k.startsWith("REACT_QUERY") || k.startsWith("tanstack")
-  );
-  keysToRemove.forEach(k => window.localStorage.removeItem(k));
+  // Limpa todas as chaves de cache do React Query no localStorage
+  Object.keys(window.localStorage).forEach(k => {
+    if (k.startsWith("rq_cache") || k.startsWith("REACT_QUERY") || k.startsWith("tanstack") || k === "offline_queue") {
+      window.localStorage.removeItem(k);
+    }
+  });
+  // Limpa IndexedDB do Dexie (fila offline)
+  indexedDB.deleteDatabase("sarelliOfflineDatabase");
 } catch {}
 
 // ─── Fallback de carregamento leve ──────────────────────────────────────
