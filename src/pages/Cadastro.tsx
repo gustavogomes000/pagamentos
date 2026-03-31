@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,10 +66,45 @@ interface Props {
   onSaved?: () => void;
 }
 
+function buildFormState(initial?: Props["initial"]): FormData {
+  return {
+    ...defaultForm,
+    ...initial,
+    nome: initial?.nome ?? defaultForm.nome,
+    nome_urna: initial?.nome_urna ?? defaultForm.nome_urna,
+    numero_urna: initial?.numero_urna ?? defaultForm.numero_urna,
+    bairro: initial?.bairro ?? defaultForm.bairro,
+    regiao_atuacao: initial?.regiao_atuacao ?? defaultForm.regiao_atuacao,
+    telefone: initial?.telefone ?? defaultForm.telefone,
+    cargo_disputado: initial?.cargo_disputado ?? defaultForm.cargo_disputado,
+    ano_eleicao: Number(initial?.ano_eleicao ?? defaultForm.ano_eleicao),
+    partido: initial?.partido ?? defaultForm.partido,
+    situacao: initial?.situacao ?? defaultForm.situacao,
+    total_votos: Number(initial?.total_votos ?? defaultForm.total_votos),
+    expectativa_votos: Number(initial?.expectativa_votos ?? defaultForm.expectativa_votos),
+    base_politica: initial?.base_politica ?? defaultForm.base_politica,
+    retirada_mensal_valor: Number(initial?.retirada_mensal_valor ?? defaultForm.retirada_mensal_valor),
+    retirada_mensal_meses: Number(initial?.retirada_mensal_meses ?? defaultForm.retirada_mensal_meses),
+    plotagem_qtd: Number(initial?.plotagem_qtd ?? defaultForm.plotagem_qtd),
+    plotagem_valor_unit: Number(initial?.plotagem_valor_unit ?? defaultForm.plotagem_valor_unit),
+    liderancas_qtd: Number(initial?.liderancas_qtd ?? defaultForm.liderancas_qtd),
+    liderancas_valor_unit: Number(initial?.liderancas_valor_unit ?? defaultForm.liderancas_valor_unit),
+    fiscais_qtd: Number(initial?.fiscais_qtd ?? defaultForm.fiscais_qtd),
+    fiscais_valor_unit: Number(initial?.fiscais_valor_unit ?? defaultForm.fiscais_valor_unit),
+    assinatura: initial?.assinatura ?? defaultForm.assinatura,
+  };
+}
+
 export default function Cadastro({ initial, onSaved }: Props) {
-  const [form, setForm] = useState<FormData>(initial ? { ...defaultForm, ...initial } : defaultForm);
+  const qc = useQueryClient();
+  const [form, setForm] = useState<FormData>(() => buildFormState(initial));
   const [saving, setSaving] = useState(false);
   const [showSignature, setShowSignature] = useState(false);
+  const initialSnapshot = initial ? JSON.stringify(initial) : "";
+
+  useEffect(() => {
+    setForm(buildFormState(initial));
+  }, [initialSnapshot]);
 
   const set = (key: keyof FormData, value: string | number) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -98,15 +134,17 @@ export default function Cadastro({ initial, onSaved }: Props) {
       toast({ title: "Votos obrigatórios", description: "Informe o total de votos maior que zero.", variant: "destructive" });
       return;
     }
+    if (!Number.isFinite(form.expectativa_votos) || form.expectativa_votos <= 0) {
+      toast({ title: "Expectativa obrigatória", description: "Informe a expectativa de votos maior que zero.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
 
-    // Verificar duplicata por nome — tanto em INSERT quanto em UPDATE
     {
       let query = supabase
         .from("suplentes")
         .select("id, nome")
         .ilike("nome", form.nome.trim());
-      // Em edição, exclui o próprio registro da verificação
       if (initial?.id) query = query.neq("id", initial.id);
       const { data: duplicado, error: dupError } = await query.maybeSingle();
       if (dupError) {
@@ -138,6 +176,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
     if (error) {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
     } else {
+      await qc.invalidateQueries({ queryKey: ["suplentes"] });
       toast({ title: initial?.id ? "Atualizado!" : "Cadastrado com sucesso!" });
       if (!initial?.id) setForm(defaultForm);
       onSaved?.();
@@ -152,7 +191,6 @@ export default function Cadastro({ initial, onSaved }: Props) {
         <h1 className="text-xl font-bold text-foreground">{initial?.id ? "Editar Ficha" : "Nova Ficha Política"}</h1>
       </div>
 
-      {/* Busca TSE */}
       {!initial?.id && (
         <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
           <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Buscar no TSE</h2>
@@ -168,10 +206,10 @@ export default function Cadastro({ initial, onSaved }: Props) {
                 situacao: c.situacao.includes("Suplente") ? "Suplente" : c.situacao.includes("Eleito") ? "Eleito" : "Não Eleito",
                 regiao_atuacao: c.municipio,
                 total_votos: c.totalVotos > 0 ? c.totalVotos : prev.total_votos,
+                expectativa_votos: prev.expectativa_votos > 0 ? prev.expectativa_votos : c.totalVotos > 0 ? c.totalVotos : prev.expectativa_votos,
               }));
               toast({ title: "Dados preenchidos!", description: `${c.nome} — ${c.partido}${c.totalVotos > 0 ? ` — ${c.totalVotos.toLocaleString("pt-BR")} votos` : ""}` });
 
-              // Auto-update existing DB records with similar name if votes differ
               if (c.totalVotos > 0) {
                 try {
                   const { data: existing } = await supabase

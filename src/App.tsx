@@ -23,41 +23,36 @@ import CadastroLideranca from "./pages/CadastroLideranca";
 import ListaAdmin from "./pages/ListaAdmin";
 import CadastroAdmin from "./pages/CadastroAdmin";
 
-// â”€â”€â”€ QueryClient com suporte offline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── QueryClient com suporte offline ───────────────────────────────────
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // offlineFirst: usa dados em cache sem tentar re-fetch quando offline
       networkMode: "offlineFirst",
-      // Dados ficam "frescos" por 5 minutos; em background refetch sempre
-      staleTime: 1000 * 60 * 5,
-      // Cache de 24h no memory â€” o localStorage persiste alÃ©m disso
+      staleTime: 0,
       gcTime: 1000 * 60 * 60 * 24,
+      refetchOnMount: "always",
+      refetchOnReconnect: true,
+      refetchOnWindowFocus: true,
       retry: (failureCount, error: unknown) => {
-        // NÃ£o tenta novamente se for erro de autenticaÃ§Ã£o; tenta 2x outros erros
         const msg = (error as Error)?.message || "";
         if (msg.includes("JWT") || msg.includes("401")) return false;
         return failureCount < 2;
       },
     },
     mutations: {
-      // Mutations tambÃ©m funcionam offline (vÃ£o para a fila)
       networkMode: "offlineFirst",
     },
   },
 });
 
-// â”€â”€â”€ Persiste o cache do React Query no localStorage â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// Isso permite que o app funcione sem internet: na prÃ³xima abertura,
-// os dados do Ãºltimo fetch ficam disponÃ­veis instantaneamente.
+// ─── Persiste o cache do React Query no localStorage ────────────────────
 const persister = createSyncStoragePersister({
   storage: window.localStorage,
-  key: "rq_cache_v1",
-  // Comprime para nÃ£o usar muito espaÃ§o (limita a 4MB)
+  key: "rq_cache_v2",
   throttleTime: 1000,
 });
 
-// â”€â”€â”€ Rotas protegidas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Rotas protegidas ────────────────────────────────────────────────────
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -83,7 +78,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// â”€â”€â”€ App â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── App ─────────────────────────────────────────────────────────────────
 
 import VersionMonitor from "./components/VersionMonitor";
 import InstallPWA from "./components/InstallPWA";
@@ -108,6 +103,7 @@ const App = () => {
       client={queryClient}
       persistOptions={{
         persister,
+        buster: "rq_cache_v2_real_data",
         maxAge: 1000 * 60 * 60 * 24,
         dehydrateOptions: {
           shouldDehydrateQuery: (query) =>
