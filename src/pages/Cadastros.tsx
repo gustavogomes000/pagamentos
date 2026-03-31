@@ -7,7 +7,7 @@ import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown, Loader2, Plu
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Cadastro from "./Cadastro";
-import { exportFichasLotePDF, exportSuplentePDF } from "@/lib/exports";
+import { exportFichasLotePDF, exportSuplentePDF, exportExcel } from "@/lib/exports";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 import { validateAllFinancials } from "@/lib/validateFinancials";
 import { validateRequiredData } from "@/lib/validateRequiredData";
