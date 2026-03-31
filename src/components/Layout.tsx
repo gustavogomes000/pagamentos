@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
-import { Download, WifiOff, X, RefreshCw } from "lucide-react";
+import { requestNotificationPermission } from "@/hooks/usePaymentNotifications";
+import { Download, WifiOff, X, RefreshCw, Bell, BellOff } from "lucide-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
@@ -22,6 +23,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
     !!sessionStorage.getItem("pwa_ios_dismissed")
   );
   const showIOSInstall = isIOS && !isStandalone && !dismissedIOS;
+
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
+    "Notification" in window ? Notification.permission : "denied"
+  );
+
+  const handleEnableNotifications = async () => {
+    const granted = await requestNotificationPermission();
+    setNotifPermission(granted ? "granted" : "denied");
+  };
 
   useEffect(() => {
     mainRef.current?.scrollTo(0, 0);
@@ -56,6 +66,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-1.5">
+            {"Notification" in window && notifPermission !== "granted" && (
+              <button
+                onClick={handleEnableNotifications}
+                className="text-[10px] text-muted-foreground font-semibold flex items-center gap-1 bg-muted px-2 py-1 rounded-full active:opacity-70"
+                title="Ativar notificações"
+              >
+                <BellOff size={9} />
+              </button>
+            )}
+            {"Notification" in window && notifPermission === "granted" && (
+              <span className="text-[10px] text-primary flex items-center">
+                <Bell size={9} />
+              </span>
+            )}
             {!isOnline && (
               <span className="text-[10px] text-destructive font-semibold flex items-center gap-1 bg-destructive/10 px-2 py-1 rounded-full border border-destructive/20">
                 <WifiOff size={9} /> Offline
