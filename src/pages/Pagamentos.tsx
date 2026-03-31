@@ -405,8 +405,8 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
       <div className="p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <p className="font-bold text-foreground text-sm truncate">{s.nome}</p>
-            {s.numero_urna && <p className="text-[10px] font-mono text-muted-foreground">Nome de Urna: {s.numero_urna}</p>}
+            <p className="font-bold text-foreground text-sm truncate uppercase">{s.numero_urna || s.nome}</p>
+            <p className="text-[11px] text-muted-foreground truncate">{s.nome}</p>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {s.partido && <span className="text-[10px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">{s.partido}</span>}
               {subtitle && <span className="text-[11px] text-muted-foreground">{subtitle}</span>}
