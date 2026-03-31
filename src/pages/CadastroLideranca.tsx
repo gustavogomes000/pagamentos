@@ -36,7 +36,7 @@ const defaultForm: FormData = {
   rede_social: "",
   ligacao_politica: "",
   retirada_mensal_valor: 0,
-  retirada_ate_mes: 10,
+  retirada_ate_mes: 9,
   chave_pix: "",
   assinatura: "",
 };
