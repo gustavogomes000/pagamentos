@@ -86,6 +86,11 @@ export function BottomNav() {
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="flex justify-around items-stretch max-w-lg mx-auto">
+          <NavLink to="/pagamentos" className={navBase} activeClassName={navActive}>
+            <Wallet size={20} strokeWidth={1.8} />
+            <span>Pagamentos</span>
+          </NavLink>
+
           <NavLink to="/cadastros" className={navBase} activeClassName={navActive}>
             <List size={20} strokeWidth={1.8} />
             <span>Suplentes</span>
@@ -99,11 +104,6 @@ export function BottomNav() {
           <NavLink to="/administrativo" className={navBase} activeClassName={navActive}>
             <Briefcase size={20} strokeWidth={1.8} />
             <span>Admin</span>
-          </NavLink>
-
-          <NavLink to="/pagamentos" className={navBase} activeClassName={navActive}>
-            <Wallet size={20} strokeWidth={1.8} />
-            <span>Pagamentos</span>
           </NavLink>
 
           <button
