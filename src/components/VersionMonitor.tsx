@@ -1,45 +1,52 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
+import { toast } from "sonner";
 
 export default function VersionMonitor() {
-  const version = import.meta.env.VITE_APP_VERSION || "DEV";
+  const checkForUpdates = useCallback(async () => {
+    if (!("serviceWorker" in navigator)) return;
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) {
+        await reg.update();
+      }
+    } catch (err) {
+      console.error("SW Update check error", err);
+    }
+  }, []);
 
   useEffect(() => {
-    // Monitor de atualização silenciosa - Auto update loop
-    const checkUpdate = async () => {
-      if ("serviceWorker" in navigator) {
-        try {
-          const regs = await navigator.serviceWorker.getRegistrations();
-          for (const reg of regs) {
-            await reg.update();
-          }
-        } catch (err) {
-          console.error("SW Update check error", err);
-        }
+    // Check on coming back online
+    const handleOnline = () => {
+      checkForUpdates();
+    };
+
+    // Check on visibility change (user returns to app)
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && navigator.onLine) {
+        checkForUpdates();
       }
     };
 
-    // Checa a cada 5 horas para atualizar, além do autoUpdate do VitePWA
-    const interval = setInterval(checkUpdate, 5 * 60 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+    // Listen for SW controlling change (new version activated)
+    const handleControllerChange = () => {
+      toast.success("App atualizado! Recarregando...", { duration: 2000 });
+      setTimeout(() => window.location.reload(), 1500);
+    };
 
-  return (
-    <div
-      style={{
-        position: "fixed",
-        bottom: "4px",
-        right: "4px",
-        fontSize: "10px",
-        color: "rgba(255,255,255,0.4)",
-        zIndex: 99999,
-        pointerEvents: "none",
-        fontFamily: "monospace",
-        fontWeight: 600,
-        textShadow: "0px 1px 2px rgba(0,0,0,0.8)"
-      }}
-      title="Monitor de Versão (Atualização Automática)"
-    >
-      v.{version}
-    </div>
-  );
+    window.addEventListener("online", handleOnline);
+    document.addEventListener("visibilitychange", handleVisibility);
+    navigator.serviceWorker?.addEventListener("controllerchange", handleControllerChange);
+
+    // Periodic check every 2 hours
+    const interval = setInterval(checkForUpdates, 2 * 60 * 60 * 1000);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      navigator.serviceWorker?.removeEventListener("controllerchange", handleControllerChange);
+      clearInterval(interval);
+    };
+  }, [checkForUpdates]);
+
+  return null;
 }
