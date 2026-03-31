@@ -17,6 +17,7 @@ import { calcTotaisFinanceiros } from "@/lib/finance";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
+import { usePaymentNotifications } from "@/hooks/usePaymentNotifications";
 
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
   "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
