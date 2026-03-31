@@ -37,6 +37,7 @@ interface FormData {
 
 const defaultForm: FormData = {
   nome: "",
+  nome_urna: "",
   numero_urna: "",
   bairro: "",
   regiao_atuacao: "",
