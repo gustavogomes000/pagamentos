@@ -67,11 +67,21 @@ function Bar({ pago, total, cor = "bg-primary", height = "h-1.5" }: { pago: numb
 }
 
 // ─── Formulário de pagamento ─────────────────────────────────────────────────
-function PayForm({ pessoaNome, categorias, onSave, onCancel, saving }: {
+// Mapeamento categoria → campos no banco
+const CAT_FIELDS: Record<string, { qtdField: string; valField: string } | { valField: string; mesesField: string }> = {
+  retirada: { valField: "retirada_mensal_valor", mesesField: "retirada_mensal_meses" },
+  plotagem: { qtdField: "plotagem_qtd", valField: "plotagem_valor_unit" },
+  liderancas: { qtdField: "liderancas_qtd", valField: "liderancas_valor_unit" },
+  fiscais: { qtdField: "fiscais_qtd", valField: "fiscais_valor_unit" },
+};
+
+function PayForm({ pessoaNome, categorias, onSave, onCancel, saving, suplenteId, onFieldsUpdated }: {
   pessoaNome: string;
-  categorias: { key: string; label: string; planejado: number; pago: number; detalhe: string }[];
+  categorias: { key: string; label: string; planejado: number; pago: number; detalhe: string; qtd: number; valorUnit: number }[];
   onSave: (valor: number, obs: string, cat: string) => Promise<void>;
   onCancel: () => void; saving: boolean;
+  suplenteId?: string;
+  onFieldsUpdated?: () => void;
 }) {
   const [cat, setCat] = useState(categorias[0]?.key || "retirada");
   const catAtual = categorias.find(c => c.key === cat) || categorias[0];
@@ -80,13 +90,48 @@ function PayForm({ pessoaNome, categorias, onSave, onCancel, saving }: {
   const [obs, setObs] = useState("");
   const valorNum = parseFloat(valor.replace(",", ".")) || 0;
 
+  // Edição inline de qtd/valor
+  const [editingFields, setEditingFields] = useState(false);
+  const [editQtd, setEditQtd] = useState("");
+  const [editVal, setEditVal] = useState("");
+  const [savingFields, setSavingFields] = useState(false);
+
   const handleCatChange = (newCat: string) => {
     setCat(newCat);
+    setEditingFields(false);
     const c = categorias.find(x => x.key === newCat);
     if (c) {
       const f = Math.max(0, c.planejado - c.pago);
       setValor(f > 0 ? String(f) : "");
     }
+  };
+
+  const startEditFields = () => {
+    if (!catAtual) return;
+    setEditQtd(String(catAtual.qtd));
+    setEditVal(String(catAtual.valorUnit));
+    setEditingFields(true);
+  };
+
+  const saveFields = async () => {
+    if (!suplenteId || !catAtual) return;
+    const fields = CAT_FIELDS[catAtual.key];
+    if (!fields) return;
+    setSavingFields(true);
+    const update: Record<string, number> = {};
+    if ("qtdField" in fields) {
+      update[fields.qtdField] = parseInt(editQtd) || 0;
+      update[fields.valField] = parseFloat(editVal.replace(",", ".")) || 0;
+    } else {
+      update[fields.valField] = parseFloat(editVal.replace(",", ".")) || 0;
+      update[fields.mesesField] = parseInt(editQtd) || 0;
+    }
+    const { error } = await supabase.from("suplentes").update(update).eq("id", suplenteId);
+    setSavingFields(false);
+    if (error) { toast({ title: "Erro", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Valores atualizados!" });
+    setEditingFields(false);
+    onFieldsUpdated?.();
   };
 
   return (
@@ -116,19 +161,51 @@ function PayForm({ pessoaNome, categorias, onSave, onCancel, saving }: {
       {/* Detalhes da categoria selecionada */}
       {catAtual && (
         <div className="bg-muted/30 rounded-xl p-2.5 space-y-1">
-          <div className="flex justify-between text-[10px]">
-            <span className="text-muted-foreground font-medium">{catAtual.detalhe}</span>
-            <span className="font-bold text-foreground">Planejado: {fmt(catAtual.planejado)}</span>
-          </div>
-          <Bar pago={catAtual.pago} total={catAtual.planejado} cor={catAtual.pago >= catAtual.planejado ? "bg-green-500" : "bg-primary"} />
-          <div className="flex justify-between text-[10px]">
-            <span className="text-green-600 dark:text-green-400 font-medium">Pago: {fmt(catAtual.pago)}</span>
-            {faltaCat > 0 ? (
-              <span className="text-amber-600 dark:text-amber-400 font-bold">Falta: {fmt(faltaCat)}</span>
-            ) : (
-              <span className="text-green-600 font-bold">Quitado ✓</span>
-            )}
-          </div>
+          {editingFields ? (
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-0.5">{catAtual.key === "retirada" ? "Valor (R$)" : "Quantidade"}</p>
+                  <Input type="number" value={editQtd} onChange={e => setEditQtd(e.target.value)}
+                    className="h-8 text-xs bg-card" />
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground mb-0.5">{catAtual.key === "retirada" ? "Meses" : "Valor Unit. (R$)"}</p>
+                  <Input type="number" value={editVal} onChange={e => setEditVal(e.target.value)}
+                    className="h-8 text-xs bg-card" />
+                </div>
+              </div>
+              <div className="flex gap-1.5">
+                <Button size="sm" className="h-7 text-[10px] flex-1 bg-primary" onClick={saveFields} disabled={savingFields}>
+                  {savingFields ? <Loader2 size={10} className="animate-spin" /> : "Salvar"}
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => setEditingFields(false)}>Cancelar</Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-between items-center text-[10px]">
+                <span className="text-muted-foreground font-medium">{catAtual.detalhe}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-foreground">Planejado: {fmt(catAtual.planejado)}</span>
+                  {suplenteId && (
+                    <button onClick={startEditFields} className="text-primary hover:text-primary/80 p-0.5">
+                      <Pencil size={10} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <Bar pago={catAtual.pago} total={catAtual.planejado} cor={catAtual.pago >= catAtual.planejado ? "bg-green-500" : "bg-primary"} />
+              <div className="flex justify-between text-[10px]">
+                <span className="text-green-600 dark:text-green-400 font-medium">Pago: {fmt(catAtual.pago)}</span>
+                {faltaCat > 0 ? (
+                  <span className="text-amber-600 dark:text-amber-400 font-bold">Falta: {fmt(faltaCat)}</span>
+                ) : (
+                  <span className="text-green-600 font-bold">Quitado ✓</span>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 
