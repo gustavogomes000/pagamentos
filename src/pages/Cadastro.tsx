@@ -12,6 +12,7 @@ import BuscaTSE from "@/components/BuscaTSE";
 
 interface FormData {
   nome: string;
+  nome_urna: string;
   numero_urna: string;
   bairro: string;
   regiao_atuacao: string;
