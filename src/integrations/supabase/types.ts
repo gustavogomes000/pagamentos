@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       administrativo: {
         Row: {
+          assinatura: string | null
           contrato_ate_mes: number | null
           cpf: string | null
           created_at: string
@@ -27,6 +28,7 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          assinatura?: string | null
           contrato_ate_mes?: number | null
           cpf?: string | null
           created_at?: string
@@ -38,6 +40,7 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          assinatura?: string | null
           contrato_ate_mes?: number | null
           cpf?: string | null
           created_at?: string
@@ -52,6 +55,7 @@ export type Database = {
       }
       liderancas: {
         Row: {
+          assinatura: string | null
           chave_pix: string | null
           cpf: string | null
           created_at: string
@@ -67,6 +71,7 @@ export type Database = {
           whatsapp: string | null
         }
         Insert: {
+          assinatura?: string | null
           chave_pix?: string | null
           cpf?: string | null
           created_at?: string
@@ -82,6 +87,7 @@ export type Database = {
           whatsapp?: string | null
         }
         Update: {
+          assinatura?: string | null
           chave_pix?: string | null
           cpf?: string | null
           created_at?: string
