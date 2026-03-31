@@ -29,7 +29,7 @@ const defaultForm: FormData = {
   cpf: "",
   whatsapp: "",
   valor_contrato: 0,
-  contrato_ate_mes: 10,
+  contrato_ate_mes: 9,
   assinatura: "",
 };
 
