@@ -681,14 +681,15 @@ export default function Dashboard() {
                         <div className="p-3">
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
-                              <p className="font-bold text-foreground text-sm truncate uppercase">{s.nome_urna || s.nome}</p>
+                              <p className="font-bold text-foreground text-sm truncate">{s.nome}</p>
+                              {s.numero_urna && (
+                                <p className="text-[10px] text-muted-foreground truncate">Urna: <span className="font-semibold">{s.numero_urna}</span></p>
+                              )}
                               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                                 {s.partido && <span className="text-[11px] text-muted-foreground font-medium">{s.partido}</span>}
                                 {s.situacao && <span className="text-[11px] font-medium text-primary uppercase">{s.situacao}</span>}
-                                {s.numero_urna && <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">#{s.numero_urna}</span>}
                               </div>
                               {s.regiao_atuacao && <p className="text-[11px] text-muted-foreground flex items-center gap-0.5 mt-0.5"><MapPin size={9} className="text-primary" />{s.regiao_atuacao}</p>}
-                              {s.nome_urna && <p className="text-[10px] text-muted-foreground mt-0.5">{s.nome}</p>}
                             </div>
                             <span className="text-sm font-bold text-primary whitespace-nowrap">{fmt(calcTotaisFinanceiros(s).totalFinal)}</span>
                           </div>
