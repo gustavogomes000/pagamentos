@@ -43,9 +43,12 @@ const queryClient = new QueryClient({
   },
 });
 
-// ─── Limpa cache persistido a cada acesso — sempre dados reais ──────────
+// ─── Limpa todo cache persistido — sempre dados reais ───────────────────
 try {
-  ["rq_cache_v2", "rq_cache_v3"].forEach(k => window.localStorage.removeItem(k));
+  const keysToRemove = Object.keys(window.localStorage).filter(k =>
+    k.startsWith("rq_cache") || k.startsWith("REACT_QUERY") || k.startsWith("tanstack")
+  );
+  keysToRemove.forEach(k => window.localStorage.removeItem(k));
 } catch {}
 
 // ─── Fallback de carregamento leve ──────────────────────────────────────
