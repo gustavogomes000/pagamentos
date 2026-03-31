@@ -592,6 +592,24 @@ export default function Pagamentos() {
     }
   }, [isLoading, totalAtrasados, alertaDismissed]);
 
+  // Notificações PWA para pagamentos atrasados
+  const totalValorPendente = supAtrasados.reduce((a, s) => {
+    const pago = pagsMes.filter(p => p.suplente_id === s.id).reduce((acc, p) => acc + p.valor, 0);
+    return a + Math.max(0, (s.retirada_mensal_valor || 0) - pago);
+  }, 0) + lidAtrasados.reduce((a, l) => {
+    const pago = pagsMes.filter(p => p.lideranca_id === l.id).reduce((acc, p) => acc + p.valor, 0);
+    return a + Math.max(0, (l.retirada_mensal_valor || 0) - pago);
+  }, 0) + admAtrasados.reduce((a, ad) => {
+    const pago = pagsMes.filter(p => p.admin_id === ad.id).reduce((acc, p) => acc + p.valor, 0);
+    return a + Math.max(0, (ad.valor_contrato || 0) - pago);
+  }, 0);
+
+  usePaymentNotifications(
+    !isLoading && totalAtrasados > 0
+      ? { supAtrasados: supAtrasados.length, lidAtrasados: lidAtrasados.length, admAtrasados: admAtrasados.length, mes, totalValorPendente }
+      : null
+  );
+
   // Renderizar conteúdo da aba ativa
   const renderAba = () => {
     if (abaAtiva === "suplentes") {
