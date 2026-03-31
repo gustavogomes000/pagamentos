@@ -42,7 +42,7 @@ const MESES_FULL = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junh
 const MES_INICIO_LID = 2;
 const MES_INICIO_SUP = 3;
 const MES_INICIO_ADM = 3;
-const MES_FIM = 10;
+const MES_FIM = 9;
 
 const COLORS_CAT = {
   suplentes: "hsl(330, 81%, 60%)",

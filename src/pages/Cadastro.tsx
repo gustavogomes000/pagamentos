@@ -51,7 +51,7 @@ const defaultForm: FormData = {
   expectativa_votos: 0,
   base_politica: "",
   retirada_mensal_valor: 0,
-  retirada_mensal_meses: 6,
+  retirada_mensal_meses: 7,
   plotagem_qtd: 0,
   plotagem_valor_unit: 250,
   liderancas_qtd: 0,

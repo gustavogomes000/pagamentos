@@ -29,7 +29,7 @@ const defaultForm: FormData = {
   cpf: "",
   whatsapp: "",
   valor_contrato: 0,
-  contrato_ate_mes: 10,
+  contrato_ate_mes: 9,
   assinatura: "",
 };
 
@@ -61,7 +61,7 @@ export default function CadastroAdmin() {
       cpf: existing.cpf || "",
       whatsapp: existing.whatsapp || "",
       valor_contrato: existing.valor_contrato || 0,
-      contrato_ate_mes: existing.contrato_ate_mes || 10,
+      contrato_ate_mes: existing.contrato_ate_mes || 9,
       assinatura: existing.assinatura || "",
     });
     setInitialized(true);
@@ -162,7 +162,7 @@ export default function CadastroAdmin() {
               <span className="text-base font-bold text-primary">{fmt(form.valor_contrato)}/mês</span>
             </div>
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>Até {MESES[(form.contrato_ate_mes || 10) - 1]} ({form.contrato_ate_mes} meses)</span>
+              <span>Até {MESES[(form.contrato_ate_mes || 9) - 1]} ({form.contrato_ate_mes} meses)</span>
               <span className="font-bold text-foreground">Total: {fmt(totalContrato)}</span>
             </div>
           </div>

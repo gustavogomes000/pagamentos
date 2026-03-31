@@ -36,7 +36,7 @@ const defaultForm: FormData = {
   rede_social: "",
   ligacao_politica: "",
   retirada_mensal_valor: 0,
-  retirada_ate_mes: 10,
+  retirada_ate_mes: 9,
   chave_pix: "",
   assinatura: "",
 };
@@ -72,7 +72,7 @@ export default function CadastroLideranca() {
       rede_social: existing.rede_social || "",
       ligacao_politica: existing.ligacao_politica || "",
       retirada_mensal_valor: existing.retirada_mensal_valor || 0,
-      retirada_ate_mes: existing.retirada_ate_mes || 10,
+      retirada_ate_mes: existing.retirada_ate_mes || 9,
       chave_pix: existing.chave_pix || "",
       assinatura: existing.assinatura || "",
     });
@@ -187,7 +187,7 @@ export default function CadastroLideranca() {
               <span className="text-base font-bold text-primary">{fmt(form.retirada_mensal_valor)}/mês</span>
             </div>
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>Até {MESES[(form.retirada_ate_mes || 10) - 1]} ({form.retirada_ate_mes} meses)</span>
+              <span>Até {MESES[(form.retirada_ate_mes || 9) - 1]} ({form.retirada_ate_mes} meses)</span>
               <span className="font-bold text-foreground">Total: {fmt(totalContrato)}</span>
             </div>
           </div>
