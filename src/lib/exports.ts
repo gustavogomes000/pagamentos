@@ -446,7 +446,7 @@ export function exportExcel(list: any[], filters?: ExportFilters) {
     [],
     ["DADOS DETALHADOS"],
     [
-      "#", "Nome", "Região", "Telefone", "Cargo", "Partido", "Situação",
+      "#", "Nome", "Nome de Urna", "Base Política", "Região", "Telefone", "Cargo", "Partido", "Situação",
       "Votos", "Expectativa", "Retirada (R$)", "Meses", "Retirada Total",
       "Plotagem Qtd", "Plotagem Unit.", "Plotagem Total",
       "Lideranças Qtd", "Lideranças Unit.", "Lideranças Total",
@@ -461,6 +461,8 @@ export function exportExcel(list: any[], filters?: ExportFilters) {
     rows.push([
       i + 1,
       s.nome || "",
+      s.numero_urna || "",
+      s.base_politica || "",
       s.regiao_atuacao || "",
       s.telefone || "",
       s.cargo_disputado || "",
