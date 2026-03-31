@@ -38,7 +38,7 @@ export default function VersionMonitor() {
     navigator.serviceWorker?.addEventListener("controllerchange", handleControllerChange);
 
     // Periodic check every 2 hours
-    const interval = setInterval(checkForUpdates, 2 * 60 * 60 * 1000);
+    const interval = setInterval(checkForUpdates, 30 * 60 * 1000);
 
     return () => {
       window.removeEventListener("online", handleOnline);
