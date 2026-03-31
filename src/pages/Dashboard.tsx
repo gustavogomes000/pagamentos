@@ -372,11 +372,11 @@ export default function Dashboard() {
                   <p className="text-3xl font-bold">{fmt(orcamentoTotal)}</p>
                   <div className="grid grid-cols-3 gap-3 mt-4">
                     <div className="bg-white/15 backdrop-blur rounded-xl px-3 py-2 text-center">
-                      <p className="text-[9px] uppercase tracking-wider text-white/70">Pago</p>
+                      <p className="text-[9px] uppercase tracking-wider text-white/70">Já Pago</p>
                       <p className="text-sm font-bold">{fmt(totalPagoAno)}</p>
                     </div>
                     <div className="bg-white/15 backdrop-blur rounded-xl px-3 py-2 text-center">
-                      <p className="text-[9px] uppercase tracking-wider text-white/70">Restante</p>
+                      <p className="text-[9px] uppercase tracking-wider text-white/70">Falta Pagar</p>
                       <p className="text-sm font-bold">{fmt(saldoRestante)}</p>
                     </div>
                     <div className="bg-white/15 backdrop-blur rounded-xl px-3 py-2 text-center">
@@ -387,45 +387,148 @@ export default function Dashboard() {
                   <MiniBar pago={totalPagoAno} total={orcamentoTotal} cor="bg-white" />
                 </div>
 
-                {/* Quick stats */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-card rounded-2xl border border-border p-3 space-y-1 shadow-sm">
-                    <div className="flex items-center gap-1.5">
-                      <List size={14} className="text-primary" />
-                      <span className="text-[10px] text-muted-foreground">Suplentes</span>
+                {/* ─── RESUMO GERAL — claro e descritivo ───────────── */}
+                <div className="bg-card rounded-2xl border border-border p-4 shadow-sm space-y-4">
+                  <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Resumo Geral</h2>
+
+                  {/* Números da Eleição */}
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">📊 Números da Eleição</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-muted/50 rounded-xl p-3">
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Votos recebidos em 2024</p>
+                        <p className="text-xl font-bold text-foreground">{fmtN(totalVotos)}</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-xl p-3">
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Expectativa de votos 2026</p>
+                        <p className="text-xl font-bold text-foreground">{fmtN(totalExpectativa)}</p>
+                      </div>
                     </div>
-                    <p className="text-xl font-bold text-foreground">{supList.length}</p>
                   </div>
-                  <div className="bg-card rounded-2xl border border-border p-3 space-y-1 shadow-sm">
-                    <div className="flex items-center gap-1.5">
-                      <Users size={14} className="text-primary" />
-                      <span className="text-[10px] text-muted-foreground">Lideranças</span>
+
+                  {/* Equipe */}
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">👥 Equipe de Campo e Apoio</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-muted/50 rounded-xl p-3">
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Suplentes cadastrados</p>
+                        <p className="text-xl font-bold text-foreground">{supList.length}</p>
+                        <p className="text-[9px] text-muted-foreground">Candidatos que a operação apoia</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-xl p-3">
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Lideranças contratadas</p>
+                        <p className="text-xl font-bold text-foreground">{lidList.length}</p>
+                        <p className="text-[9px] text-muted-foreground">Cabos eleitorais e líderes de bairro</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-xl p-3">
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Equipe administrativa</p>
+                        <p className="text-xl font-bold text-foreground">{admList.length}</p>
+                        <p className="text-[9px] text-muted-foreground">Funcionários e prestadores</p>
+                      </div>
+                      <div className="bg-muted/50 rounded-xl p-3">
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Pessoas de campo (total)</p>
+                        <p className="text-xl font-bold text-foreground">{fmtN(totalPessoas)}</p>
+                        <p className="text-[9px] text-muted-foreground">{fmtN(totalLiderancasQtd)} líderes + {fmtN(totalFiscais)} fiscais</p>
+                      </div>
                     </div>
-                    <p className="text-xl font-bold text-foreground">{lidList.length}</p>
                   </div>
-                  <div className="bg-card rounded-2xl border border-border p-3 space-y-1 shadow-sm">
-                    <div className="flex items-center gap-1.5">
-                      <Briefcase size={14} className="text-primary" />
-                      <span className="text-[10px] text-muted-foreground">Admin</span>
+
+                  {/* Plotagem */}
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">🖼️ Material de Campanha</p>
+                    <div className="bg-muted/50 rounded-xl p-3 flex items-center justify-between">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Plotagens contratadas</p>
+                        <p className="text-lg font-bold text-foreground">{fmtN(totalPlotagem)} unidades</p>
+                        <p className="text-[9px] text-muted-foreground">Banners, adesivos e material gráfico</p>
+                      </div>
+                      <p className="text-sm font-bold text-primary">{fmt(totalPlotagemVal)}</p>
                     </div>
-                    <p className="text-xl font-bold text-foreground">{admList.length}</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-card rounded-2xl border border-border p-3 space-y-1 shadow-sm">
-                    <div className="flex items-center gap-1.5">
-                      <Vote size={14} className="text-primary" />
-                      <span className="text-[10px] text-muted-foreground">Votos (2024)</span>
+                {/* ─── CUSTOS DETALHADOS ───────────────────── */}
+                <div className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
+                  <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">💰 De Onde Vem Cada Gasto</h2>
+
+                  {/* Suplentes */}
+                  <div className="space-y-2 bg-muted/30 rounded-xl p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-foreground">Suplentes (custo de campanha)</p>
+                        <p className="text-[10px] text-muted-foreground">Tudo que é gasto com cada suplente: salários, pessoas, material</p>
+                      </div>
+                      <p className="text-sm font-bold text-primary shrink-0">{fmt(totalCampanhaSup)}</p>
                     </div>
-                    <p className="text-xl font-bold text-foreground">{fmtN(totalVotos)}</p>
+                    <MiniBar pago={totalCampanhaSup} total={orcamentoTotal} cor="bg-primary" />
+                    <div className="space-y-1 pl-2 border-l-2 border-primary/20">
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-muted-foreground">Retirada mensal dos suplentes</span>
+                        <span className="font-medium text-foreground">{fmt(totalRetiradaSup)}</span>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-muted-foreground">Líderes de campo ({fmtN(totalLiderancasQtd)} pessoas)</span>
+                        <span className="font-medium text-foreground">{fmt(totalLiderancasVal)}</span>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-muted-foreground">Fiscais de urna ({fmtN(totalFiscais)} pessoas)</span>
+                        <span className="font-medium text-foreground">{fmt(totalFiscaisVal)}</span>
+                      </div>
+                      <div className="flex justify-between text-[11px]">
+                        <span className="text-muted-foreground">Plotagem / Material ({fmtN(totalPlotagem)} un.)</span>
+                        <span className="font-medium text-foreground">{fmt(totalPlotagemVal)}</span>
+                      </div>
+                      <div className="flex justify-between text-[11px] pt-1 border-t border-border/30">
+                        <span className="text-muted-foreground italic">Retirada mensal somada (todos sup.)</span>
+                        <span className="font-bold text-foreground">{fmt(totalRetiradaMensalSup)}/mês</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="bg-card rounded-2xl border border-border p-3 space-y-1 shadow-sm">
-                    <div className="flex items-center gap-1.5">
-                      <TrendingUp size={14} className="text-primary" />
-                      <span className="text-[10px] text-muted-foreground">Expectativa</span>
+
+                  {/* Lideranças */}
+                  <div className="space-y-2 bg-muted/30 rounded-xl p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-foreground">Lideranças (mensal)</p>
+                        <p className="text-[10px] text-muted-foreground">Cabos eleitorais e líderes de bairro — pagos todo mês</p>
+                      </div>
+                      <p className="text-sm font-bold text-primary shrink-0">{fmt(totalLidMensal)}/mês</p>
                     </div>
-                    <p className="text-xl font-bold text-foreground">{fmtN(totalExpectativa)}</p>
+                    <MiniBar pago={totalLidMensal * (MES_FIM - MES_INICIO_LID + 1)} total={orcamentoTotal} cor="bg-primary" />
+                    <div className="space-y-0.5 pl-2 border-l-2 border-primary/20">
+                      {lidList.map(l => (
+                        <div key={l.id} className="flex justify-between text-[11px]">
+                          <span className="text-muted-foreground truncate mr-2">{l.nome} {l.regiao ? `(${l.regiao})` : ""}</span>
+                          <span className="font-medium text-foreground shrink-0">{fmt(l.retirada_mensal_valor || 0)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Admin */}
+                  <div className="space-y-2 bg-muted/30 rounded-xl p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-bold text-foreground">Administrativo (mensal)</p>
+                        <p className="text-[10px] text-muted-foreground">Funcionários e prestadores de serviço</p>
+                      </div>
+                      <p className="text-sm font-bold text-primary shrink-0">{fmt(totalAdmMensal)}/mês</p>
+                    </div>
+                    <MiniBar pago={totalAdmMensal * (MES_FIM - MES_INICIO_ADM + 1)} total={orcamentoTotal} cor="bg-primary" />
+                    <div className="space-y-0.5 pl-2 border-l-2 border-primary/20">
+                      {admList.map(a => (
+                        <div key={a.id} className="flex justify-between text-[11px]">
+                          <span className="text-muted-foreground truncate mr-2">{a.nome}</span>
+                          <span className="font-medium text-foreground shrink-0">{fmt(a.valor_contrato || 0)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-border" />
+                  <div className="flex justify-between items-center pt-1">
+                    <span className="text-sm font-bold text-foreground">TOTAL GERAL DA OPERAÇÃO</span>
+                    <span className="text-lg font-bold text-primary">{fmt(orcamentoTotal)}</span>
                   </div>
                 </div>
 
@@ -433,7 +536,7 @@ export default function Dashboard() {
                 {pieData.length > 0 && (
                   <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
                     <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5 mb-3">
-                      <PieChartIcon size={14} /> Distribuição por Categoria
+                      <PieChartIcon size={14} /> Onde vai o dinheiro (%)
                     </h2>
                     <ResponsiveContainer width="100%" height={200}>
                       <PieChart>
@@ -454,78 +557,6 @@ export default function Dashboard() {
                     </div>
                   </div>
                 )}
-
-                {/* Composição detalhada */}
-                <div className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
-                  <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Composição do Orçamento</h2>
-
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-primary bg-primary/10 flex items-center gap-1"><List size={9} />Suplentes (Campanha)</span>
-                      <span className="text-xs font-bold text-foreground ml-auto">{fmt(totalCampanhaSup)}</span>
-                    </div>
-                    <MiniBar pago={totalCampanhaSup} total={orcamentoTotal} cor="bg-primary" />
-                    <div className="pl-3 space-y-0.5">
-                      <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Retirada ({supList.length} sup.)</span><span className="font-medium text-foreground">{fmt(totalRetiradaSup)}</span></div>
-                      <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Lideranças ({fmtN(totalLiderancasQtd)} pess.)</span><span className="font-medium text-foreground">{fmt(totalLiderancasVal)}</span></div>
-                      <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Fiscais ({fmtN(totalFiscais)} pess.)</span><span className="font-medium text-foreground">{fmt(totalFiscaisVal)}</span></div>
-                      <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Plotagem ({fmtN(totalPlotagem)} un.)</span><span className="font-medium text-foreground">{fmt(totalPlotagemVal)}</span></div>
-                      <div className="flex justify-between text-[11px] pt-0.5 border-t border-border/30"><span className="text-muted-foreground font-medium">Retirada mensal (todos)</span><span className="font-bold text-foreground">{fmt(totalRetiradaMensalSup)}/mês</span></div>
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-border" />
-
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-primary bg-primary/10 flex items-center gap-1"><Users size={9} />Lideranças</span>
-                      <span className="text-xs font-bold text-foreground ml-auto">{fmt(totalLidMensal)}/mês</span>
-                    </div>
-                    <MiniBar pago={totalLidMensal * (MES_FIM - MES_INICIO_LID + 1)} total={orcamentoTotal} cor="bg-primary" />
-                    <div className="pl-3 space-y-0.5">
-                      {lidList.map(l => (
-                        <div key={l.id} className="flex justify-between text-[11px]">
-                          <span className="text-muted-foreground truncate mr-2">{l.nome} {l.regiao ? `(${l.regiao})` : ""}</span>
-                          <span className="font-medium text-foreground shrink-0">{fmt(l.retirada_mensal_valor || 0)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-border" />
-
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-primary bg-primary/10 flex items-center gap-1"><Briefcase size={9} />Administrativo</span>
-                      <span className="text-xs font-bold text-foreground ml-auto">{fmt(totalAdmMensal)}/mês</span>
-                    </div>
-                    <MiniBar pago={totalAdmMensal * (MES_FIM - MES_INICIO_ADM + 1)} total={orcamentoTotal} cor="bg-primary" />
-                    <div className="pl-3 space-y-0.5">
-                      {admList.map(a => (
-                        <div key={a.id} className="flex justify-between text-[11px]">
-                          <span className="text-muted-foreground truncate mr-2">{a.nome}</span>
-                          <span className="font-medium text-foreground shrink-0">{fmt(a.valor_contrato || 0)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="h-px bg-border" />
-                  <div className="flex justify-between items-center pt-2">
-                    <span className="text-sm font-bold text-foreground">ORÇAMENTO TOTAL</span>
-                    <span className="text-lg font-bold text-primary">{fmt(orcamentoTotal)}</span>
-                  </div>
-                </div>
-
-                {/* Pessoas de campo */}
-                <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Pessoas de Campo</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="text-center bg-muted/50 rounded-lg py-1.5"><p className="text-[9px] text-muted-foreground uppercase">Líderes</p><p className="text-sm font-bold text-foreground">{fmtN(totalLiderancasQtd)}</p></div>
-                    <div className="text-center bg-muted/50 rounded-lg py-1.5"><p className="text-[9px] text-muted-foreground uppercase">Fiscais</p><p className="text-sm font-bold text-foreground">{fmtN(totalFiscais)}</p></div>
-                    <div className="text-center bg-muted/50 rounded-lg py-1.5"><p className="text-[9px] text-muted-foreground uppercase">Total</p><p className="text-sm font-bold text-foreground">{fmtN(totalPessoas)}</p></div>
-                  </div>
-                </div>
               </div>
             )}
 
