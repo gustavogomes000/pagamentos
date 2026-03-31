@@ -136,7 +136,7 @@ const App = () => {
           </Suspense>
         </BrowserRouter>
       </TooltipProvider>
-    </PersistQueryClientProvider>
+    </QueryClientProvider>
   );
 };
 
