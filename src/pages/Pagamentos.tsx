@@ -398,8 +398,6 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
     qc.invalidateQueries({ queryKey: ["pagamentos"] });
   };
 
-  const subtitle = [s.bairro || s.regiao_atuacao, s.partido].filter(Boolean).join(" · ");
-
   return (
     <div className={`bg-card rounded-2xl border shadow-sm overflow-hidden ${pago ? "border-green-500/20" : "border-amber-500/30"}`}>
       <div className="p-3">
@@ -409,9 +407,9 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
             <p className="text-[11px] text-muted-foreground truncate">{s.nome}</p>
             <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {s.partido && <span className="text-[10px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">{s.partido}</span>}
-              {subtitle && <span className="text-[11px] text-muted-foreground">{subtitle}</span>}
+              {(s.bairro || s.regiao_atuacao) && <span className="text-[11px] text-muted-foreground">📍 {s.bairro || s.regiao_atuacao}</span>}
             </div>
-            {s.base_politica && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">📍 {s.base_politica}</p>}
+            {s.base_politica && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">🏛 {s.base_politica}</p>}
           </div>
           <div className="text-right shrink-0">
             {pago ? (
