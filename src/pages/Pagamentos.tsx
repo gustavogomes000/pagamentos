@@ -77,7 +77,7 @@ const CAT_FIELDS: Record<string, { qtdField: string; valField: string } | { valF
 
 function PayForm({ pessoaNome, categorias, onSave, onCancel, saving, suplenteId, onFieldsUpdated }: {
   pessoaNome: string;
-  categorias: { key: string; label: string; planejado: number; pago: number; detalhe: string; qtd: number; valorUnit: number }[];
+  categorias: { key: string; label: string; planejado: number; pago: number; detalhe: string; qtd: number; valorUnit: number; faltaMes?: number }[];
   onSave: (valor: number, obs: string, cat: string) => Promise<void>;
   onCancel: () => void; saving: boolean;
   suplenteId?: string;
@@ -85,7 +85,10 @@ function PayForm({ pessoaNome, categorias, onSave, onCancel, saving, suplenteId,
 }) {
   const [cat, setCat] = useState(categorias[0]?.key || "retirada");
   const catAtual = categorias.find(c => c.key === cat) || categorias[0];
-  const faltaCat = catAtual ? Math.max(0, catAtual.planejado - catAtual.pago) : 0;
+  // Para retirada, usar faltaMes (só o mês) em vez de falta total
+  const faltaCat = catAtual
+    ? (catAtual.faltaMes != null ? catAtual.faltaMes : Math.max(0, catAtual.planejado - catAtual.pago))
+    : 0;
   const [valor, setValor] = useState(faltaCat > 0 ? String(faltaCat) : "");
   const [obs, setObs] = useState("");
   const valorNum = parseFloat(valor.replace(",", ".")) || 0;
@@ -100,7 +103,7 @@ function PayForm({ pessoaNome, categorias, onSave, onCancel, saving, suplenteId,
     setCat(newCat);
     const c = categorias.find(x => x.key === newCat);
     if (c) {
-      const f = Math.max(0, c.planejado - c.pago);
+      const f = c.faltaMes != null ? c.faltaMes : Math.max(0, c.planejado - c.pago);
       setValor(f > 0 ? String(f) : "");
     }
   };
