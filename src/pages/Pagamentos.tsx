@@ -456,8 +456,7 @@ function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes,
         <div className="p-3 border-t border-border/30">
           <PayForm
             pessoaNome={nome}
-            valorSugerido={faltando}
-            categorias={[{ key: catPadrao, label: tipo === "lideranca" ? "Retirada" : "Salário" }]}
+            categorias={[{ key: catPadrao, label: tipo === "lideranca" ? "Retirada" : "Salário", planejado: valorEsperado, pago: totalPago, detalhe: `${fmt(valorEsperado)}/mês` }]}
             onSave={(v, o) => handleSave(v, o)}
             onCancel={() => setPaying(false)}
             saving={saving}
