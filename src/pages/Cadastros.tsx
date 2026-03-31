@@ -199,15 +199,13 @@ export default function Cadastros() {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          {s.numero_urna ? (
-                            <p className="font-black text-foreground text-sm uppercase truncate">{s.nome}</p>
-                          ) : (
-                            <p className="font-bold text-foreground text-sm truncate">{s.nome}</p>
+                          <p className="font-bold text-foreground text-sm truncate">{s.nome}</p>
+                          {s.numero_urna && (
+                            <p className="text-[10px] text-muted-foreground truncate">Urna: <span className="font-semibold">{s.numero_urna}</span></p>
                           )}
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                             {s.partido && <span className="text-[10px] font-semibold bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">{s.partido}</span>}
                             {s.situacao && <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{s.situacao}</span>}
-                            {s.numero_urna && <span className="text-[10px] font-mono bg-muted text-foreground px-1.5 py-0.5 rounded-md">Nº {s.numero_urna}</span>}
                           </div>
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                             {s.regiao_atuacao && (
@@ -216,9 +214,6 @@ export default function Cadastros() {
                               </span>
                             )}
                           </div>
-                          {s.numero_urna && (
-                            <p className="text-[10px] text-muted-foreground mt-0.5">{s.nome}</p>
-                          )}
                         </div>
                         <p className="text-sm font-bold text-primary whitespace-nowrap">{fmt(calcTotaisFinanceiros(s).totalFinal)}</p>
                       </div>
