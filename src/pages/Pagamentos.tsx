@@ -816,7 +816,11 @@ export default function Pagamentos() {
               </DialogTitle>
               <DialogDescription className="text-left">
                 <span className="block mt-2 text-sm text-foreground font-medium">
-                  O prazo de pagamento (dia {DEADLINE_DAY}) já passou e ainda há <strong>{totalAtrasados}</strong> pessoa{totalAtrasados > 1 ? "s" : ""} com retirada/salário pendente em {MESES[mes - 1]}:
+                  O prazo de pagamento já passou e ainda há <strong>{totalAtrasados}</strong> pessoa{totalAtrasados > 1 ? "s" : ""} com pagamento pendente em {MESES[mes - 1]}:
+                </span>
+                <span className="block mt-1 text-[11px] text-muted-foreground">
+                  Retiradas: até o último dia do mês · Salários: até dia 10 do mês seguinte
+                </span>
                 </span>
                 <div className="mt-3 space-y-2 max-h-60 overflow-y-auto">
                   {supAtrasados.length > 0 && (
