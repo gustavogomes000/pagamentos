@@ -38,7 +38,7 @@ type Suplente = {
   plotagem_qtd: number; plotagem_valor_unit: number;
   liderancas_qtd: number; liderancas_valor_unit: number;
   fiscais_qtd: number; fiscais_valor_unit: number; total_campanha: number;
-  numero_urna: string | null;
+  numero_urna: string | null; base_politica: string | null;
 };
 
 type Lideranca = {
