@@ -67,17 +67,27 @@ function Bar({ pago, total, cor = "bg-primary", height = "h-1.5" }: { pago: numb
 }
 
 // ─── Formulário de pagamento ─────────────────────────────────────────────────
-function PayForm({ pessoaNome, valorSugerido, categorias, onSave, onCancel, saving }: {
+function PayForm({ pessoaNome, categorias, onSave, onCancel, saving }: {
   pessoaNome: string;
-  valorSugerido: number;
-  categorias: { key: string; label: string }[];
+  categorias: { key: string; label: string; planejado: number; pago: number; detalhe: string }[];
   onSave: (valor: number, obs: string, cat: string) => Promise<void>;
   onCancel: () => void; saving: boolean;
 }) {
-  const [valor, setValor] = useState(valorSugerido > 0 ? String(valorSugerido) : "");
-  const [obs, setObs] = useState("");
   const [cat, setCat] = useState(categorias[0]?.key || "retirada");
+  const catAtual = categorias.find(c => c.key === cat) || categorias[0];
+  const faltaCat = catAtual ? Math.max(0, catAtual.planejado - catAtual.pago) : 0;
+  const [valor, setValor] = useState(faltaCat > 0 ? String(faltaCat) : "");
+  const [obs, setObs] = useState("");
   const valorNum = parseFloat(valor.replace(",", ".")) || 0;
+
+  const handleCatChange = (newCat: string) => {
+    setCat(newCat);
+    const c = categorias.find(x => x.key === newCat);
+    if (c) {
+      const f = Math.max(0, c.planejado - c.pago);
+      setValor(f > 0 ? String(f) : "");
+    }
+  };
 
   return (
     <div className="bg-card rounded-2xl border border-primary/30 p-4 space-y-3 shadow-sm">
@@ -94,11 +104,30 @@ function PayForm({ pessoaNome, valorSugerido, categorias, onSave, onCancel, savi
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Categoria</p>
           <div className="flex gap-1.5 flex-wrap">
             {categorias.map(c => (
-              <button key={c.key} onClick={() => setCat(c.key)}
+              <button key={c.key} onClick={() => handleCatChange(c.key)}
                 className={`text-xs font-semibold px-3 py-1.5 rounded-xl transition-all ${cat === c.key ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
                 {c.label}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Detalhes da categoria selecionada */}
+      {catAtual && (
+        <div className="bg-muted/30 rounded-xl p-2.5 space-y-1">
+          <div className="flex justify-between text-[10px]">
+            <span className="text-muted-foreground font-medium">{catAtual.detalhe}</span>
+            <span className="font-bold text-foreground">Planejado: {fmt(catAtual.planejado)}</span>
+          </div>
+          <Bar pago={catAtual.pago} total={catAtual.planejado} cor={catAtual.pago >= catAtual.planejado ? "bg-green-500" : "bg-primary"} />
+          <div className="flex justify-between text-[10px]">
+            <span className="text-green-600 dark:text-green-400 font-medium">Pago: {fmt(catAtual.pago)}</span>
+            {faltaCat > 0 ? (
+              <span className="text-amber-600 dark:text-amber-400 font-bold">Falta: {fmt(faltaCat)}</span>
+            ) : (
+              <span className="text-green-600 font-bold">Quitado ✓</span>
+            )}
           </div>
         </div>
       )}
@@ -118,10 +147,10 @@ function PayForm({ pessoaNome, valorSugerido, categorias, onSave, onCancel, savi
         </div>
       </div>
 
-      {valorSugerido > 0 && valorNum > 0 && valorNum < valorSugerido && (
+      {faltaCat > 0 && valorNum > 0 && valorNum < faltaCat && (
         <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded-lg px-2.5 py-1.5">
           <AlertCircle size={11} className="text-amber-500 shrink-0" />
-          <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">Parcial — faltará {fmt(valorSugerido - valorNum)}</span>
+          <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium">Parcial — faltará {fmt(faltaCat - valorNum)}</span>
         </div>
       )}
 
