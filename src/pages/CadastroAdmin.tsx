@@ -61,7 +61,7 @@ export default function CadastroAdmin() {
       cpf: existing.cpf || "",
       whatsapp: existing.whatsapp || "",
       valor_contrato: existing.valor_contrato || 0,
-      contrato_ate_mes: existing.contrato_ate_mes || 10,
+      contrato_ate_mes: existing.contrato_ate_mes || 9,
       assinatura: existing.assinatura || "",
     });
     setInitialized(true);
