@@ -680,6 +680,7 @@ export default function Dashboard() {
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
                               <p className="font-semibold text-foreground text-sm truncate">{s.nome}</p>
+                              {s.nome_urna && <p className="text-[11px] text-muted-foreground font-medium">Nome de urna: {s.nome_urna}</p>}
                               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                                 {s.numero_urna && <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">#{s.numero_urna}</span>}
                                 {s.regiao_atuacao && <span className="text-[11px] text-muted-foreground flex items-center gap-0.5"><MapPin size={9} className="text-primary" />{s.regiao_atuacao}</span>}
