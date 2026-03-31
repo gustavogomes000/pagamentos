@@ -197,17 +197,22 @@ export default function Cadastro({ initial, onSaved }: Props) {
         <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Dados do Suplente</h2>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Nome" required>
+          <Field label="Nome Completo" required>
             <Input value={form.nome} onChange={(e) => set("nome", e.target.value)} placeholder="Nome completo" className="bg-card shadow-sm border-border" />
           </Field>
-          <Field label="Nº de Urna">
-            <Input value={form.numero_urna} onChange={(e) => set("numero_urna", e.target.value)} placeholder="Ex: 12345" className="bg-card shadow-sm border-border" inputMode="numeric" />
+          <Field label="Nome de Urna">
+            <Input value={form.nome_urna} onChange={(e) => set("nome_urna", e.target.value)} placeholder="Ex: FERNANDINHA" className="bg-card shadow-sm border-border" />
           </Field>
         </div>
 
-        <Field label="Setor">
-          <Input value={form.regiao_atuacao} onChange={(e) => set("regiao_atuacao", e.target.value)} placeholder="Ex: Goiânia, Setor 1, Garavelo..." className="bg-card shadow-sm border-border" />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Nº de Urna">
+            <Input value={form.numero_urna} onChange={(e) => set("numero_urna", e.target.value)} placeholder="Ex: 12345" className="bg-card shadow-sm border-border" inputMode="numeric" />
+          </Field>
+          <Field label="Setor">
+            <Input value={form.regiao_atuacao} onChange={(e) => set("regiao_atuacao", e.target.value)} placeholder="Ex: Goiânia" className="bg-card shadow-sm border-border" />
+          </Field>
+        </div>
 
         <Field label="Telefone">
           <Input value={form.telefone} onChange={(e) => set("telefone", e.target.value)} placeholder="(62) 99999-9999" className="bg-card shadow-sm border-border" />
