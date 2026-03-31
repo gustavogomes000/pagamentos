@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,12 @@ import {
   ChevronDown, ChevronUp, Trash2, X, Loader2, Wallet,
   ChevronLeft, ChevronRight, Save, Search,
   CheckCircle2, AlertCircle, Users, Briefcase, List, Pencil,
-  DollarSign, Receipt,
+  DollarSign, Receipt, Bell,
 } from "lucide-react";
 import { calcTotaisFinanceiros } from "@/lib/finance";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
   "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
