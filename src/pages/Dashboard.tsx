@@ -643,6 +643,26 @@ export default function Dashboard() {
             {/* ═══════════════════════════════════════════════ */}
             {activeView === "detalhes" && (
               <div className="space-y-4">
+                {/* Resumo Geral — PRIMEIRO */}
+                <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl border border-primary/20 p-4 space-y-2">
+                  <p className="text-xs font-semibold text-primary uppercase tracking-wider">Resumo Geral</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="text-center"><p className="text-[10px] text-muted-foreground uppercase">Votos</p><p className="text-sm font-bold text-foreground">{fmtN(totalVotos)}</p></div>
+                    <div className="text-center"><p className="text-[10px] text-muted-foreground uppercase">Expectativa</p><p className="text-sm font-bold text-foreground">{fmtN(totalExpectativa)}</p></div>
+                    <div className="text-center"><p className="text-[10px] text-muted-foreground uppercase">Pessoas</p><p className="text-sm font-bold text-foreground">{fmtN(totalPessoas)}</p></div>
+                    <div className="text-center"><p className="text-[10px] text-muted-foreground uppercase">Plotagem</p><p className="text-sm font-bold text-foreground">{fmtN(totalPlotagem)}</p></div>
+                  </div>
+                  <div className="space-y-1 pt-1 border-t border-primary/20">
+                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Suplentes (campanha)</span><span className="font-bold text-foreground">{fmt(totalCampanhaSup)}</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Lideranças (mensal)</span><span className="font-bold text-foreground">{fmt(totalLidMensal)}</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Administrativo (mensal)</span><span className="font-bold text-foreground">{fmt(totalAdmMensal)}</span></div>
+                  </div>
+                  <div className="flex justify-between items-center pt-2 border-t border-primary/20">
+                    <span className="text-sm font-bold text-foreground">ORÇAMENTO TOTAL</span>
+                    <span className="text-lg font-bold text-primary">{fmt(orcamentoTotal)}</span>
+                  </div>
+                </div>
+
                 {/* Suplentes */}
                 <div className="space-y-3">
                   <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
@@ -662,7 +682,7 @@ export default function Dashboard() {
                               <p className="font-semibold text-foreground text-sm truncate">{s.nome}</p>
                               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                                 {s.numero_urna && <span className="text-[10px] font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded-md">#{s.numero_urna}</span>}
-                                {s.bairro && <span className="text-[11px] text-muted-foreground flex items-center gap-0.5"><MapPin size={9} className="text-primary" />{s.bairro}</span>}
+                                {s.regiao_atuacao && <span className="text-[11px] text-muted-foreground flex items-center gap-0.5"><MapPin size={9} className="text-primary" />{s.regiao_atuacao}</span>}
                                 {s.partido && <span className="text-[10px] text-muted-foreground">{s.partido}</span>}
                                 {s.situacao && <span className="text-[10px] font-medium text-primary uppercase">{s.situacao}</span>}
                               </div>
@@ -672,13 +692,13 @@ export default function Dashboard() {
                         </div>
                         <div className="grid grid-cols-3 border-t border-border divide-x divide-border bg-muted/40">
                           <div className="py-2 px-1 text-center"><p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Votos</p><p className="text-sm font-bold text-foreground">{fmtN(s.total_votos || 0)}</p></div>
-                          <div className="py-2 px-1 text-center"><p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Expect.</p><p className="text-sm font-bold text-foreground">{fmtN(s.expectativa_votos || 0)}</p></div>
+                          <div className="py-2 px-1 text-center"><p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Expectativa</p><p className="text-sm font-bold text-foreground">{fmtN(s.expectativa_votos || 0)}</p></div>
                           <div className="py-2 px-1 text-center"><p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Pessoas</p><p className="text-sm font-bold text-foreground">{fmtN(pessoas)}</p></div>
                         </div>
                         <div className="grid grid-cols-4 border-t border-border divide-x divide-border bg-muted/40">
-                          <div className="py-2 px-1 text-center"><p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Líder.</p><p className="text-sm font-bold text-foreground">{fmtN(liderancas)}</p><p className="text-[9px] text-muted-foreground">{fmt(liderancas * (s.liderancas_valor_unit || 0))}</p></div>
+                          <div className="py-2 px-1 text-center"><p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Lideranças</p><p className="text-sm font-bold text-foreground">{fmtN(liderancas)}</p><p className="text-[9px] text-muted-foreground">{fmt(liderancas * (s.liderancas_valor_unit || 0))}</p></div>
                           <div className="py-2 px-1 text-center"><p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Fiscais</p><p className="text-sm font-bold text-foreground">{fmtN(fiscais)}</p><p className="text-[9px] text-muted-foreground">{fmt(fiscais * (s.fiscais_valor_unit || 0))}</p></div>
-                          <div className="py-2 px-1 text-center"><p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Plotag.</p><p className="text-sm font-bold text-foreground">{fmtN(plotagem)}</p><p className="text-[9px] text-muted-foreground">{fmt(plotagem * (s.plotagem_valor_unit || 0))}</p></div>
+                          <div className="py-2 px-1 text-center"><p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Plotagem</p><p className="text-sm font-bold text-foreground">{fmtN(plotagem)}</p><p className="text-[9px] text-muted-foreground">{fmt(plotagem * (s.plotagem_valor_unit || 0))}</p></div>
                           <div className="py-2 px-1 text-center"><p className="text-[9px] uppercase tracking-wider text-muted-foreground font-medium">Retirada</p><p className="text-xs font-bold text-foreground">{fmt(retirada)}</p><p className="text-[9px] text-muted-foreground">{s.retirada_mensal_meses || 0}× {fmt(s.retirada_mensal_valor || 0)}</p></div>
                         </div>
                       </div>
@@ -745,26 +765,6 @@ export default function Dashboard() {
                     )}
                   </div>
                 )}
-
-                {/* Resumo final */}
-                <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl border border-primary/20 p-4 space-y-2">
-                  <p className="text-xs font-semibold text-primary uppercase tracking-wider">Resumo Geral</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    <div className="text-center"><p className="text-[10px] text-muted-foreground uppercase">Votos</p><p className="text-sm font-bold text-foreground">{fmtN(totalVotos)}</p></div>
-                    <div className="text-center"><p className="text-[10px] text-muted-foreground uppercase">Expect.</p><p className="text-sm font-bold text-foreground">{fmtN(totalExpectativa)}</p></div>
-                    <div className="text-center"><p className="text-[10px] text-muted-foreground uppercase">Pessoas</p><p className="text-sm font-bold text-foreground">{fmtN(totalPessoas)}</p></div>
-                    <div className="text-center"><p className="text-[10px] text-muted-foreground uppercase">Plotag.</p><p className="text-sm font-bold text-foreground">{fmtN(totalPlotagem)}</p></div>
-                  </div>
-                  <div className="space-y-1 pt-1 border-t border-primary/20">
-                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Suplentes (campanha)</span><span className="font-bold text-foreground">{fmt(totalCampanhaSup)}</span></div>
-                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Lideranças (mensal)</span><span className="font-bold text-foreground">{fmt(totalLidMensal)}</span></div>
-                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Administrativo (mensal)</span><span className="font-bold text-foreground">{fmt(totalAdmMensal)}</span></div>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-primary/20">
-                    <span className="text-sm font-bold text-foreground">ORÇAMENTO TOTAL</span>
-                    <span className="text-lg font-bold text-primary">{fmt(orcamentoTotal)}</span>
-                  </div>
-                </div>
               </div>
             )}
           </>
