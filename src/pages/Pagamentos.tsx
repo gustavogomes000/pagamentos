@@ -680,7 +680,8 @@ export default function Pagamentos() {
       if (error) throw error;
       return data as unknown as Pagamento[];
     },
-    staleTime: 300000,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const isLoading = loadS || loadL || loadA || loadP;
