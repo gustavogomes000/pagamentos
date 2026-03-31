@@ -1,7 +1,5 @@
 import { useState, useCallback, lazy, Suspense } from "react";
-import { QueryClient } from "@tanstack/react-query";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -29,7 +27,7 @@ const queryClient = new QueryClient({
     queries: {
       networkMode: "offlineFirst",
       staleTime: 0,
-      gcTime: 1000 * 60 * 60 * 24,
+      gcTime: 1000 * 60 * 5,
       refetchOnMount: "always",
       refetchOnReconnect: true,
       refetchOnWindowFocus: true,
@@ -45,21 +43,10 @@ const queryClient = new QueryClient({
   },
 });
 
-// ─── Limpa cache antigo com dados inconsistentes ────────────────────────
-const CACHE_VERSION = "rq_cache_v3";
+// ─── Limpa cache persistido a cada acesso — sempre dados reais ──────────
 try {
-  const oldKey = "rq_cache_v2";
-  if (window.localStorage.getItem(oldKey)) {
-    window.localStorage.removeItem(oldKey);
-  }
+  ["rq_cache_v2", "rq_cache_v3"].forEach(k => window.localStorage.removeItem(k));
 } catch {}
-
-// ─── Persiste o cache do React Query no localStorage ────────────────────
-const persister = createSyncStoragePersister({
-  storage: window.localStorage,
-  key: CACHE_VERSION,
-  throttleTime: 1000,
-});
 
 // ─── Fallback de carregamento leve ──────────────────────────────────────
 function PageFallback() {
@@ -118,18 +105,7 @@ const App = () => {
   const handleSplashFinish = useCallback(() => setShowSplash(false), []);
 
   return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{
-        persister,
-        buster: "rq_cache_v2_real_data",
-        maxAge: 1000 * 60 * 60 * 24,
-        dehydrateOptions: {
-          shouldDehydrateQuery: (query) =>
-            query.state.status === "success",
-        },
-      }}
-    >
+    <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <GlobalOfflineSync />
         <InstallPWA />
@@ -159,7 +135,7 @@ const App = () => {
           </Suspense>
         </BrowserRouter>
       </TooltipProvider>
-    </PersistQueryClientProvider>
+    </QueryClientProvider>
   );
 };
 
