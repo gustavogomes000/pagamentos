@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Users, DollarSign, Vote, TrendingUp, MapPin, ChevronDown, ChevronUp, FileDown, FileSpreadsheet, Search, Briefcase, List, Wallet } from "lucide-react";
+import { Users, DollarSign, Vote, TrendingUp, MapPin, ChevronDown, ChevronUp, FileDown, FileSpreadsheet, Search, Briefcase, List, Wallet, Filter, X } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,10 @@ export default function Dashboard() {
   const [expandedLid, setExpandedLid] = useState(false);
   const [expandedAdm, setExpandedAdm] = useState(false);
   const [search, setSearch] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filtroRegiao, setFiltroRegiao] = useState<string>("");
+  const [filtroPartido, setFiltroPartido] = useState<string>("");
+  const [filtroSituacao, setFiltroSituacao] = useState<string>("");
 
   const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes"],
@@ -69,22 +73,54 @@ export default function Dashboard() {
   const normalizeStr = (str: string) =>
     str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
+  // Opções únicas para filtros
+  const regioes = useMemo(() => {
+    const set = new Set<string>();
+    (suplentes ?? []).forEach((s: any) => { if (s.regiao_atuacao) set.add(s.regiao_atuacao); if (s.bairro) set.add(s.bairro); });
+    (liderancas ?? []).forEach(l => { if (l.regiao) set.add(l.regiao); });
+    return Array.from(set).sort();
+  }, [suplentes, liderancas]);
+
+  const partidos = useMemo(() => {
+    const set = new Set<string>();
+    (suplentes ?? []).forEach((s: any) => { if (s.partido) set.add(s.partido); });
+    return Array.from(set).sort();
+  }, [suplentes]);
+
+  const situacoes = useMemo(() => {
+    const set = new Set<string>();
+    (suplentes ?? []).forEach((s: any) => { if (s.situacao) set.add(s.situacao); });
+    return Array.from(set).sort();
+  }, [suplentes]);
+
+  const activeFiltersCount = [filtroRegiao, filtroPartido, filtroSituacao].filter(Boolean).length;
+
+  const clearFilters = () => { setFiltroRegiao(""); setFiltroPartido(""); setFiltroSituacao(""); };
+
   const supList = useMemo(() => {
-    const all = suplentes ?? [];
-    if (!search.trim()) return all;
-    const q = normalizeStr(search);
-    return all.filter((s: any) =>
-      normalizeStr(s.nome || "").includes(q) ||
-      normalizeStr(s.regiao_atuacao || "").includes(q)
-    );
-  }, [suplentes, search]);
+    let all = suplentes ?? [];
+    if (search.trim()) {
+      const q = normalizeStr(search);
+      all = all.filter((s: any) =>
+        normalizeStr(s.nome || "").includes(q) ||
+        normalizeStr(s.regiao_atuacao || "").includes(q)
+      );
+    }
+    if (filtroRegiao) all = all.filter((s: any) => s.regiao_atuacao === filtroRegiao || s.bairro === filtroRegiao);
+    if (filtroPartido) all = all.filter((s: any) => s.partido === filtroPartido);
+    if (filtroSituacao) all = all.filter((s: any) => s.situacao === filtroSituacao);
+    return all;
+  }, [suplentes, search, filtroRegiao, filtroPartido, filtroSituacao]);
 
   const lidList = useMemo(() => {
-    const all = liderancas ?? [];
-    if (!search.trim()) return all;
-    const q = normalizeStr(search);
-    return all.filter(l => normalizeStr(l.nome || "").includes(q) || normalizeStr(l.regiao || "").includes(q));
-  }, [liderancas, search]);
+    let all = liderancas ?? [];
+    if (search.trim()) {
+      const q = normalizeStr(search);
+      all = all.filter(l => normalizeStr(l.nome || "").includes(q) || normalizeStr(l.regiao || "").includes(q));
+    }
+    if (filtroRegiao) all = all.filter(l => l.regiao === filtroRegiao);
+    return all;
+  }, [liderancas, search, filtroRegiao]);
 
   const admList = useMemo(() => {
     const all = administrativo ?? [];
@@ -141,14 +177,114 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="relative">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome ou região..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 bg-card border-border"
-          />
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome ou região..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10 bg-card border-border"
+              />
+              {search && (
+                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <Button
+              variant={showFilters || activeFiltersCount > 0 ? "default" : "outline"}
+              size="icon"
+              className="h-10 w-10 shrink-0 relative"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter size={16} />
+              {activeFiltersCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold flex items-center justify-center">
+                  {activeFiltersCount}
+                </span>
+              )}
+            </Button>
+          </div>
+
+          {showFilters && (
+            <div className="bg-card rounded-2xl border border-border p-3 space-y-2.5 shadow-sm animate-fade-in">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                  <Filter size={10} /> Filtros
+                </p>
+                {activeFiltersCount > 0 && (
+                  <button onClick={clearFilters} className="text-[10px] text-destructive font-semibold flex items-center gap-1">
+                    <X size={10} /> Limpar
+                  </button>
+                )}
+              </div>
+
+              {/* Região */}
+              <div className="space-y-1">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Região / Bairro</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {regioes.map(r => (
+                    <button key={r} onClick={() => setFiltroRegiao(filtroRegiao === r ? "" : r)}
+                      className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all ${filtroRegiao === r ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                      {r}
+                    </button>
+                  ))}
+                  {regioes.length === 0 && <span className="text-[10px] text-muted-foreground italic">Nenhuma região</span>}
+                </div>
+              </div>
+
+              {/* Partido */}
+              <div className="space-y-1">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Partido</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {partidos.map(p => (
+                    <button key={p} onClick={() => setFiltroPartido(filtroPartido === p ? "" : p)}
+                      className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all ${filtroPartido === p ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                      {p}
+                    </button>
+                  ))}
+                  {partidos.length === 0 && <span className="text-[10px] text-muted-foreground italic">Nenhum partido</span>}
+                </div>
+              </div>
+
+              {/* Situação */}
+              <div className="space-y-1">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Situação</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {situacoes.map(s => (
+                    <button key={s} onClick={() => setFiltroSituacao(filtroSituacao === s ? "" : s)}
+                      className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg transition-all ${filtroSituacao === s ? "bg-primary text-primary-foreground shadow-sm" : "bg-muted text-muted-foreground hover:bg-muted/80"}`}>
+                      {s}
+                    </button>
+                  ))}
+                  {situacoes.length === 0 && <span className="text-[10px] text-muted-foreground italic">Nenhuma situação</span>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tags dos filtros ativos */}
+          {activeFiltersCount > 0 && !showFilters && (
+            <div className="flex flex-wrap gap-1.5">
+              {filtroRegiao && (
+                <span className="text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-lg flex items-center gap-1">
+                  {filtroRegiao} <button onClick={() => setFiltroRegiao("")}><X size={10} /></button>
+                </span>
+              )}
+              {filtroPartido && (
+                <span className="text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-lg flex items-center gap-1">
+                  {filtroPartido} <button onClick={() => setFiltroPartido("")}><X size={10} /></button>
+                </span>
+              )}
+              {filtroSituacao && (
+                <span className="text-[10px] font-semibold bg-primary/10 text-primary px-2 py-0.5 rounded-lg flex items-center gap-1">
+                  {filtroSituacao} <button onClick={() => setFiltroSituacao("")}><X size={10} /></button>
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {isLoading ? (
