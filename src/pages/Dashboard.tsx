@@ -435,12 +435,12 @@ export default function Dashboard() {
 
                   {/* Plotagem */}
                   <div>
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">🖼️ Material de Campanha</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">🚗 Carros Plotados</p>
                     <div className="bg-muted/50 rounded-xl p-3 flex items-center justify-between">
                       <div>
-                        <p className="text-[10px] text-muted-foreground mb-0.5">Plotagens contratadas</p>
+                        <p className="text-[10px] text-muted-foreground mb-0.5">Carros plotados contratados</p>
                         <p className="text-lg font-bold text-foreground">{fmtN(totalPlotagem)} unidades</p>
-                        <p className="text-[9px] text-muted-foreground">Banners, adesivos e material gráfico</p>
+                        <p className="text-[9px] text-muted-foreground">Veículos com adesivação e plotagem</p>
                       </div>
                       <p className="text-sm font-bold text-primary">{fmt(totalPlotagemVal)}</p>
                     </div>
