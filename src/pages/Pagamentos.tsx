@@ -802,7 +802,7 @@ export default function Pagamentos() {
         {/* Tabs: Suplentes / Lideranças / Admin */}
         <div className="flex bg-muted rounded-xl p-1 gap-1">
           {abas.map(a => (
-            <button key={a.id} onClick={() => { setAbaAtiva(a.id); setShowPagos(false); }}
+            <button key={a.id} onClick={() => { setAbaAtiva(a.id); setShowPagos(true); }}
               className={`flex-1 flex items-center justify-center gap-1 text-[11px] font-semibold py-2 rounded-lg transition-all ${abaAtiva === a.id ? "bg-card shadow text-primary" : "text-muted-foreground"}`}>
               {a.icon}{a.label}
               <span className={`text-[9px] px-1 py-0.5 rounded-full font-bold ml-0.5 ${abaAtiva === a.id ? "bg-primary/10 text-primary" : "bg-muted-foreground/20"}`}>{a.count}</span>
