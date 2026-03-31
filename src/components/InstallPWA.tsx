@@ -54,11 +54,11 @@ export default function InstallPWA() {
     <Button 
       onClick={handleInstallClick}
       variant="outline" 
-      size="sm"
-      className="fixed top-4 right-4 z-50 bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-primary/10 transition-all flex items-center gap-2 shadow-lg"
+      size="icon"
+      className="fixed top-4 right-4 z-50 bg-background/80 backdrop-blur-sm border-primary/20 hover:bg-primary/10 transition-all shadow-lg h-9 w-9"
+      title="Instalar App"
     >
-      <Download className="w-4 h-4 text-primary animate-bounce" />
-      <span className="hidden sm:inline font-medium text-sm">Instalar App</span>
+      <Download className="w-4 h-4 text-primary" />
     </Button>
   );
 }
