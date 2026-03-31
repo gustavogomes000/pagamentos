@@ -7,12 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, LogIn, Lock, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import NetworkBackground from "@/components/NetworkBackground";
+import LogoSarelli from "@/assets/Logo_Sarelli.png";
 
 const EMAIL_DOMAIN = "@painel.sarelli.com";
-
-const DOCTOR_PHOTO =
-  "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
 
 export default function Login() {
   const [username, setUsername] = useState(() => localStorage.getItem("saved_user") || "");
@@ -71,26 +68,20 @@ export default function Login() {
   return (
     <div
       className="min-h-[100dvh] flex flex-col items-center justify-center p-4 relative overflow-hidden"
-      style={{ background: '#070510' }}
+      style={{ background: '#ffffff' }}
     >
-      {/* Network animation background */}
-      <NetworkBackground />
-
-      {/* Gradient overlay */}
+      {/* Subtle decorative gold curves */}
       <div
-        className="absolute inset-0 z-0"
+        className="absolute inset-0 z-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(ellipse 80% 60% at 50% 120%, hsl(340 82% 35% / 0.4) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 40% at 20% 80%, hsl(280 60% 30% / 0.3) 0%, transparent 50%),
-            radial-gradient(ellipse 60% 40% at 80% 20%, hsl(350 70% 25% / 0.25) 0%, transparent 50%)
+            radial-gradient(ellipse 90% 50% at 50% 0%, rgba(200, 170, 100, 0.08) 0%, transparent 60%),
+            radial-gradient(ellipse 80% 40% at 50% 100%, rgba(236, 72, 153, 0.06) 0%, transparent 50%)
           `,
           opacity: entered ? 1 : 0,
           transition: 'opacity 1s ease-out',
         }}
       />
-
-      <div className="absolute inset-0 z-[1] pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(7,5,16,0.5) 100%)' }} />
 
       <div
         className="w-full max-w-sm space-y-6 relative z-10"
@@ -100,97 +91,85 @@ export default function Login() {
           transition: 'all 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
-        {/* Photo + Identity */}
+        {/* Logo */}
         <div className="text-center space-y-3">
           <div
-            className="relative mx-auto w-28 h-28"
+            className="mx-auto"
             style={{
               opacity: entered ? 1 : 0,
-              transform: entered ? 'scale(1)' : 'scale(0.5)',
+              transform: entered ? 'scale(1)' : 'scale(0.8)',
               transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s',
             }}
           >
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary to-rose-400 p-[3px]">
-              <div className="w-full h-full rounded-full overflow-hidden" style={{ background: '#070510' }}>
-                <img
-                  src={DOCTOR_PHOTO}
-                  alt="Dra. Fernanda Sarelli"
-                  className="w-full h-full object-cover"
-                  loading="eager"
-                />
-              </div>
-            </div>
-            <div
-              className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500"
-              style={{
-                borderColor: '#070510',
-                borderWidth: 2,
-                opacity: entered ? 1 : 0,
-                transform: entered ? 'scale(1)' : 'scale(0)',
-                transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.5s',
-              }}
+            <img
+              src={LogoSarelli}
+              alt="Dra. Fernanda Sarelli"
+              className="mx-auto h-24 w-auto object-contain"
+              loading="eager"
             />
           </div>
 
           <div style={anim(0.2)}>
-            <h1 className="text-xl font-bold text-white tracking-tight">
-              Dra. Fernanda Sarelli
-            </h1>
-            <p className="text-xs font-medium text-primary uppercase tracking-widest mt-1">
+            <p className="text-xs font-semibold uppercase tracking-widest mt-1"
+              style={{ color: '#c8aa64' }}
+            >
               Painel de Pagamentos
             </p>
           </div>
 
-          <p className="text-[11px] text-white/40" style={anim(0.3)}>
+          <p className="text-[11px] text-gray-400" style={anim(0.3)}>
             Acesso exclusivo da equipe
           </p>
         </div>
 
-        {/* Login form */}
+        {/* Login form — glass effect */}
         <form
           onSubmit={handleLogin}
-          className="space-y-4 backdrop-blur-xl p-6 rounded-2xl border border-white/[0.08]"
+          className="space-y-4 p-6 rounded-2xl border"
           style={{
-            background: 'rgba(0,0,0,0.6)',
-            boxShadow: '0 8px 32px hsl(340 82% 55% / 0.15)',
+            background: 'rgba(255, 255, 255, 0.6)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            borderColor: 'rgba(200, 170, 100, 0.25)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(200, 170, 100, 0.1)',
             ...anim(0.35),
           }}
         >
           <div className="space-y-1.5" style={anim(0.4)}>
-            <Label className="text-[11px] uppercase tracking-widest text-white/50 font-medium">
+            <Label className="text-[11px] uppercase tracking-widest text-gray-500 font-medium">
               Usuário
             </Label>
             <div className="relative">
-              <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+              <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <Input
                 type="text"
                 placeholder="Ex: Administrador"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="bg-white/[0.06] border-white/[0.1] text-white placeholder:text-white/25 focus:border-primary/50 focus:ring-primary/20 h-11 pl-10 text-sm"
+                className="bg-white/80 border-gray-200 text-gray-800 placeholder:text-gray-400 focus:border-pink-400 focus:ring-pink-200 h-11 pl-10 text-sm"
               />
             </div>
           </div>
 
           <div className="space-y-1.5" style={anim(0.5)}>
-            <Label className="text-[11px] uppercase tracking-widest text-white/50 font-medium">
+            <Label className="text-[11px] uppercase tracking-widest text-gray-500 font-medium">
               Senha
             </Label>
             <div className="relative">
-              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <Input
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="bg-white/[0.06] border-white/[0.1] text-white placeholder:text-white/25 focus:border-primary/50 focus:ring-primary/20 h-11 pl-10 pr-10 text-sm"
+                className="bg-white/80 border-gray-200 text-gray-800 placeholder:text-gray-400 focus:border-pink-400 focus:ring-pink-200 h-11 pl-10 pr-10 text-sm"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -203,9 +182,9 @@ export default function Login() {
               id="remember"
               checked={remember}
               onCheckedChange={(v) => setRemember(!!v)}
-              className="border-white/20 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+              className="border-gray-300 data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
             />
-            <label htmlFor="remember" className="text-xs text-white/50 cursor-pointer select-none">
+            <label htmlFor="remember" className="text-xs text-gray-500 cursor-pointer select-none">
               Lembrar meus dados
             </label>
           </div>
@@ -214,7 +193,11 @@ export default function Login() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-primary to-rose-400 hover:from-primary/90 hover:to-rose-500 text-primary-foreground font-semibold h-11 text-sm shadow-[0_4px_16px_hsl(340_82%_55%/0.3)] transition-all active:scale-[0.98]"
+              className="w-full font-semibold h-11 text-sm text-white transition-all active:scale-[0.98]"
+              style={{
+                background: 'linear-gradient(135deg, #ec4899, #c8aa64)',
+                boxShadow: '0 4px 16px rgba(236, 72, 153, 0.25)',
+              }}
             >
               {loading ? (
                 <div className="flex items-center gap-2">
@@ -232,20 +215,19 @@ export default function Login() {
         </form>
 
         <div className="text-center space-y-1" style={anim(0.7)}>
-          <p className="text-[10px] text-white/25">
+          <p className="text-[10px] text-gray-400">
             Pré-candidata a Deputada Estadual — GO 2026
           </p>
           <a
             href="https://drafernandasarelli.com.br"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[10px] text-primary/50 hover:text-primary transition-colors"
+            className="text-[10px] text-pink-400 hover:text-pink-500 transition-colors"
           >
             drafernandasarelli.com.br
           </a>
         </div>
       </div>
-
     </div>
   );
 }
