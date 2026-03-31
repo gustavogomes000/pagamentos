@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Save, Loader2, ArrowLeft } from "lucide-react";
+import { Save, Loader2, ArrowLeft, PenLine, Trash2, FileDown } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
+import SignaturePad from "@/components/SignaturePad";
+import { exportAdminPDF } from "@/lib/exports";
 
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
   "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -19,6 +21,7 @@ interface FormData {
   whatsapp: string;
   valor_contrato: number;
   contrato_ate_mes: number;
+  assinatura: string;
 }
 
 const defaultForm: FormData = {
@@ -27,6 +30,7 @@ const defaultForm: FormData = {
   whatsapp: "",
   valor_contrato: 0,
   contrato_ate_mes: 10,
+  assinatura: "",
 };
 
 const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -35,6 +39,7 @@ export default function CadastroAdmin() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [showSignature, setShowSignature] = useState(false);
 
   const { data: existing, isLoading } = useQuery({
     queryKey: ["admin_pessoa", id],
@@ -57,6 +62,7 @@ export default function CadastroAdmin() {
       whatsapp: existing.whatsapp || "",
       valor_contrato: existing.valor_contrato || 0,
       contrato_ate_mes: existing.contrato_ate_mes || 10,
+      assinatura: existing.assinatura || "",
     });
     setInitialized(true);
   }
@@ -94,11 +100,18 @@ export default function CadastroAdmin() {
   return (
     <PageTransition>
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/administrativo")} className="p-1.5 rounded-xl text-muted-foreground active:bg-muted">
-            <ArrowLeft size={20} />
-          </button>
-          <h1 className="text-xl font-bold text-foreground">{id ? "Editar Funcionário" : "Novo Funcionário"}</h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate("/administrativo")} className="p-1.5 rounded-xl text-muted-foreground active:bg-muted">
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-xl font-bold text-foreground">{id ? "Editar Funcionário" : "Novo Funcionário"}</h1>
+          </div>
+          {id && (
+            <Button variant="outline" size="sm" className="text-xs gap-1.5" onClick={() => exportAdminPDF({ ...form, id })}>
+              <FileDown size={14} /> PDF
+            </Button>
+          )}
         </div>
 
         <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
@@ -154,6 +167,37 @@ export default function CadastroAdmin() {
             </div>
           </div>
         </section>
+
+        {/* Assinatura */}
+        <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
+          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Assinatura</h2>
+          {form.assinatura ? (
+            <div className="space-y-2">
+              <div className="bg-muted/50 rounded-xl p-3 flex items-center justify-center">
+                <img src={form.assinatura} alt="Assinatura" className="max-h-20 object-contain" />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1 gap-1.5 text-xs" onClick={() => setShowSignature(true)}>
+                  <PenLine size={13} /> Refazer
+                </Button>
+                <Button variant="outline" size="sm" className="gap-1.5 text-xs text-destructive" onClick={() => set("assinatura", "")}>
+                  <Trash2 size={13} /> Remover
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant="outline" className="w-full h-20 border-dashed gap-2 text-muted-foreground" onClick={() => setShowSignature(true)}>
+              <PenLine size={18} /> Toque para assinar
+            </Button>
+          )}
+        </section>
+
+        <SignaturePad
+          open={showSignature}
+          onClose={() => setShowSignature(false)}
+          onSave={(dataUrl) => set("assinatura", dataUrl)}
+          initial={form.assinatura || undefined}
+        />
 
         <Button
           onClick={handleSave}
