@@ -655,7 +655,7 @@ export default function Dashboard() {
                     <div className="text-center"><p className="text-[10px] text-muted-foreground uppercase">Plotagem</p><p className="text-sm font-bold text-foreground">{fmtN(totalPlotagem)}</p></div>
                   </div>
                   <div className="space-y-1 pt-1 border-t border-primary/20">
-                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Suplentes (campanha)</span><span className="font-bold text-foreground">{fmt(totalCampanhaSup)}</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Suplentes (mensal)</span><span className="font-bold text-foreground">{fmt(totalRetiradaMensalSup)}</span></div>
                     <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Lideranças (mensal)</span><span className="font-bold text-foreground">{fmt(totalLidMensal)}</span></div>
                     <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Administrativo (mensal)</span><span className="font-bold text-foreground">{fmt(totalAdmMensal)}</span></div>
                   </div>
