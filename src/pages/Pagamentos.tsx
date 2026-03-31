@@ -542,6 +542,35 @@ export default function Pagamentos() {
     return norm(nome).includes(q) || norm(extra || "").includes(q);
   };
 
+  // ─── Alerta de atraso (dia > 4, retirada/salário pendente) ──────────────────
+  const DEADLINE_DAY = 4;
+  const diaAtual = now.getDate();
+  const mesAtual = now.getMonth() + 1;
+  const anoAtual = now.getFullYear();
+  const isCurrentMonth = mes === mesAtual && ano === anoAtual;
+  const isPassedDeadline = isCurrentMonth && diaAtual > DEADLINE_DAY;
+
+  // Pessoas com retirada/salário pendente no mês atual
+  const supAtrasados = isPassedDeadline ? supComValor.filter(s => {
+    const pago = pagsMes.filter(p => p.suplente_id === s.id).reduce((a, p) => a + p.valor, 0);
+    return pago < (s.retirada_mensal_valor || 0);
+  }) : [];
+  const lidAtrasados = isPassedDeadline ? lidComValor.filter(l => {
+    const pago = pagsMes.filter(p => p.lideranca_id === l.id).reduce((a, p) => a + p.valor, 0);
+    return pago < (l.retirada_mensal_valor || 0);
+  }) : [];
+  const admAtrasados = isPassedDeadline ? admComValor.filter(a => {
+    const pago = pagsMes.filter(p => p.admin_id === a.id).reduce((a2, p) => a2 + p.valor, 0);
+    return pago < (a.valor_contrato || 0);
+  }) : [];
+  const totalAtrasados = supAtrasados.length + lidAtrasados.length + admAtrasados.length;
+
+  useEffect(() => {
+    if (!isLoading && totalAtrasados > 0 && !alertaDismissed) {
+      setShowAlertaAtraso(true);
+    }
+  }, [isLoading, totalAtrasados, alertaDismissed]);
+
   // Renderizar conteúdo da aba ativa
   const renderAba = () => {
     if (abaAtiva === "suplentes") {
