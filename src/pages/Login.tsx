@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, LogIn, Lock, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import NetworkBackground from "@/components/NetworkBackground";
 
 const EMAIL_DOMAIN = "@painel.sarelli.com";
 
@@ -72,7 +73,10 @@ export default function Login() {
       className="min-h-[100dvh] flex flex-col items-center justify-center p-4 relative overflow-hidden"
       style={{ background: '#070510' }}
     >
-      {/* Lightweight animated gradient background */}
+      {/* Network animation background */}
+      <NetworkBackground />
+
+      {/* Gradient overlay */}
       <div
         className="absolute inset-0 z-0"
         style={{
@@ -85,26 +89,6 @@ export default function Login() {
           transition: 'opacity 1s ease-out',
         }}
       />
-
-      {/* Animated light streaks (CSS only) */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className="absolute rounded-full"
-            style={{
-              width: 2,
-              height: '40%',
-              left: `${15 + i * 18}%`,
-              top: '-10%',
-              background: `linear-gradient(to bottom, transparent, hsl(340 82% 55% / ${0.08 + i * 0.03}), transparent)`,
-              animation: `loginStreak ${3 + i * 0.5}s ease-in-out ${i * 0.4}s infinite`,
-              opacity: entered ? 1 : 0,
-              transition: `opacity 1s ease-out ${0.5 + i * 0.1}s`,
-            }}
-          />
-        ))}
-      </div>
 
       <div className="absolute inset-0 z-[1] pointer-events-none" style={{ background: 'radial-gradient(ellipse at center, transparent 40%, rgba(7,5,16,0.5) 100%)' }} />
 
@@ -262,14 +246,6 @@ export default function Login() {
         </div>
       </div>
 
-      <style>{`
-        @keyframes loginStreak {
-          0%, 100% { transform: translateY(-100%); opacity: 0; }
-          30% { opacity: 1; }
-          70% { opacity: 1; }
-          100% { transform: translateY(250%); opacity: 0; }
-        }
-      `}</style>
     </div>
   );
 }
