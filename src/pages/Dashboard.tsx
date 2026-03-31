@@ -659,6 +659,10 @@ export default function Dashboard() {
                     <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Lideranças (mensal)</span><span className="font-bold text-foreground">{fmt(totalLidMensal)}</span></div>
                     <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Administrativo (mensal)</span><span className="font-bold text-foreground">{fmt(totalAdmMensal)}</span></div>
                   </div>
+                  <div className="flex justify-between items-center pt-1 border-t border-accent/30">
+                    <span className="text-[11px] font-bold text-foreground">Gasto Total / Mês</span>
+                    <span className="text-sm font-bold text-primary">{fmt(totalRetiradaMensalSup + totalLidMensal + totalAdmMensal)}</span>
+                  </div>
                   <div className="flex justify-between items-center pt-2 border-t border-primary/20">
                     <span className="text-sm font-bold text-foreground">ORÇAMENTO TOTAL</span>
                     <span className="text-lg font-bold text-primary">{fmt(orcamentoTotal)}</span>
