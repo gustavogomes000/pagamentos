@@ -88,7 +88,7 @@ export default function Login() {
       />
 
       <div
-        className="w-full max-w-sm space-y-5 relative z-10"
+        className="w-full max-w-sm space-y-3 sm:space-y-5 relative z-10"
         style={{
           opacity: entered ? 1 : 0,
           transform: entered ? 'translateY(0)' : 'translateY(20px)',
