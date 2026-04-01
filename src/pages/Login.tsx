@@ -69,19 +69,17 @@ export default function Login() {
   return (
     <div
       className="min-h-[100dvh] flex flex-col items-center justify-center p-4 relative overflow-hidden"
-      style={{ background: '#fefefe' }}
+      style={{ background: 'linear-gradient(180deg, #fef2f2 0%, #fdf2f8 40%, #fefefe 100%)' }}
     >
-      {/* Animated network background */}
       <NetworkBackground />
 
-      {/* Soft gradient overlays */}
+      {/* Soft overlay */}
       <div
         className="absolute inset-0 z-[1] pointer-events-none"
         style={{
           background: `
             radial-gradient(ellipse 100% 60% at 50% 0%, rgba(200, 170, 100, 0.07) 0%, transparent 60%),
-            radial-gradient(ellipse 80% 50% at 50% 100%, rgba(236, 72, 153, 0.05) 0%, transparent 50%),
-            radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255,255,255,0.6) 0%, transparent 100%)
+            radial-gradient(ellipse 80% 50% at 50% 100%, rgba(236, 72, 153, 0.05) 0%, transparent 50%)
           `,
           opacity: entered ? 1 : 0,
           transition: 'opacity 1s ease-out',
@@ -96,7 +94,7 @@ export default function Login() {
           transition: 'all 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
         }}
       >
-        {/* Logo — much bigger */}
+        {/* Logo */}
         <div className="text-center space-y-2">
           <div
             className="mx-auto"
@@ -123,34 +121,32 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Login form — frosted glass */}
+        {/* Login form — glassmorphism with golden border */}
         <form
           onSubmit={handleLogin}
-          className="space-y-4 p-6 rounded-3xl"
+          className="space-y-4 p-6 rounded-2xl relative overflow-hidden"
           style={{
-            background: 'linear-gradient(145deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0.08) 100%)',
-            backdropFilter: 'blur(28px) saturate(1.8)',
-            WebkitBackdropFilter: 'blur(28px) saturate(1.8)',
-            border: '1px solid rgba(255, 255, 255, 0.35)',
-            borderTop: '1.5px solid rgba(255, 255, 255, 0.55)',
-            borderLeft: '1.5px solid rgba(255, 255, 255, 0.45)',
+            background: 'linear-gradient(145deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 100%)',
+            backdropFilter: 'blur(24px) saturate(1.6)',
+            WebkitBackdropFilter: 'blur(24px) saturate(1.6)',
+            border: '1.5px solid rgba(200, 170, 100, 0.35)',
             boxShadow: `
-              0 8px 40px rgba(236, 72, 153, 0.08),
-              0 4px 20px rgba(0, 0, 0, 0.06),
-              inset 0 1px 0 rgba(255, 255, 255, 0.5),
-              inset 0 -1px 0 rgba(200, 170, 100, 0.08)
+              0 8px 32px rgba(236, 72, 153, 0.08),
+              0 4px 16px rgba(0, 0, 0, 0.05),
+              inset 0 1px 0 rgba(255, 255, 255, 0.6),
+              inset 0 -1px 0 rgba(200, 170, 100, 0.1)
             `,
             ...anim(0.3),
           }}
         >
           <div className="space-y-1.5" style={anim(0.35)}>
-            <Label className="text-[11px] uppercase tracking-widest font-medium"
-              style={{ color: '#888' }}
+            <Label className="text-[11px] uppercase tracking-widest font-bold"
+              style={{ color: '#555' }}
             >
               Usuário
             </Label>
             <div className="relative">
-              <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#aaa' }} />
+              <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#c8aa64' }} />
               <Input
                 type="text"
                 placeholder="Ex: Administrador"
@@ -158,23 +154,23 @@ export default function Login() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 style={{
-                  background: 'rgba(255,255,255,0.7)',
-                  borderColor: 'rgba(200,170,100,0.15)',
+                  background: 'rgba(255,255,255,0.6)',
+                  borderColor: 'rgba(200,170,100,0.25)',
                   color: '#333',
                 }}
-                className="placeholder:text-gray-400 focus:border-pink-400 focus:ring-pink-200 h-11 pl-10 text-sm"
+                className="placeholder:text-gray-400 focus:border-pink-400 focus:ring-pink-200 h-11 pl-10 text-sm rounded-lg"
               />
             </div>
           </div>
 
           <div className="space-y-1.5" style={anim(0.4)}>
-            <Label className="text-[11px] uppercase tracking-widest font-medium"
-              style={{ color: '#888' }}
+            <Label className="text-[11px] uppercase tracking-widest font-bold"
+              style={{ color: '#555' }}
             >
               Senha
             </Label>
             <div className="relative">
-              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#aaa' }} />
+              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#c8aa64' }} />
               <Input
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
@@ -182,17 +178,17 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 style={{
-                  background: 'rgba(255,255,255,0.7)',
-                  borderColor: 'rgba(200,170,100,0.15)',
+                  background: 'rgba(255,255,255,0.6)',
+                  borderColor: 'rgba(200,170,100,0.25)',
                   color: '#333',
                 }}
-                className="placeholder:text-gray-400 focus:border-pink-400 focus:ring-pink-200 h-11 pl-10 pr-10 text-sm"
+                className="placeholder:text-gray-400 focus:border-pink-400 focus:ring-pink-200 h-11 pl-10 pr-10 text-sm rounded-lg"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-                style={{ color: '#aaa' }}
+                style={{ color: '#c8aa64' }}
                 tabIndex={-1}
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -216,10 +212,10 @@ export default function Login() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full font-semibold h-11 text-sm text-white transition-all active:scale-[0.98] hover:opacity-90"
+              className="w-full font-semibold h-12 text-sm text-white transition-all active:scale-[0.97] hover:brightness-110 rounded-xl"
               style={{
-                background: 'linear-gradient(135deg, #ec4899, #c8aa64)',
-                boxShadow: '0 4px 20px rgba(236, 72, 153, 0.25), 0 2px 8px rgba(200, 170, 100, 0.15)',
+                background: 'linear-gradient(135deg, #ec4899 0%, #d4a054 100%)',
+                boxShadow: '0 4px 20px rgba(236, 72, 153, 0.3), 0 2px 8px rgba(200, 170, 100, 0.2)',
               }}
             >
               {loading ? (
