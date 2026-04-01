@@ -134,7 +134,7 @@ export default function Login() {
             <img
               src={LogoSarelli}
               alt="Sarelli"
-              className="mx-auto h-44 w-auto object-contain drop-shadow-sm"
+              className="mx-auto h-36 sm:h-44 w-auto object-contain drop-shadow-sm"
               loading="eager"
             />
           </div>
