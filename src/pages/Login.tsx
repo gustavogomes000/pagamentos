@@ -96,7 +96,7 @@ export default function Login() {
         }}
       >
         {/* Logo */}
-        <div className="flex flex-col items-center space-y-1">
+        <div className="flex flex-col items-center -space-y-2">
           {/* Foto circular */}
           <div
             style={{
@@ -134,7 +134,7 @@ export default function Login() {
             <img
               src={LogoSarelli}
               alt="Sarelli"
-              className="mx-auto h-36 w-auto object-contain drop-shadow-sm"
+              className="mx-auto h-40 w-auto object-contain drop-shadow-sm"
               loading="eager"
             />
           </div>
