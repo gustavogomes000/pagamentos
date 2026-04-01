@@ -96,7 +96,8 @@ export default function Login() {
         }}
       >
         {/* Logo */}
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-3">
+          {/* Foto circular */}
           <div
             className="mx-auto"
             style={{
@@ -105,15 +106,41 @@ export default function Login() {
               transition: 'all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s',
             }}
           >
+            <div
+              className="mx-auto rounded-full overflow-hidden"
+              style={{
+                width: 120,
+                height: 120,
+                border: '3px solid #ec4899',
+                boxShadow: '0 0 20px rgba(236, 72, 153, 0.25)',
+              }}
+            >
+              <img
+                src={FotoDra}
+                alt="Dra. Fernanda Sarelli"
+                className="w-full h-full object-cover"
+                loading="eager"
+              />
+            </div>
+          </div>
+
+          {/* Logo */}
+          <div
+            style={{
+              opacity: entered ? 1 : 0,
+              transform: entered ? 'scale(1)' : 'scale(0.8)',
+              transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s',
+            }}
+          >
             <img
               src={LogoSarelli}
-              alt="Dra. Fernanda Sarelli"
-              className="mx-auto h-56 w-auto object-contain drop-shadow-sm"
+              alt="Sarelli"
+              className="mx-auto h-28 w-auto object-contain drop-shadow-sm"
               loading="eager"
             />
           </div>
 
-          <div style={anim(0.2)}>
+          <div style={anim(0.3)}>
             <p className="text-xs font-semibold uppercase tracking-[0.2em]"
               style={{ color: '#c8aa64' }}
             >
