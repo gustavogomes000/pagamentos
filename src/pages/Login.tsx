@@ -118,7 +118,7 @@ export default function Login() {
               <img
                 src={FotoDra}
                 alt="Dra. Fernanda Sarelli"
-                className="w-full h-full object-cover object-top scale-[1.6]"
+                className="w-full h-full object-cover"
                 loading="eager"
               />
             </div>
