@@ -96,7 +96,7 @@ export default function Login() {
         }}
       >
         {/* Logo */}
-        <div className="flex flex-col items-center space-y-4">
+        <div className="flex flex-col items-center space-y-1">
           {/* Foto circular */}
           <div
             style={{
@@ -108,11 +108,10 @@ export default function Login() {
             <div
               className="rounded-full overflow-hidden mx-auto"
               style={{
-                width: 110,
-                height: 110,
+                width: 100,
+                height: 100,
                 border: '3px solid #ec4899',
                 boxShadow: '0 4px 25px rgba(236, 72, 153, 0.3)',
-                background: 'linear-gradient(135deg, #fdf2f8, #fef2f2)',
               }}
             >
               <img
@@ -135,7 +134,7 @@ export default function Login() {
             <img
               src={LogoSarelli}
               alt="Sarelli"
-              className="mx-auto h-24 w-auto object-contain drop-shadow-sm"
+              className="mx-auto h-36 w-auto object-contain drop-shadow-sm"
               loading="eager"
             />
           </div>
