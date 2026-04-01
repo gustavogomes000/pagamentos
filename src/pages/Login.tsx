@@ -69,7 +69,7 @@ export default function Login() {
 
   return (
     <div
-      className="min-h-[100dvh] flex flex-col items-center justify-center p-4 py-6 relative overflow-y-auto"
+      className="min-h-[100dvh] flex flex-col items-center justify-start sm:justify-center p-4 pt-8 sm:py-6 relative overflow-y-auto"
       style={{ background: 'linear-gradient(180deg, #fef2f2 0%, #fdf2f8 40%, #fefefe 100%)' }}
     >
       <NetworkBackground />
