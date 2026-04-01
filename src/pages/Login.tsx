@@ -106,10 +106,8 @@ export default function Login() {
             }}
           >
             <div
-              className="rounded-full overflow-hidden mx-auto"
+              className="rounded-full overflow-hidden mx-auto w-[90px] h-[90px] sm:w-[110px] sm:h-[110px]"
               style={{
-                width: 110,
-                height: 110,
                 border: '3px solid #ec4899',
                 boxShadow: '0 4px 25px rgba(236, 72, 153, 0.3)',
               }}
