@@ -96,29 +96,29 @@ export default function Login() {
         }}
       >
         {/* Logo */}
-        <div className="text-center space-y-3">
+        <div className="flex flex-col items-center space-y-4">
           {/* Foto circular */}
           <div
-            className="mx-auto"
             style={{
               opacity: entered ? 1 : 0,
-              transform: entered ? 'scale(1)' : 'scale(0.7)',
+              transform: entered ? 'scale(1) translateY(0)' : 'scale(0.6) translateY(20px)',
               transition: 'all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s',
             }}
           >
             <div
-              className="mx-auto rounded-full overflow-hidden"
+              className="rounded-full overflow-hidden mx-auto"
               style={{
-                width: 120,
-                height: 120,
+                width: 110,
+                height: 110,
                 border: '3px solid #ec4899',
-                boxShadow: '0 0 20px rgba(236, 72, 153, 0.25)',
+                boxShadow: '0 4px 25px rgba(236, 72, 153, 0.3)',
+                background: 'linear-gradient(135deg, #fdf2f8, #fef2f2)',
               }}
             >
               <img
                 src={FotoDra}
                 alt="Dra. Fernanda Sarelli"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-top scale-[1.6]"
                 loading="eager"
               />
             </div>
@@ -128,18 +128,19 @@ export default function Login() {
           <div
             style={{
               opacity: entered ? 1 : 0,
-              transform: entered ? 'scale(1)' : 'scale(0.8)',
+              transform: entered ? 'scale(1) translateY(0)' : 'scale(0.8) translateY(10px)',
               transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s',
             }}
           >
             <img
               src={LogoSarelli}
               alt="Sarelli"
-              className="mx-auto h-28 w-auto object-contain drop-shadow-sm"
+              className="mx-auto h-24 w-auto object-contain drop-shadow-sm"
               loading="eager"
             />
           </div>
 
+          {/* Subtítulo */}
           <div style={anim(0.3)}>
             <p className="text-xs font-semibold uppercase tracking-[0.2em]"
               style={{ color: '#c8aa64' }}
