@@ -126,7 +126,7 @@ export default function Login() {
 
           {/* Logo */}
           <div
-            className="-mt-3"
+            className="-mt-6"
             style={{
               opacity: entered ? 1 : 0,
               transform: entered ? 'scale(1) translateY(0)' : 'scale(0.8) translateY(10px)',
