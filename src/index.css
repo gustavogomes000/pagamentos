@@ -93,3 +93,14 @@
     input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
   }
 }
+
+@keyframes borderPulse {
+  0%, 100% {
+    border-color: rgba(236, 150, 170, 0.4);
+    box-shadow: 0 8px 40px rgba(236, 72, 153, 0.06), 0 0 15px rgba(236, 150, 170, 0.1);
+  }
+  50% {
+    border-color: rgba(236, 150, 170, 0.65);
+    box-shadow: 0 8px 40px rgba(236, 72, 153, 0.12), 0 0 25px rgba(236, 150, 170, 0.2);
+  }
+}
