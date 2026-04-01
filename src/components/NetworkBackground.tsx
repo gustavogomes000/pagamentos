@@ -44,9 +44,9 @@ export default function NetworkBackground() {
     let dust: FloatingDust[] = [];
     let w = 0, h = 0;
 
-    const NODE_COUNT = 120;
-    const DUST_COUNT = 50;
-    const MAX_DIST = 200;
+    const NODE_COUNT = 160;
+    const DUST_COUNT = 60;
+    const MAX_DIST = 220;
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -63,18 +63,18 @@ export default function NetworkBackground() {
       resize();
       particles = Array.from({ length: NODE_COUNT }, () => {
         const layerRand = Math.random();
-        const depth = layerRand < 0.25 ? 0 : layerRand < 0.6 ? 1 : 2;
-        const speedScale = [0.18, 0.35, 0.55][depth];
-        const sizeScale = [0.8, 1.6, 2.6][depth];
+        const depth = layerRand < 0.2 ? 0 : layerRand < 0.55 ? 1 : 2;
+        const speedScale = [0.12, 0.28, 0.48][depth];
+        const sizeScale = [0.7, 1.5, 2.8][depth];
         return {
           x: Math.random() * w,
           y: Math.random() * h,
           vx: (Math.random() - 0.5) * speedScale,
           vy: (Math.random() - 0.5) * speedScale,
           radius: (Math.random() * 1.5 + 0.8) * sizeScale,
-          baseAlpha: [0.3, 0.55, 0.8][depth],
+          baseAlpha: [0.25, 0.5, 0.85][depth],
           phase: Math.random() * Math.PI * 2,
-          breathSpeed: 0.006 + Math.random() * 0.018,
+          breathSpeed: 0.005 + Math.random() * 0.02,
           color: PALETTE[Math.floor(Math.random() * PALETTE.length)],
           layer: depth,
         };
@@ -83,10 +83,10 @@ export default function NetworkBackground() {
       dust = Array.from({ length: DUST_COUNT }, () => ({
         x: Math.random() * w,
         y: Math.random() * h,
-        vx: (Math.random() - 0.5) * 0.1,
-        vy: (Math.random() - 0.5) * 0.1,
-        radius: Math.random() * 1.0 + 0.3,
-        alpha: 0.2 + Math.random() * 0.3,
+        vx: (Math.random() - 0.5) * 0.08,
+        vy: (Math.random() - 0.5) * 0.08,
+        radius: Math.random() * 1.2 + 0.3,
+        alpha: 0.15 + Math.random() * 0.35,
         drift: Math.random() * Math.PI * 2,
         phase: Math.random() * Math.PI * 2,
       }));
@@ -96,34 +96,21 @@ export default function NetworkBackground() {
       const t = time * 0.001;
       ctx.clearRect(0, 0, w, h);
 
-      // Ambient blobs
-      const cx1 = Math.sin(t * 0.2) * w * 0.3 + w * 0.35;
-      const cy1 = Math.cos(t * 0.15) * h * 0.25 + h * 0.35;
-      const cx2 = Math.cos(t * 0.25) * w * 0.25 + w * 0.65;
-      const cy2 = Math.sin(t * 0.2) * h * 0.2 + h * 0.6;
-      const cx3 = Math.sin(t * 0.18 + 2) * w * 0.2 + w * 0.5;
-      const cy3 = Math.cos(t * 0.12 + 1) * h * 0.3 + h * 0.25;
-
-      const g1 = ctx.createRadialGradient(cx1, cy1, 0, cx1, cy1, w * 0.5);
-      g1.addColorStop(0, "rgba(236, 72, 153, 0.12)");
-      g1.addColorStop(0.5, "rgba(244, 114, 182, 0.05)");
-      g1.addColorStop(1, "transparent");
-      ctx.fillStyle = g1;
-      ctx.fillRect(0, 0, w, h);
-
-      const g2 = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, w * 0.45);
-      g2.addColorStop(0, "rgba(200, 170, 100, 0.10)");
-      g2.addColorStop(0.5, "rgba(200, 170, 100, 0.04)");
-      g2.addColorStop(1, "transparent");
-      ctx.fillStyle = g2;
-      ctx.fillRect(0, 0, w, h);
-
-      const g3 = ctx.createRadialGradient(cx3, cy3, 0, cx3, cy3, w * 0.4);
-      g3.addColorStop(0, "rgba(244, 114, 182, 0.08)");
-      g3.addColorStop(0.6, "rgba(236, 72, 153, 0.03)");
-      g3.addColorStop(1, "transparent");
-      ctx.fillStyle = g3;
-      ctx.fillRect(0, 0, w, h);
+      // Ambient gradient blobs — 4 of them for richer backdrop
+      const blobs = [
+        { cx: Math.sin(t * 0.2) * w * 0.3 + w * 0.3, cy: Math.cos(t * 0.15) * h * 0.25 + h * 0.3, r: w * 0.5, c: "236,72,153", a: 0.13 },
+        { cx: Math.cos(t * 0.25) * w * 0.25 + w * 0.7, cy: Math.sin(t * 0.2) * h * 0.2 + h * 0.6, r: w * 0.45, c: "200,170,100", a: 0.1 },
+        { cx: Math.sin(t * 0.18 + 2) * w * 0.2 + w * 0.5, cy: Math.cos(t * 0.12 + 1) * h * 0.3 + h * 0.2, r: w * 0.4, c: "244,114,182", a: 0.09 },
+        { cx: Math.cos(t * 0.15 + 3) * w * 0.2 + w * 0.2, cy: Math.sin(t * 0.1 + 2) * h * 0.2 + h * 0.7, r: w * 0.35, c: "251,182,206", a: 0.08 },
+      ];
+      for (const bl of blobs) {
+        const g = ctx.createRadialGradient(bl.cx, bl.cy, 0, bl.cx, bl.cy, bl.r);
+        g.addColorStop(0, `rgba(${bl.c},${bl.a})`);
+        g.addColorStop(0.5, `rgba(${bl.c},${bl.a * 0.35})`);
+        g.addColorStop(1, "transparent");
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, w, h);
+      }
 
       // Move particles
       for (const p of particles) {
@@ -135,7 +122,7 @@ export default function NetworkBackground() {
         else if (p.y > h + 30) p.vy = -Math.abs(p.vy);
       }
 
-      // Draw connections — thicker, more visible
+      // Draw connections
       for (let i = 0; i < particles.length; i++) {
         const a = particles[i];
         for (let j = i + 1; j < particles.length; j++) {
@@ -144,13 +131,12 @@ export default function NetworkBackground() {
           const dx = a.x - b.x;
           const dy = a.y - b.y;
           const distSq = dx * dx + dy * dy;
-          const maxD = MAX_DIST;
-          if (distSq > maxD * maxD) continue;
+          if (distSq > MAX_DIST * MAX_DIST) continue;
           const dist = Math.sqrt(distSq);
-          const fade = 1 - dist / maxD;
-          const lineAlpha = fade * fade * 0.4;
+          const fade = 1 - dist / MAX_DIST;
+          const lineAlpha = fade * fade * 0.5;
           const avgLayer = (a.layer + b.layer) / 2;
-          const lineW = [0.4, 0.8, 1.2][Math.round(avgLayer)];
+          const lineW = [0.3, 0.7, 1.3][Math.round(avgLayer)];
           const [r, gg, bb] = a.color;
           ctx.strokeStyle = `rgba(${r},${gg},${bb},${lineAlpha})`;
           ctx.lineWidth = lineW;
@@ -161,18 +147,18 @@ export default function NetworkBackground() {
         }
       }
 
-      // Draw nodes
+      // Draw nodes with glow
       for (const p of particles) {
         p.phase += p.breathSpeed;
-        const breath = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(p.phase));
+        const breath = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(p.phase));
         const a = p.baseAlpha * breath;
         const [r, g, b] = p.color;
 
         // Outer glow
-        const glowR = p.radius * 7;
+        const glowR = p.radius * 8;
         const glow = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
-        glow.addColorStop(0, `rgba(${r},${g},${b},${a * 0.35})`);
-        glow.addColorStop(0.4, `rgba(${r},${g},${b},${a * 0.1})`);
+        glow.addColorStop(0, `rgba(${r},${g},${b},${a * 0.4})`);
+        glow.addColorStop(0.35, `rgba(${r},${g},${b},${a * 0.12})`);
         glow.addColorStop(1, "transparent");
         ctx.fillStyle = glow;
         ctx.fillRect(p.x - glowR, p.y - glowR, glowR * 2, glowR * 2);
@@ -180,13 +166,13 @@ export default function NetworkBackground() {
         // Core
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${r},${g},${b},${a * 0.9})`;
+        ctx.fillStyle = `rgba(${r},${g},${b},${a * 0.95})`;
         ctx.fill();
 
         // White center
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius * 0.35, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${a * 0.5})`;
+        ctx.arc(p.x, p.y, p.radius * 0.4, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${a * 0.55})`;
         ctx.fill();
       }
 
