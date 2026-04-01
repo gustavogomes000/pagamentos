@@ -129,7 +129,7 @@ export default function Login() {
             background: 'linear-gradient(160deg, rgba(255,255,255,0.38) 0%, rgba(255,240,245,0.18) 50%, rgba(255,255,255,0.08) 100%)',
             backdropFilter: 'blur(20px) saturate(1.5)',
             WebkitBackdropFilter: 'blur(20px) saturate(1.5)',
-            border: '1.5px solid rgba(236, 150, 170, 0.4)',
+            border: '2px solid rgba(236, 150, 170, 0.5)',
             borderRadius: '20px',
             boxShadow: `
               0 8px 40px rgba(236, 72, 153, 0.06),
