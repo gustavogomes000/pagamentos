@@ -124,17 +124,17 @@ export default function Login() {
         {/* Login form — glassmorphism with golden border */}
         <form
           onSubmit={handleLogin}
-          className="space-y-4 p-6 rounded-2xl relative overflow-hidden"
+          className="space-y-5 p-7 rounded-[20px] relative overflow-hidden"
           style={{
-            background: 'linear-gradient(145deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.15) 100%)',
-            backdropFilter: 'blur(24px) saturate(1.6)',
-            WebkitBackdropFilter: 'blur(24px) saturate(1.6)',
-            border: '1.5px solid rgba(200, 170, 100, 0.35)',
+            background: 'linear-gradient(160deg, rgba(255,255,255,0.40) 0%, rgba(255,240,245,0.20) 50%, rgba(255,255,255,0.10) 100%)',
+            backdropFilter: 'blur(20px) saturate(1.5)',
+            WebkitBackdropFilter: 'blur(20px) saturate(1.5)',
+            border: '1.5px solid rgba(200, 170, 100, 0.4)',
+            borderRadius: '20px',
             boxShadow: `
-              0 8px 32px rgba(236, 72, 153, 0.08),
-              0 4px 16px rgba(0, 0, 0, 0.05),
-              inset 0 1px 0 rgba(255, 255, 255, 0.6),
-              inset 0 -1px 0 rgba(200, 170, 100, 0.1)
+              0 8px 40px rgba(236, 72, 153, 0.06),
+              0 2px 12px rgba(0, 0, 0, 0.04),
+              inset 0 1px 0 rgba(255, 255, 255, 0.5)
             `,
             ...anim(0.3),
           }}
@@ -154,11 +154,11 @@ export default function Login() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 style={{
-                  background: 'rgba(255,255,255,0.6)',
-                  borderColor: 'rgba(200,170,100,0.25)',
+                  background: 'rgba(255,255,255,0.55)',
+                  borderColor: 'rgba(200,170,100,0.3)',
                   color: '#333',
                 }}
-                className="placeholder:text-gray-400 focus:border-pink-400 focus:ring-pink-200 h-11 pl-10 text-sm rounded-lg"
+                className="placeholder:text-gray-400 focus:border-pink-400 focus:ring-pink-200 h-12 pl-10 text-sm rounded-xl"
               />
             </div>
           </div>
@@ -178,11 +178,11 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 style={{
-                  background: 'rgba(255,255,255,0.6)',
-                  borderColor: 'rgba(200,170,100,0.25)',
+                  background: 'rgba(255,255,255,0.55)',
+                  borderColor: 'rgba(200,170,100,0.3)',
                   color: '#333',
                 }}
-                className="placeholder:text-gray-400 focus:border-pink-400 focus:ring-pink-200 h-11 pl-10 pr-10 text-sm rounded-lg"
+                className="placeholder:text-gray-400 focus:border-pink-400 focus:ring-pink-200 h-12 pl-10 pr-10 text-sm rounded-xl"
               />
               <button
                 type="button"
