@@ -24,11 +24,11 @@ export default defineConfig(({ mode }) => ({
       manifest: {
         name: "Sarelli - Gestão Política",
         short_name: "Sarelli",
-        description: "Sistema de gestão política",
+        description: "Sistema de gestão política - Dra. Fernanda Sarelli",
         start_url: "/",
         display: "standalone",
-        background_color: "#070510",
-        theme_color: "#e91e63",
+        background_color: "#ffffff",
+        theme_color: "#ec4899",
         orientation: "portrait",
         icons: [
           {
