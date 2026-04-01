@@ -1,10 +1,10 @@
 {
-  "name": "Sarelli - Painel de Pagamentos",
+  "name": "Sarelli - Gestão Política",
   "short_name": "Sarelli",
-  "description": "Painel de Pagamentos - Dra. Fernanda Sarelli",
+  "description": "Sistema de gestão política - Dra. Fernanda Sarelli",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#fdf2f8",
+  "background_color": "#ffffff",
   "theme_color": "#ec4899",
   "orientation": "portrait",
   "icons": [
