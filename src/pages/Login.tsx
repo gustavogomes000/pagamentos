@@ -107,7 +107,7 @@ export default function Login() {
             <img
               src={LogoSarelli}
               alt="Dra. Fernanda Sarelli"
-              className="mx-auto h-44 w-auto object-contain drop-shadow-sm"
+              className="mx-auto h-48 w-auto object-contain drop-shadow-sm"
               loading="eager"
             />
           </div>
