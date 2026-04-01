@@ -69,7 +69,7 @@ export default function Login() {
 
   return (
     <div
-      className="min-h-[100dvh] flex flex-col items-center justify-center p-4 relative overflow-hidden"
+      className="min-h-[100dvh] flex flex-col items-center justify-start sm:justify-center p-4 pt-8 sm:py-6 relative overflow-y-auto"
       style={{ background: 'linear-gradient(180deg, #fef2f2 0%, #fdf2f8 40%, #fefefe 100%)' }}
     >
       <NetworkBackground />
@@ -88,7 +88,7 @@ export default function Login() {
       />
 
       <div
-        className="w-full max-w-sm space-y-5 relative z-10"
+        className="w-full max-w-sm space-y-3 sm:space-y-5 relative z-10"
         style={{
           opacity: entered ? 1 : 0,
           transform: entered ? 'translateY(0)' : 'translateY(20px)',
@@ -106,10 +106,8 @@ export default function Login() {
             }}
           >
             <div
-              className="rounded-full overflow-hidden mx-auto"
+              className="rounded-full overflow-hidden mx-auto w-[90px] h-[90px] sm:w-[110px] sm:h-[110px]"
               style={{
-                width: 110,
-                height: 110,
                 border: '3px solid #ec4899',
                 boxShadow: '0 4px 25px rgba(236, 72, 153, 0.3)',
               }}
@@ -136,7 +134,7 @@ export default function Login() {
             <img
               src={LogoSarelli}
               alt="Sarelli"
-              className="mx-auto h-44 w-auto object-contain drop-shadow-sm"
+              className="mx-auto h-36 sm:h-44 w-auto object-contain drop-shadow-sm"
               loading="eager"
             />
           </div>
@@ -154,7 +152,7 @@ export default function Login() {
         {/* Login form — glassmorphism with animated pink border */}
         <form
           onSubmit={handleLogin}
-          className="space-y-5 p-7 rounded-[20px] relative overflow-hidden animate-[borderPulse_4s_ease-in-out_infinite]"
+          className="space-y-4 p-5 sm:p-7 rounded-[20px] relative overflow-hidden animate-[borderPulse_4s_ease-in-out_infinite]"
           style={{
             background: 'linear-gradient(160deg, rgba(255,255,255,0.38) 0%, rgba(255,240,245,0.18) 50%, rgba(255,255,255,0.08) 100%)',
             backdropFilter: 'blur(20px) saturate(1.5)',
