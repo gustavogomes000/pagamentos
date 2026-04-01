@@ -107,7 +107,7 @@ export default function Login() {
             <img
               src={LogoSarelli}
               alt="Dra. Fernanda Sarelli"
-              className="mx-auto h-44 w-auto object-contain drop-shadow-sm"
+              className="mx-auto h-48 w-auto object-contain drop-shadow-sm"
               loading="eager"
             />
           </div>
@@ -126,10 +126,10 @@ export default function Login() {
           onSubmit={handleLogin}
           className="space-y-5 p-7 rounded-[20px] relative overflow-hidden"
           style={{
-            background: 'linear-gradient(160deg, rgba(255,255,255,0.40) 0%, rgba(255,240,245,0.20) 50%, rgba(255,255,255,0.10) 100%)',
+            background: 'linear-gradient(160deg, rgba(255,255,255,0.38) 0%, rgba(255,240,245,0.18) 50%, rgba(255,255,255,0.08) 100%)',
             backdropFilter: 'blur(20px) saturate(1.5)',
             WebkitBackdropFilter: 'blur(20px) saturate(1.5)',
-            border: '1.5px solid rgba(200, 170, 100, 0.4)',
+            border: '1.5px solid rgba(190, 150, 120, 0.35)',
             borderRadius: '20px',
             boxShadow: `
               0 8px 40px rgba(236, 72, 153, 0.06),
