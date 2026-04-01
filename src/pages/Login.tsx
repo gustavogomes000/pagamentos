@@ -178,11 +178,11 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 style={{
-                  background: 'rgba(255,255,255,0.6)',
-                  borderColor: 'rgba(200,170,100,0.25)',
+                  background: 'rgba(255,255,255,0.55)',
+                  borderColor: 'rgba(200,170,100,0.3)',
                   color: '#333',
                 }}
-                className="placeholder:text-gray-400 focus:border-pink-400 focus:ring-pink-200 h-11 pl-10 pr-10 text-sm rounded-lg"
+                className="placeholder:text-gray-400 focus:border-pink-400 focus:ring-pink-200 h-12 pl-10 pr-10 text-sm rounded-xl"
               />
               <button
                 type="button"
