@@ -96,7 +96,7 @@ export default function Login() {
         }}
       >
         {/* Logo */}
-        <div className="flex flex-col items-center space-y-1">
+        <div className="flex flex-col items-center -space-y-2">
           {/* Foto circular */}
           <div
             style={{
