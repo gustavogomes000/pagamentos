@@ -53,6 +53,33 @@ export type Database = {
         }
         Relationships: []
       }
+      fiscais: {
+        Row: {
+          cpf: string | null
+          created_at: string | null
+          id: string
+          nome: string
+          updated_at: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          cpf?: string | null
+          created_at?: string | null
+          id?: string
+          nome: string
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          cpf?: string | null
+          created_at?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       liderancas: {
         Row: {
           assinatura: string | null

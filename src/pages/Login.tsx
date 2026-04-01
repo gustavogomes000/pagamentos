@@ -96,7 +96,7 @@ export default function Login() {
         }}
       >
         {/* Logo */}
-        <div className="flex flex-col items-center -space-y-2">
+        <div className="flex flex-col items-center">
           {/* Foto circular */}
           <div
             style={{
@@ -108,8 +108,8 @@ export default function Login() {
             <div
               className="rounded-full overflow-hidden mx-auto"
               style={{
-                width: 100,
-                height: 100,
+                width: 110,
+                height: 110,
                 border: '3px solid #ec4899',
                 boxShadow: '0 4px 25px rgba(236, 72, 153, 0.3)',
               }}
@@ -126,6 +126,7 @@ export default function Login() {
 
           {/* Logo */}
           <div
+            className="-mt-3"
             style={{
               opacity: entered ? 1 : 0,
               transform: entered ? 'scale(1) translateY(0)' : 'scale(0.8) translateY(10px)',
@@ -135,13 +136,13 @@ export default function Login() {
             <img
               src={LogoSarelli}
               alt="Sarelli"
-              className="mx-auto h-40 w-auto object-contain drop-shadow-sm"
+              className="mx-auto h-44 w-auto object-contain drop-shadow-sm"
               loading="eager"
             />
           </div>
 
           {/* Subtítulo */}
-          <div style={anim(0.3)}>
+          <div className="-mt-4" style={anim(0.3)}>
             <p className="text-xs font-semibold uppercase tracking-[0.2em]"
               style={{ color: '#c8aa64' }}
             >
