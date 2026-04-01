@@ -9,6 +9,7 @@ import { Eye, EyeOff, LogIn, Lock, User } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import NetworkBackground from "@/components/NetworkBackground";
 import LogoSarelli from "@/assets/Logo_Sarelli.png";
+import FotoDra from "@/assets/foto_dra.png";
 
 const EMAIL_DOMAIN = "@painel.sarelli.com";
 
