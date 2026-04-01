@@ -121,10 +121,10 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Login form — glassmorphism with golden border */}
+        {/* Login form — glassmorphism with animated pink border */}
         <form
           onSubmit={handleLogin}
-          className="space-y-5 p-7 rounded-[20px] relative overflow-hidden"
+          className="space-y-5 p-7 rounded-[20px] relative overflow-hidden animate-[borderPulse_4s_ease-in-out_infinite]"
           style={{
             background: 'linear-gradient(160deg, rgba(255,255,255,0.38) 0%, rgba(255,240,245,0.18) 50%, rgba(255,255,255,0.08) 100%)',
             backdropFilter: 'blur(20px) saturate(1.5)',
@@ -132,9 +132,10 @@ export default function Login() {
             border: '2px solid rgba(236, 150, 170, 0.5)',
             borderRadius: '20px',
             boxShadow: `
-              0 8px 40px rgba(236, 72, 153, 0.06),
+              0 8px 40px rgba(236, 72, 153, 0.08),
               0 2px 12px rgba(0, 0, 0, 0.04),
-              inset 0 1px 0 rgba(255, 255, 255, 0.5)
+              inset 0 1px 0 rgba(255, 255, 255, 0.5),
+              0 0 20px rgba(236, 150, 170, 0.15)
             `,
             ...anim(0.3),
           }}
