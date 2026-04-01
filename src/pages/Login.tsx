@@ -152,7 +152,7 @@ export default function Login() {
         {/* Login form — glassmorphism with animated pink border */}
         <form
           onSubmit={handleLogin}
-          className="space-y-5 p-7 rounded-[20px] relative overflow-hidden animate-[borderPulse_4s_ease-in-out_infinite]"
+          className="space-y-4 p-5 sm:p-7 rounded-[20px] relative overflow-hidden animate-[borderPulse_4s_ease-in-out_infinite]"
           style={{
             background: 'linear-gradient(160deg, rgba(255,255,255,0.38) 0%, rgba(255,240,245,0.18) 50%, rgba(255,255,255,0.08) 100%)',
             backdropFilter: 'blur(20px) saturate(1.5)',
