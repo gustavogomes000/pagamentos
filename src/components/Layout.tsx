@@ -6,6 +6,7 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { requestNotificationPermission } from "@/hooks/usePaymentNotifications";
 import { Download, WifiOff, X, RefreshCw, Bell, BellOff } from "lucide-react";
+import SeletorCidade from "@/components/SeletorCidade";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();

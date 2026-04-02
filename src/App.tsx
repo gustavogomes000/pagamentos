@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
 import { Layout } from "@/components/Layout";
+import { CidadeProvider } from "@/contexts/CidadeContext";
 import SplashScreen from "@/components/SplashScreen";
 
 // ─── Lazy-loaded pages ─────────────────────────────────────────────────
@@ -19,6 +20,7 @@ const ListaLiderancas = lazy(() => import("./pages/ListaLiderancas"));
 const CadastroLideranca = lazy(() => import("./pages/CadastroLideranca"));
 const ListaAdmin = lazy(() => import("./pages/ListaAdmin"));
 const CadastroAdmin = lazy(() => import("./pages/CadastroAdmin"));
+const GerenciarCidades = lazy(() => import("./pages/GerenciarCidades"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // ─── QueryClient com suporte offline ───────────────────────────────────
@@ -45,13 +47,11 @@ const queryClient = new QueryClient({
 
 // ─── Limpa todo cache persistido — sempre dados reais do Supabase ────────
 try {
-  // Limpa todas as chaves de cache do React Query no localStorage
   Object.keys(window.localStorage).forEach(k => {
     if (k.startsWith("rq_cache") || k.startsWith("REACT_QUERY") || k.startsWith("tanstack") || k === "offline_queue") {
       window.localStorage.removeItem(k);
     }
   });
-  // Limpa IndexedDB do Dexie (fila offline)
   indexedDB.deleteDatabase("sarelliOfflineDatabase");
 } catch {}
 
@@ -114,33 +114,36 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <GlobalOfflineSync />
-        <InstallPWA />
-        <VersionMonitor />
-        <Toaster />
-        <Sonner />
-        {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
-        <BrowserRouter>
-          <Suspense fallback={<PageFallback />}>
-            <Routes>
-              <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/cadastros" element={<ProtectedRoute><Cadastros /></ProtectedRoute>} />
-              <Route path="/cadastros/novo" element={<ProtectedRoute><Cadastro /></ProtectedRoute>} />
-              <Route path="/cadastros/:id" element={<ProtectedRoute><Cadastros /></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/usuarios" element={<ProtectedRoute><Usuarios /></ProtectedRoute>} />
-              <Route path="/pagamentos" element={<ProtectedRoute><Pagamentos /></ProtectedRoute>} />
-              <Route path="/liderancas" element={<ProtectedRoute><ListaLiderancas /></ProtectedRoute>} />
-              <Route path="/liderancas/novo" element={<ProtectedRoute><CadastroLideranca /></ProtectedRoute>} />
-              <Route path="/liderancas/:id" element={<ProtectedRoute><CadastroLideranca /></ProtectedRoute>} />
-              <Route path="/administrativo" element={<ProtectedRoute><ListaAdmin /></ProtectedRoute>} />
-              <Route path="/administrativo/novo" element={<ProtectedRoute><CadastroAdmin /></ProtectedRoute>} />
-              <Route path="/administrativo/:id" element={<ProtectedRoute><CadastroAdmin /></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
+        <CidadeProvider>
+          <GlobalOfflineSync />
+          <InstallPWA />
+          <VersionMonitor />
+          <Toaster />
+          <Sonner />
+          {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
+          <BrowserRouter>
+            <Suspense fallback={<PageFallback />}>
+              <Routes>
+                <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+                <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+                <Route path="/cadastros" element={<ProtectedRoute><Cadastros /></ProtectedRoute>} />
+                <Route path="/cadastros/novo" element={<ProtectedRoute><Cadastro /></ProtectedRoute>} />
+                <Route path="/cadastros/:id" element={<ProtectedRoute><Cadastros /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/usuarios" element={<ProtectedRoute><Usuarios /></ProtectedRoute>} />
+                <Route path="/pagamentos" element={<ProtectedRoute><Pagamentos /></ProtectedRoute>} />
+                <Route path="/liderancas" element={<ProtectedRoute><ListaLiderancas /></ProtectedRoute>} />
+                <Route path="/liderancas/novo" element={<ProtectedRoute><CadastroLideranca /></ProtectedRoute>} />
+                <Route path="/liderancas/:id" element={<ProtectedRoute><CadastroLideranca /></ProtectedRoute>} />
+                <Route path="/administrativo" element={<ProtectedRoute><ListaAdmin /></ProtectedRoute>} />
+                <Route path="/administrativo/novo" element={<ProtectedRoute><CadastroAdmin /></ProtectedRoute>} />
+                <Route path="/administrativo/:id" element={<ProtectedRoute><CadastroAdmin /></ProtectedRoute>} />
+                <Route path="/cidades" element={<ProtectedRoute><GerenciarCidades /></ProtectedRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </CidadeProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
