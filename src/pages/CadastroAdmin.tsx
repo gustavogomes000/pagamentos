@@ -11,6 +11,7 @@ import { Save, Loader2, ArrowLeft, PenLine, Trash2, FileDown } from "lucide-reac
 import { PageTransition } from "@/components/PageTransition";
 import SignaturePad from "@/components/SignaturePad";
 import { exportAdminPDF } from "@/lib/exports";
+import { useCidade } from "@/contexts/CidadeContext";
 
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
   "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
@@ -39,6 +40,7 @@ export default function CadastroAdmin() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { cidadeAtiva } = useCidade();
   const [showSignature, setShowSignature] = useState(false);
 
   const { data: existing, isLoading } = useQuery({
@@ -76,7 +78,8 @@ export default function CadastroAdmin() {
       return;
     }
     setSaving(true);
-    const payload = { ...form, updated_at: new Date().toISOString() };
+    const payload: any = { ...form, updated_at: new Date().toISOString() };
+    if (!id && cidadeAtiva) payload.municipio_id = cidadeAtiva;
     let error;
     if (id) {
       ({ error } = await (supabase as any).from("administrativo").update(payload).eq("id", id));

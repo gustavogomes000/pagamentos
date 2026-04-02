@@ -1,5 +1,5 @@
 import { NavLink } from "@/components/NavLink";
-import { Wallet, List, Users, Briefcase, MoreHorizontal, BarChart3, UserCog, LogOut, Plus } from "lucide-react";
+import { Wallet, List, Users, Briefcase, MoreHorizontal, BarChart3, UserCog, LogOut, Plus, MapPin } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -65,6 +65,13 @@ export function BottomNav() {
             >
               <UserCog size={17} className="text-primary" />
               Usuários
+            </button>
+            <button
+              onClick={() => { navigate("/cidades"); setShowMais(false); }}
+              className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-foreground rounded-xl active:bg-muted hover:bg-muted/50"
+            >
+              <MapPin size={17} className="text-primary" />
+              Cidades
             </button>
             <div className="h-px bg-border my-1" />
             <button

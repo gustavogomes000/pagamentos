@@ -16,6 +16,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, AreaChart, Area,
 } from "recharts";
+import { useCidade } from "@/contexts/CidadeContext";
 
 type Lideranca = {
   id: string; nome: string; regiao: string | null;
@@ -69,11 +70,14 @@ export default function Dashboard() {
   const [filtroPartido, setFiltroPartido] = useState("");
   const [filtroSituacao, setFiltroSituacao] = useState("");
   const [activeView, setActiveView] = useState<"resumo" | "mensal" | "detalhes">("resumo");
+  const { cidadeAtiva } = useCidade();
 
   const { data: suplentes, isLoading: loadS } = useQuery({
-    queryKey: ["suplentes"],
+    queryKey: ["suplentes", cidadeAtiva],
     queryFn: async () => {
-      const { data, error } = await supabase.from("suplentes").select("*").order("nome");
+      let query = (supabase as any).from("suplentes").select("*").order("nome");
+      if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -82,9 +86,11 @@ export default function Dashboard() {
   });
 
   const { data: liderancas, isLoading: loadL } = useQuery({
-    queryKey: ["liderancas"],
+    queryKey: ["liderancas", cidadeAtiva],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("liderancas").select("*").order("nome");
+      let query = (supabase as any).from("liderancas").select("*").order("nome");
+      if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
+      const { data, error } = await query;
       if (error) throw error;
       return data as Lideranca[];
     },
@@ -92,9 +98,11 @@ export default function Dashboard() {
   });
 
   const { data: administrativo, isLoading: loadA } = useQuery({
-    queryKey: ["administrativo"],
+    queryKey: ["administrativo", cidadeAtiva],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("administrativo").select("*").order("nome");
+      let query = (supabase as any).from("administrativo").select("*").order("nome");
+      if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
+      const { data, error } = await query;
       if (error) throw error;
       return data as AdminPessoa[];
     },

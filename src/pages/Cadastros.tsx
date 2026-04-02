@@ -13,20 +13,21 @@ import { validateAllFinancials } from "@/lib/validateFinancials";
 import { validateRequiredData } from "@/lib/validateRequiredData";
 import { PageTransition } from "@/components/PageTransition";
 import { CardSkeletonList } from "@/components/CardSkeleton";
+import { useCidade } from "@/contexts/CidadeContext";
 
 export default function Cadastros() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const { cidadeAtiva } = useCidade();
 
   const { data: suplentes, refetch, isLoading } = useQuery({
-    queryKey: ["suplentes"],
+    queryKey: ["suplentes", cidadeAtiva],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("suplentes")
-        .select("*")
-        .order("nome");
+      let query = (supabase as any).from("suplentes").select("*").order("nome");
+      if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },

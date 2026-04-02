@@ -9,6 +9,7 @@ import { Search, Plus, Phone, Trash2, ChevronRight, Loader2, FileDown } from "lu
 import { exportAdminPDF } from "@/lib/exports";
 import { PageTransition } from "@/components/PageTransition";
 import { CardSkeletonList } from "@/components/CardSkeleton";
+import { useCidade } from "@/contexts/CidadeContext";
 
 const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -18,11 +19,14 @@ export default function ListaAdmin() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
+  const { cidadeAtiva } = useCidade();
 
   const { data: funcionarios, isLoading } = useQuery({
-    queryKey: ["administrativo"],
+    queryKey: ["administrativo", cidadeAtiva],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("administrativo").select("*").order("nome");
+      let query = (supabase as any).from("administrativo").select("*").order("nome");
+      if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },

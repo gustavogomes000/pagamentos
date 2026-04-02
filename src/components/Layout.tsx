@@ -6,6 +6,7 @@ import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useOfflineSync } from "@/hooks/useOfflineSync";
 import { requestNotificationPermission } from "@/hooks/usePaymentNotifications";
 import { Download, WifiOff, X, RefreshCw, Bell, BellOff } from "lucide-react";
+import SeletorCidade from "@/components/SeletorCidade";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
@@ -53,19 +54,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <div className="h-[100dvh] flex flex-col bg-muted select-none">
       <div className="bg-gradient-to-r from-primary via-rose-400 to-pink-300 h-1.5 shrink-0" />
 
-      <header className="bg-card border-b border-border px-4 py-3 shrink-0 z-40">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-rose-400 flex items-center justify-center">
+      <header className="bg-card border-b border-border px-4 py-2.5 shrink-0 z-40">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-rose-400 flex items-center justify-center shrink-0">
               <span className="text-xs font-bold text-primary-foreground">FS</span>
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-sm font-bold text-foreground leading-tight">Painel Político</h1>
               <p className="text-[10px] text-muted-foreground">Dra. Fernanda Sarelli</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <SeletorCidade />
             {"Notification" in window && notifPermission !== "granted" && (
               <button
                 onClick={handleEnableNotifications}

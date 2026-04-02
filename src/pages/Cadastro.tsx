@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { Save, Calculator, PenLine, Trash2, Loader2 } from "lucide-react";
 import SignaturePad from "@/components/SignaturePad";
 import BuscaTSE from "@/components/BuscaTSE";
+import { useCidade } from "@/contexts/CidadeContext";
 
 interface FormData {
   nome: string;
@@ -97,6 +98,7 @@ function buildFormState(initial?: Props["initial"]): FormData {
 
 export default function Cadastro({ initial, onSaved }: Props) {
   const qc = useQueryClient();
+  const { cidadeAtiva } = useCidade();
   const [form, setForm] = useState<FormData>(() => buildFormState(initial));
   const [saving, setSaving] = useState(false);
   const [showSignature, setShowSignature] = useState(false);
@@ -164,7 +166,8 @@ export default function Cadastro({ initial, onSaved }: Props) {
     }
 
     const { nome_urna, ...rest } = form;
-    const payload = { ...rest, numero_urna: nome_urna || rest.numero_urna || "", total_campanha: totalCampanha };
+    const payload: any = { ...rest, numero_urna: nome_urna || rest.numero_urna || "", total_campanha: totalCampanha };
+    if (!initial?.id && cidadeAtiva) payload.municipio_id = cidadeAtiva;
 
     let error;
     if (initial?.id) {
