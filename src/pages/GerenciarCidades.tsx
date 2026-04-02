@@ -5,16 +5,19 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { MapPin, Plus, Loader2, ToggleLeft, ToggleRight } from "lucide-react";
+import { MapPin, Plus, Loader2, ToggleLeft, ToggleRight, ArrowRightLeft } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 
 export default function GerenciarCidades() {
-  const { refetchMunicipios } = useCidade();
+  const { refetchMunicipios, municipios } = useCidade();
   const qc = useQueryClient();
   const [nome, setNome] = useState("");
   const [uf, setUf] = useState("GO");
   const [saving, setSaving] = useState(false);
+  const [assigning, setAssigning] = useState(false);
+  const [targetCidade, setTargetCidade] = useState("");
 
   const { data: cidades, isLoading } = useQuery({
     queryKey: ["municipios-admin"],
@@ -30,7 +33,6 @@ export default function GerenciarCidades() {
     refetchOnMount: "always",
   });
 
-  // Stats per city
   const { data: stats } = useQuery({
     queryKey: ["cidade-stats"],
     queryFn: async () => {
@@ -41,7 +43,10 @@ export default function GerenciarCidades() {
       ]);
       const count = (data: any[], cidadeId: string) =>
         (data || []).filter((r: any) => r.municipio_id === cidadeId).length;
+      const countNull = (data: any[]) =>
+        (data || []).filter((r: any) => !r.municipio_id).length;
       const result: Record<string, { suplentes: number; liderancas: number; admin: number }> = {};
+      let semCidade = { suplentes: 0, liderancas: 0, admin: 0 };
       for (const c of (cidades || [])) {
         result[c.id] = {
           suplentes: count(sup.data || [], c.id),
@@ -49,6 +54,12 @@ export default function GerenciarCidades() {
           admin: count(adm.data || [], c.id),
         };
       }
+      semCidade = {
+        suplentes: countNull(sup.data || []),
+        liderancas: countNull(lid.data || []),
+        admin: countNull(adm.data || []),
+      };
+      result["__sem_cidade"] = semCidade;
       return result;
     },
     enabled: !!cidades,
@@ -83,12 +94,77 @@ export default function GerenciarCidades() {
     }
   };
 
+  const handleAssignAll = async () => {
+    if (!targetCidade) {
+      toast({ title: "Selecione uma cidade", variant: "destructive" });
+      return;
+    }
+    setAssigning(true);
+    try {
+      const tables = ["suplentes", "liderancas", "administrativo"];
+      let total = 0;
+      for (const table of tables) {
+        const { data } = await (supabase as any)
+          .from(table)
+          .select("id")
+          .is("municipio_id", null);
+        if (data && data.length > 0) {
+          const ids = data.map((r: any) => r.id);
+          const { error } = await (supabase as any)
+            .from(table)
+            .update({ municipio_id: targetCidade })
+            .in("id", ids);
+          if (error) throw error;
+          total += ids.length;
+        }
+      }
+      const cidadeNome = municipios.find(m => m.id === targetCidade)?.nome || "";
+      toast({ title: `${total} registros vinculados a ${cidadeNome}!` });
+      qc.invalidateQueries();
+      refetchMunicipios();
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+    setAssigning(false);
+  };
+
+  const semCidade = stats?.["__sem_cidade"];
+  const totalSemCidade = semCidade ? semCidade.suplentes + semCidade.liderancas + semCidade.admin : 0;
+
   return (
     <PageTransition>
       <div className="space-y-5">
         <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
           <MapPin size={20} className="text-primary" /> Gerenciar Cidades
         </h1>
+
+        {/* Assign unlinked records */}
+        {totalSemCidade > 0 && (
+          <section className="bg-destructive/5 border border-destructive/20 rounded-2xl p-4 space-y-3">
+            <h2 className="text-sm font-semibold text-destructive uppercase tracking-wider flex items-center gap-2">
+              <ArrowRightLeft size={16} /> {totalSemCidade} registros sem cidade
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              {semCidade!.suplentes} suplentes, {semCidade!.liderancas} lideranças, {semCidade!.admin} administrativo — sem cidade vinculada.
+            </p>
+            <div className="flex gap-2">
+              <Select value={targetCidade} onValueChange={setTargetCidade}>
+                <SelectTrigger className="flex-1 bg-card border-border text-xs">
+                  <SelectValue placeholder="Selecione a cidade destino" />
+                </SelectTrigger>
+                <SelectContent>
+                  {municipios.map(m => (
+                    <SelectItem key={m.id} value={m.id} className="text-xs">📍 {m.nome} — {m.uf}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={handleAssignAll} disabled={assigning} size="sm" className="gap-1.5 bg-gradient-to-r from-pink-500 to-rose-400 text-white font-semibold">
+                {assigning ? <Loader2 size={14} className="animate-spin" /> : <ArrowRightLeft size={14} />}
+                Vincular Todos
+              </Button>
+            </div>
+          </section>
+        )}
 
         {/* Add city */}
         <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">

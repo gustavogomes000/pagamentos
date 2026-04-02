@@ -74,6 +74,7 @@ function buildFormState(initial?: Props["initial"]): FormData {
   return {
     ...defaultForm,
     ...initial,
+    municipio_id: (initial as any)?.municipio_id ?? defaultForm.municipio_id,
     nome: initial?.nome ?? defaultForm.nome,
     nome_urna: initial?.nome_urna ?? defaultForm.nome_urna,
     numero_urna: initial?.numero_urna ?? defaultForm.numero_urna,
