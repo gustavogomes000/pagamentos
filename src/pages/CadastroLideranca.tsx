@@ -49,7 +49,7 @@ export default function CadastroLideranca() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { cidadeAtiva, municipios } = useCidade();
-  const [selectedMunicipio, setSelectedMunicipio] = useState<string>("");
+  const [selectedMunicipio, setSelectedMunicipio] = useState<string>(cidadeAtiva || "");
   const [showSignature, setShowSignature] = useState(false);
 
   const { data: existing, isLoading } = useQuery({
