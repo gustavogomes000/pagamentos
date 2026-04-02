@@ -101,7 +101,7 @@ function buildFormState(initial?: Props["initial"]): FormData {
 
 export default function Cadastro({ initial, onSaved }: Props) {
   const qc = useQueryClient();
-  const { cidadeAtiva } = useCidade();
+  const { cidadeAtiva, municipios } = useCidade();
   const [form, setForm] = useState<FormData>(() => buildFormState(initial));
   const [saving, setSaving] = useState(false);
   const [showSignature, setShowSignature] = useState(false);
