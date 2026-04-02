@@ -16,6 +16,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, Legend, AreaChart, Area,
 } from "recharts";
+import { useCidade } from "@/contexts/CidadeContext";
 
 type Lideranca = {
   id: string; nome: string; regiao: string | null;
