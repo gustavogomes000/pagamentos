@@ -19,11 +19,14 @@ export default function ListaAdmin() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
+  const { cidadeAtiva } = useCidade();
 
   const { data: funcionarios, isLoading } = useQuery({
-    queryKey: ["administrativo"],
+    queryKey: ["administrativo", cidadeAtiva],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("administrativo").select("*").order("nome");
+      let query = (supabase as any).from("administrativo").select("*").order("nome");
+      if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },

@@ -166,7 +166,8 @@ export default function Cadastro({ initial, onSaved }: Props) {
     }
 
     const { nome_urna, ...rest } = form;
-    const payload = { ...rest, numero_urna: nome_urna || rest.numero_urna || "", total_campanha: totalCampanha };
+    const payload: any = { ...rest, numero_urna: nome_urna || rest.numero_urna || "", total_campanha: totalCampanha };
+    if (!initial?.id && cidadeAtiva) payload.municipio_id = cidadeAtiva;
 
     let error;
     if (initial?.id) {
