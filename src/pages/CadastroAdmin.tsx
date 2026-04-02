@@ -67,6 +67,7 @@ export default function CadastroAdmin() {
       contrato_ate_mes: existing.contrato_ate_mes || 9,
       assinatura: existing.assinatura || "",
     });
+    setSelectedMunicipio(existing.municipio_id || cidadeAtiva || "");
     setInitialized(true);
   }
 
