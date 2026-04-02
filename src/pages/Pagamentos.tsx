@@ -18,6 +18,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
 import { usePaymentNotifications } from "@/hooks/usePaymentNotifications";
+import { useCidade } from "@/contexts/CidadeContext";
 
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
   "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
