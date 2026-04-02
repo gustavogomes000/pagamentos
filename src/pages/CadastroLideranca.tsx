@@ -79,6 +79,7 @@ export default function CadastroLideranca() {
       chave_pix: existing.chave_pix || "",
       assinatura: existing.assinatura || "",
     });
+    setSelectedMunicipio(existing.municipio_id || cidadeAtiva || "");
     setInitialized(true);
   }
 
