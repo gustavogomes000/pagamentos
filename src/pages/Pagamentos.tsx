@@ -670,13 +670,16 @@ export default function Pagamentos() {
   const [showPagos, setShowPagos] = useState(true);
   const [showAlertaAtraso, setShowAlertaAtraso] = useState(false);
   const [alertaDismissed, setAlertaDismissed] = useState(false);
+  const { cidadeAtiva } = useCidade();
 
   const { data: suplentes, isLoading: loadS } = useQuery({
-    queryKey: ["suplentes"],
+    queryKey: ["suplentes", cidadeAtiva],
     queryFn: async () => {
-      const { data, error } = await supabase.from("suplentes").select(
+      let query = (supabase as any).from("suplentes").select(
         "id,nome,numero_urna,bairro,regiao_atuacao,partido,base_politica,retirada_mensal_valor,retirada_mensal_meses,plotagem_qtd,plotagem_valor_unit,liderancas_qtd,liderancas_valor_unit,fiscais_qtd,fiscais_valor_unit,total_campanha"
       ).order("nome");
+      if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
+      const { data, error } = await query;
       if (error) throw error;
       return data as unknown as Suplente[];
     },
@@ -685,9 +688,11 @@ export default function Pagamentos() {
   });
 
   const { data: liderancas, isLoading: loadL } = useQuery({
-    queryKey: ["liderancas"],
+    queryKey: ["liderancas", cidadeAtiva],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("liderancas").select("id,nome,regiao,retirada_mensal_valor,chave_pix").order("nome");
+      let query = (supabase as any).from("liderancas").select("id,nome,regiao,retirada_mensal_valor,chave_pix").order("nome");
+      if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
+      const { data, error } = await query;
       if (error) throw error;
       return data as unknown as Lideranca[];
     },
@@ -696,9 +701,11 @@ export default function Pagamentos() {
   });
 
   const { data: administrativo, isLoading: loadA } = useQuery({
-    queryKey: ["administrativo"],
+    queryKey: ["administrativo", cidadeAtiva],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("administrativo").select("id,nome,whatsapp,valor_contrato").order("nome");
+      let query = (supabase as any).from("administrativo").select("id,nome,whatsapp,valor_contrato").order("nome");
+      if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
+      const { data, error } = await query;
       if (error) throw error;
       return data as unknown as AdminPessoa[];
     },
