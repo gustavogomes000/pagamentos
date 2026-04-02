@@ -329,20 +329,41 @@ export default function Dashboard() {
   ].filter(d => d.value > 0), [totalCampanhaSup, totalLidMensal, totalAdmMensal]);
 
   // ─── DADOS POR CIDADE (para aba Cidades) ──────────────────────────────
+  // ─── DADOS POR CIDADE (detalhado) ──────────────────────────────
   const dadosPorCidade = useMemo(() => {
-    if (!isAdmin || municipios.length === 0) return [];
+    if (municipios.length === 0) return [];
+    // When filtered by city, use all data (queries already filter)
+    // When "Todas", need to split by municipio_id
     const allSup = suplentes ?? [];
     const allLid = liderancas ?? [];
     const allAdm = administrativo ?? [];
 
     return municipios.map((mun, idx) => {
-      const supCidade = allSup.filter((s: any) => s.municipio_id === mun.id);
-      const lidCidade = allLid.filter(l => l.municipio_id === mun.id);
-      const admCidade = allAdm.filter(a => a.municipio_id === mun.id);
+      const supCidade = cidadeAtiva
+        ? (cidadeAtiva === mun.id ? allSup : [])
+        : allSup.filter((s: any) => s.municipio_id === mun.id);
+      const lidCidade = cidadeAtiva
+        ? (cidadeAtiva === mun.id ? allLid : [])
+        : allLid.filter(l => l.municipio_id === mun.id);
+      const admCidade = cidadeAtiva
+        ? (cidadeAtiva === mun.id ? allAdm : [])
+        : allAdm.filter(a => a.municipio_id === mun.id);
 
+      const retiradaSup = supCidade.reduce((a: number, s: any) => a + ((s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0)), 0);
+      const liderancasVal = supCidade.reduce((a: number, s: any) => a + ((s.liderancas_qtd || 0) * (s.liderancas_valor_unit || 0)), 0);
+      const fiscaisVal = supCidade.reduce((a: number, s: any) => a + ((s.fiscais_qtd || 0) * (s.fiscais_valor_unit || 0)), 0);
+      const plotagemVal = supCidade.reduce((a: number, s: any) => a + ((s.plotagem_qtd || 0) * (s.plotagem_valor_unit || 0)), 0);
       const orcSup = supCidade.reduce((a: number, s: any) => a + calcTotaisFinanceiros(s).totalFinal, 0);
-      const orcLid = lidCidade.reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0) * (MES_FIM - MES_INICIO_LID + 1);
-      const orcAdm = admCidade.reduce((a, ad) => a + (ad.valor_contrato || 0), 0) * (MES_FIM - MES_INICIO_ADM + 1);
+
+      const retiradaMensalSup = supCidade.reduce((a: number, s: any) => a + (s.retirada_mensal_valor || 0), 0);
+      const liderancasQtd = supCidade.reduce((a: number, s: any) => a + (s.liderancas_qtd || 0), 0);
+      const fiscaisQtd = supCidade.reduce((a: number, s: any) => a + (s.fiscais_qtd || 0), 0);
+      const plotagemQtd = supCidade.reduce((a: number, s: any) => a + (s.plotagem_qtd || 0), 0);
+
+      const lidMensal = lidCidade.reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0);
+      const orcLid = lidMensal * (MES_FIM - MES_INICIO_LID + 1);
+      const admMensal = admCidade.reduce((a, ad) => a + (ad.valor_contrato || 0), 0);
+      const orcAdm = admMensal * (MES_FIM - MES_INICIO_ADM + 1);
       const orcTotal = orcSup + orcLid + orcAdm;
 
       const supIdsCity = new Set(supCidade.map((s: any) => s.id));
@@ -366,15 +387,20 @@ export default function Dashboard() {
         uf: mun.uf,
         color: COLORS_CITY[idx % COLORS_CITY.length],
         suplentes: supCidade.length,
-        liderancas: lidCidade.length,
+        liderancasCount: lidCidade.length,
         admin: admCidade.length,
+        orcSup, retiradaSup, liderancasVal, fiscaisVal, plotagemVal,
+        retiradaMensalSup, liderancasQtd, fiscaisQtd, plotagemQtd,
+        lidMensal, orcLid, admMensal, orcAdm,
         orcamento: orcTotal,
         pago: pagoCity,
         votos2024: totalVotosCidade,
         expectativa2026: totalExpCidade,
+        lidCidade,
+        admCidade,
       };
-    });
-  }, [isAdmin, municipios, suplentes, liderancas, administrativo, pagamentos]);
+    }).filter(c => c.orcamento > 0 || c.suplentes > 0 || c.liderancasCount > 0 || c.admin > 0);
+  }, [municipios, suplentes, liderancas, administrativo, pagamentos, cidadeAtiva]);
 
   const mesAtual = new Date().getMonth() + 1;
 
