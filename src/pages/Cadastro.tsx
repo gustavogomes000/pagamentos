@@ -11,8 +11,10 @@ import { Save, Calculator, PenLine, Trash2, Loader2 } from "lucide-react";
 import SignaturePad from "@/components/SignaturePad";
 import BuscaTSE from "@/components/BuscaTSE";
 import { useCidade } from "@/contexts/CidadeContext";
+import { MapPin } from "lucide-react";
 
 interface FormData {
+  municipio_id: string;
   nome: string;
   nome_urna: string;
   numero_urna: string;
