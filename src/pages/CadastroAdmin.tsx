@@ -11,6 +11,7 @@ import { Save, Loader2, ArrowLeft, PenLine, Trash2, FileDown } from "lucide-reac
 import { PageTransition } from "@/components/PageTransition";
 import SignaturePad from "@/components/SignaturePad";
 import { exportAdminPDF } from "@/lib/exports";
+import { useCidade } from "@/contexts/CidadeContext";
 
 const MESES = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho",
   "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
