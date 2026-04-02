@@ -73,9 +73,11 @@ export default function Dashboard() {
   const { cidadeAtiva } = useCidade();
 
   const { data: suplentes, isLoading: loadS } = useQuery({
-    queryKey: ["suplentes"],
+    queryKey: ["suplentes", cidadeAtiva],
     queryFn: async () => {
-      const { data, error } = await supabase.from("suplentes").select("*").order("nome");
+      let query = (supabase as any).from("suplentes").select("*").order("nome");
+      if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
