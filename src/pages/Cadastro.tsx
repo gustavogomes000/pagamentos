@@ -168,9 +168,9 @@ export default function Cadastro({ initial, onSaved }: Props) {
       }
     }
 
-    const { nome_urna, ...rest } = form;
+    const { nome_urna, municipio_id, ...rest } = form;
     const payload: any = { ...rest, numero_urna: nome_urna || rest.numero_urna || "", total_campanha: totalCampanha };
-    if (!initial?.id && cidadeAtiva) payload.municipio_id = cidadeAtiva;
+    payload.municipio_id = municipio_id || cidadeAtiva || null;
 
     let error;
     if (initial?.id) {
