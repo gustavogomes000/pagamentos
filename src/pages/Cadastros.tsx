@@ -25,7 +25,7 @@ export default function Cadastros() {
   const { data: suplentes, refetch, isLoading } = useQuery({
     queryKey: ["suplentes", cidadeAtiva],
     queryFn: async () => {
-      let query = supabase.from("suplentes").select("*").order("nome");
+      let query = (supabase as any).from("suplentes").select("*").order("nome");
       if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
       const { data, error } = await query;
       if (error) throw error;
