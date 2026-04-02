@@ -13,6 +13,7 @@ import { validateAllFinancials } from "@/lib/validateFinancials";
 import { validateRequiredData } from "@/lib/validateRequiredData";
 import { PageTransition } from "@/components/PageTransition";
 import { CardSkeletonList } from "@/components/CardSkeleton";
+import { useCidade } from "@/contexts/CidadeContext";
 
 export default function Cadastros() {
   const navigate = useNavigate();
