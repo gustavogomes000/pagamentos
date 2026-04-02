@@ -40,7 +40,8 @@ export default function CadastroAdmin() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { cidadeAtiva } = useCidade();
+  const { cidadeAtiva, municipios } = useCidade();
+  const [selectedMunicipio, setSelectedMunicipio] = useState<string>("");
   const [showSignature, setShowSignature] = useState(false);
 
   const { data: existing, isLoading } = useQuery({
