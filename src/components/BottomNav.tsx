@@ -66,6 +66,13 @@ export function BottomNav() {
               <UserCog size={17} className="text-primary" />
               Usuários
             </button>
+            <button
+              onClick={() => { navigate("/cidades"); setShowMais(false); }}
+              className="flex items-center gap-3 w-full px-3 py-2.5 text-sm text-foreground rounded-xl active:bg-muted hover:bg-muted/50"
+            >
+              <MapPin size={17} className="text-primary" />
+              Cidades
+            </button>
             <div className="h-px bg-border my-1" />
             <button
               onClick={handleSignOut}
