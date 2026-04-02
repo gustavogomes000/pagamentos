@@ -120,6 +120,22 @@ export default function CadastroAdmin() {
         </div>
 
         <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
+          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+            <MapPin size={16} /> Cidade
+          </h2>
+          <Field label="Município" required>
+            <Select value={selectedMunicipio || ""} onValueChange={setSelectedMunicipio}>
+              <SelectTrigger className="bg-card shadow-sm border-border"><SelectValue placeholder="Selecione a cidade" /></SelectTrigger>
+              <SelectContent>
+                {municipios.map(m => (
+                  <SelectItem key={m.id} value={m.id}>📍 {m.nome} — {m.uf}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        </section>
+
+        <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
           <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Dados do Funcionário</h2>
 
           <Field label="Nome" required>
