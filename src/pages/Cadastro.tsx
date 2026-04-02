@@ -109,7 +109,9 @@ export default function Cadastro({ initial, onSaved }: Props) {
   const initialSnapshot = initial ? JSON.stringify(initial) : "";
 
   useEffect(() => {
-    setForm(buildFormState(initial));
+    const built = buildFormState(initial);
+    if (!built.municipio_id && cidadeAtiva) built.municipio_id = cidadeAtiva;
+    setForm(built);
   }, [initialSnapshot]);
 
   const set = (key: keyof FormData, value: string | number) =>
