@@ -1034,7 +1034,7 @@ export default function Dashboard() {
                         </div>
                         <div className="bg-muted/50 rounded-lg p-2 text-center">
                           <p className="text-[8px] text-muted-foreground uppercase">Lideranças</p>
-                          <p className="text-sm font-bold text-foreground">{c.liderancas}</p>
+                          <p className="text-sm font-bold text-foreground">{c.liderancasCount}</p>
                         </div>
                         <div className="bg-muted/50 rounded-lg p-2 text-center">
                           <p className="text-[8px] text-muted-foreground uppercase">Admin</p>
@@ -1108,7 +1108,7 @@ export default function Dashboard() {
                       </div>
                       <div className="text-center">
                         <p className="text-[9px] text-muted-foreground uppercase">Lideranças (total)</p>
-                        <p className="text-lg font-bold text-foreground">{dadosPorCidade.reduce((a, c) => a + c.liderancas, 0)}</p>
+                        <p className="text-lg font-bold text-foreground">{dadosPorCidade.reduce((a, c) => a + c.liderancasCount, 0)}</p>
                       </div>
                     </div>
                   </div>
