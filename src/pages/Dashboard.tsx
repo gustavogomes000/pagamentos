@@ -4,6 +4,7 @@ import {
   Users, DollarSign, Vote, TrendingUp, MapPin, ChevronDown, ChevronUp,
   FileDown, FileSpreadsheet, Search, Briefcase, List, Wallet, Filter, X,
   Calendar, BarChart3, PieChart as PieChartIcon, ArrowUpRight, ArrowDownRight,
+  Building2, CheckCircle2, AlertTriangle, XCircle, TrendingDown,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
@@ -22,12 +23,14 @@ type Lideranca = {
   id: string; nome: string; regiao: string | null;
   retirada_mensal_valor: number | null; retirada_mensal_meses: number | null;
   retirada_ate_mes: number | null; chave_pix: string | null;
+  municipio_id?: string | null;
 };
 
 type AdminPessoa = {
   id: string; nome: string; whatsapp: string | null;
   valor_contrato: number | null; valor_contrato_meses: number | null;
   contrato_ate_mes: number | null;
+  municipio_id?: string | null;
 };
 
 type Pagamento = {
@@ -51,12 +54,42 @@ const COLORS_CAT = {
   admin: "hsl(217, 91%, 60%)",
 };
 
+const COLORS_CITY = [
+  "hsl(330, 81%, 60%)", "hsl(263, 70%, 58%)", "hsl(217, 91%, 60%)",
+  "hsl(160, 60%, 45%)", "hsl(30, 90%, 55%)", "hsl(0, 70%, 55%)",
+];
+
 function MiniBar({ pago, total, cor = "bg-primary" }: { pago: number; total: number; cor?: string }) {
   const pct = total > 0 ? Math.min(100, (pago / total) * 100) : 0;
   return (
     <div className="h-1.5 bg-muted rounded-full overflow-hidden">
       <div className={`h-full rounded-full transition-all duration-700 ${cor}`} style={{ width: `${pct}%` }} />
     </div>
+  );
+}
+
+function StatusBadge({ pago, previsto }: { pago: number; previsto: number }) {
+  if (previsto <= 0) return null;
+  const pct = (pago / previsto) * 100;
+  if (pct >= 100) return (
+    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full">
+      <CheckCircle2 size={9} /> Quitado
+    </span>
+  );
+  if (pct >= 50) return (
+    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 px-1.5 py-0.5 rounded-full">
+      <AlertTriangle size={9} /> {pct.toFixed(0)}%
+    </span>
+  );
+  if (pct > 0) return (
+    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/30 px-1.5 py-0.5 rounded-full">
+      <AlertTriangle size={9} /> {pct.toFixed(0)}%
+    </span>
+  );
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-destructive bg-destructive/10 px-1.5 py-0.5 rounded-full">
+      <XCircle size={9} /> Pendente
+    </span>
   );
 }
 
@@ -69,8 +102,8 @@ export default function Dashboard() {
   const [filtroRegiao, setFiltroRegiao] = useState("");
   const [filtroPartido, setFiltroPartido] = useState("");
   const [filtroSituacao, setFiltroSituacao] = useState("");
-  const [activeView, setActiveView] = useState<"resumo" | "mensal" | "detalhes">("resumo");
-  const { cidadeAtiva } = useCidade();
+  const [activeView, setActiveView] = useState<"resumo" | "mensal" | "detalhes" | "cidades">("resumo");
+  const { cidadeAtiva, municipios, isAdmin } = useCidade();
 
   const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes", cidadeAtiva],
@@ -109,8 +142,9 @@ export default function Dashboard() {
     staleTime: 0, refetchOnMount: "always",
   });
 
+  // Pagamentos agora filtrados por cidade
   const { data: pagamentos } = useQuery({
-    queryKey: ["pagamentos-dash"],
+    queryKey: ["pagamentos-dash", cidadeAtiva],
     queryFn: async () => {
       const { data, error } = await supabase.from("pagamentos").select("*");
       if (error) throw error;
@@ -118,6 +152,24 @@ export default function Dashboard() {
     },
     staleTime: 0, refetchOnMount: "always",
   });
+
+  // IDs de suplentes/lideranças/admin da cidade ativa para filtrar pagamentos
+  const supIds = useMemo(() => new Set((suplentes ?? []).map((s: any) => s.id)), [suplentes]);
+  const lidIds = useMemo(() => new Set((liderancas ?? []).map((l: any) => l.id)), [liderancas]);
+  const admIds = useMemo(() => new Set((administrativo ?? []).map((a: any) => a.id)), [administrativo]);
+
+  const pagamentosFiltrados = useMemo(() => {
+    if (!pagamentos) return [];
+    if (!cidadeAtiva) return pagamentos; // "Todas" = todos os pagamentos
+    return pagamentos.filter(p => {
+      if (p.suplente_id && supIds.has(p.suplente_id)) return true;
+      if (p.lideranca_id && lidIds.has(p.lideranca_id)) return true;
+      if (p.admin_id && admIds.has(p.admin_id)) return true;
+      // Se não tem nenhum ID vinculado, incluir (pagamento avulso)
+      if (!p.suplente_id && !p.lideranca_id && !p.admin_id) return true;
+      return false;
+    });
+  }, [pagamentos, cidadeAtiva, supIds, lidIds, admIds]);
 
   const isLoading = loadS || loadL || loadA;
   const normalizeStr = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -192,7 +244,7 @@ export default function Dashboard() {
   const totalLidMensal = lidList.reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0);
   const totalAdmMensal = admList.reduce((a, p) => a + (p.valor_contrato || 0), 0);
 
-  // ─── FLUXO MENSAL (Fev–Out) ───────────────────────────────────────────
+  // ─── FLUXO MENSAL (Fev–Set) ───────────────────────────────────────────
   const fluxoMensal = useMemo(() => {
     const meses: { mes: number; label: string; suplentes: number; liderancas: number; admin: number; total: number; pago: number }[] = [];
     for (let m = 1; m <= MES_FIM; m++) {
@@ -226,7 +278,7 @@ export default function Dashboard() {
         }, 0);
       }
 
-      const pagoMes = (pagamentos ?? [])
+      const pagoMes = pagamentosFiltrados
         .filter(p => p.mes === m && p.ano === 2026)
         .reduce((a, p) => a + (p.valor || 0), 0);
 
@@ -241,18 +293,33 @@ export default function Dashboard() {
       });
     }
     return meses;
-  }, [supList, lidList, admList, pagamentos]);
+  }, [supList, lidList, admList, pagamentosFiltrados]);
 
   const totalPrevistoAno = fluxoMensal.reduce((a, m) => a + m.total, 0);
   // Add one-time costs (plotagem, lideranças campanha, fiscais)
   const custosPontuais = totalPlotagemVal + totalLiderancasVal + totalFiscaisVal;
   const orcamentoTotal = totalPrevistoAno + custosPontuais;
 
-  const totalPagoAno = (pagamentos ?? [])
+  const totalPagoAno = pagamentosFiltrados
     .filter(p => p.ano === 2026)
     .reduce((a, p) => a + (p.valor || 0), 0);
 
   const saldoRestante = orcamentoTotal - totalPagoAno;
+
+  // Cumulative area chart data
+  const cumulativeData = useMemo(() => {
+    let acumPrevisto = 0;
+    let acumPago = 0;
+    return fluxoMensal.filter(m => m.mes >= 2).map(m => {
+      acumPrevisto += m.total;
+      acumPago += m.pago;
+      return {
+        label: MESES_LABEL[m.mes],
+        previsto: acumPrevisto,
+        pago: acumPago,
+      };
+    });
+  }, [fluxoMensal]);
 
   // Pie chart data
   const pieData = useMemo(() => [
@@ -261,8 +328,55 @@ export default function Dashboard() {
     { name: "Administrativo", value: totalAdmMensal * (MES_FIM - MES_INICIO_ADM + 1), fill: COLORS_CAT.admin },
   ].filter(d => d.value > 0), [totalCampanhaSup, totalLidMensal, totalAdmMensal]);
 
+  // ─── DADOS POR CIDADE (para aba Cidades) ──────────────────────────────
+  const dadosPorCidade = useMemo(() => {
+    if (!isAdmin || municipios.length === 0) return [];
+    const allSup = suplentes ?? [];
+    const allLid = liderancas ?? [];
+    const allAdm = administrativo ?? [];
+
+    return municipios.map((mun, idx) => {
+      const supCidade = allSup.filter((s: any) => s.municipio_id === mun.id);
+      const lidCidade = allLid.filter(l => l.municipio_id === mun.id);
+      const admCidade = allAdm.filter(a => a.municipio_id === mun.id);
+
+      const orcSup = supCidade.reduce((a: number, s: any) => a + calcTotaisFinanceiros(s).totalFinal, 0);
+      const orcLid = lidCidade.reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0) * (MES_FIM - MES_INICIO_LID + 1);
+      const orcAdm = admCidade.reduce((a, ad) => a + (ad.valor_contrato || 0), 0) * (MES_FIM - MES_INICIO_ADM + 1);
+      const orcTotal = orcSup + orcLid + orcAdm;
+
+      const supIdsCity = new Set(supCidade.map((s: any) => s.id));
+      const lidIdsCity = new Set(lidCidade.map(l => l.id));
+      const admIdsCity = new Set(admCidade.map(a => a.id));
+
+      const pagoCity = (pagamentos ?? []).filter(p =>
+        p.ano === 2026 && (
+          (p.suplente_id && supIdsCity.has(p.suplente_id)) ||
+          (p.lideranca_id && lidIdsCity.has(p.lideranca_id)) ||
+          (p.admin_id && admIdsCity.has(p.admin_id))
+        )
+      ).reduce((a, p) => a + (p.valor || 0), 0);
+
+      const totalVotosCidade = supCidade.reduce((a: number, s: any) => a + (s.total_votos || 0), 0);
+      const totalExpCidade = supCidade.reduce((a: number, s: any) => a + (s.expectativa_votos || 0), 0);
+
+      return {
+        id: mun.id,
+        nome: mun.nome,
+        uf: mun.uf,
+        color: COLORS_CITY[idx % COLORS_CITY.length],
+        suplentes: supCidade.length,
+        liderancas: lidCidade.length,
+        admin: admCidade.length,
+        orcamento: orcTotal,
+        pago: pagoCity,
+        votos2024: totalVotosCidade,
+        expectativa2026: totalExpCidade,
+      };
+    });
+  }, [isAdmin, municipios, suplentes, liderancas, administrativo, pagamentos]);
+
   const mesAtual = new Date().getMonth() + 1;
-  const gastoAteMesAtual = fluxoMensal.filter(m => m.mes <= mesAtual).reduce((a, m) => a + m.total, 0);
 
   const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   const fmtN = (v: number) => v.toLocaleString("pt-BR");
@@ -273,6 +387,13 @@ export default function Dashboard() {
   const visibleAdm = expandedAdm ? admList : admList.slice(0, 5);
 
   const tooltipFmt = (value: number) => fmt(value);
+
+  const viewTabs: [string, string, any][] = [
+    ["resumo", "Resumo", BarChart3],
+    ["mensal", "Mensal", Calendar],
+    ["detalhes", "Detalhes", List],
+    ...(isAdmin && municipios.length > 1 ? [["cidades", "Cidades", Building2] as [string, string, any]] : []),
+  ];
 
   return (
     <PageTransition>
@@ -361,8 +482,8 @@ export default function Dashboard() {
           <>
             {/* ─── VIEW TABS ──────────────────────────────── */}
             <div className="flex gap-1 bg-muted/50 rounded-xl p-1">
-              {([["resumo", "Resumo", BarChart3], ["mensal", "Mensal", Calendar], ["detalhes", "Detalhes", List]] as const).map(([key, label, Icon]) => (
-                <button key={key} onClick={() => setActiveView(key)}
+              {viewTabs.map(([key, label, Icon]) => (
+                <button key={key} onClick={() => setActiveView(key as any)}
                   className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all ${activeView === key ? "bg-card text-foreground shadow-sm" : "text-muted-foreground"}`}>
                   <Icon size={13} /> {label}
                 </button>
@@ -421,6 +542,12 @@ export default function Dashboard() {
                       <div className="bg-muted/50 rounded-xl p-3">
                         <p className="text-[10px] text-muted-foreground mb-0.5">Expectativa de votos 2026</p>
                         <p className="text-xl font-bold text-foreground">{fmtN(totalExpectativa)}</p>
+                        {totalVotos > 0 && (
+                          <p className={`text-[9px] font-medium flex items-center gap-0.5 mt-0.5 ${totalExpectativa >= totalVotos ? "text-green-600 dark:text-green-400" : "text-destructive"}`}>
+                            {totalExpectativa >= totalVotos ? <ArrowUpRight size={9} /> : <ArrowDownRight size={9} />}
+                            {totalVotos > 0 ? ((((totalExpectativa - totalVotos) / totalVotos) * 100).toFixed(0)) : 0}% vs 2024
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -454,7 +581,7 @@ export default function Dashboard() {
 
                   {/* Plotagem */}
                   <div>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">🚗 Carros Plotados</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">🚗 Carros Plotados</p>
                     <div className="bg-muted/50 rounded-xl p-3 flex items-center justify-between">
                       <div>
                         <p className="text-[10px] text-muted-foreground mb-0.5">Carros plotados contratados</p>
@@ -585,6 +712,36 @@ export default function Dashboard() {
             {activeView === "mensal" && (
               <div className="space-y-4">
 
+                {/* Gráfico acumulado Previsto vs Pago */}
+                <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+                  <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5 mb-3">
+                    <TrendingUp size={14} /> Previsto vs Pago (Acumulado)
+                  </h2>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <AreaChart data={cumulativeData}>
+                      <defs>
+                        <linearGradient id="gradPrevisto" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(330, 81%, 60%)" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(330, 81%, 60%)" stopOpacity={0} />
+                        </linearGradient>
+                        <linearGradient id="gradPago" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(142, 71%, 45%)" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                      <YAxis tickFormatter={fmtK} tick={{ fontSize: 10 }} width={40} />
+                      <Tooltip formatter={tooltipFmt} />
+                      <Area type="monotone" dataKey="previsto" name="Previsto" stroke="hsl(330, 81%, 60%)" fill="url(#gradPrevisto)" strokeWidth={2} />
+                      <Area type="monotone" dataKey="pago" name="Pago" stroke="hsl(142, 71%, 45%)" fill="url(#gradPago)" strokeWidth={2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                  <div className="flex justify-center gap-6 mt-1">
+                    <span className="flex items-center gap-1.5 text-[10px]"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: "hsl(330, 81%, 60%)" }} /> Previsto</span>
+                    <span className="flex items-center gap-1.5 text-[10px]"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: "hsl(142, 71%, 45%)" }} /> Pago</span>
+                  </div>
+                </div>
+
                 {/* Tabela mensal detalhada */}
                 <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                   <div className="p-3 border-b border-border">
@@ -603,6 +760,7 @@ export default function Dashboard() {
                                 {MESES_FULL[m.mes] || m.label}
                               </span>
                               {isCurrent && <span className="text-[8px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full font-bold uppercase">Atual</span>}
+                              <StatusBadge pago={m.pago} previsto={m.total} />
                             </div>
                             <span className="text-sm font-bold text-foreground">{fmt(m.total)}</span>
                           </div>
@@ -688,6 +846,11 @@ export default function Dashboard() {
                     const pessoas = liderancas + fiscais;
                     const plotagem = s.plotagem_qtd || 0;
                     const retirada = (s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0);
+                    const totalSup = calcTotaisFinanceiros(s).totalFinal;
+
+                    // Pagamentos deste suplente
+                    const pagoSup = pagamentosFiltrados.filter(p => p.suplente_id === s.id && p.ano === 2026).reduce((a, p) => a + (p.valor || 0), 0);
+
                     return (
                       <div key={s.id} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
                         <div className="p-3">
@@ -700,10 +863,16 @@ export default function Dashboard() {
                               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
                                 {s.partido && <span className="text-[11px] text-muted-foreground font-medium">{s.partido}</span>}
                                 {s.situacao && <span className="text-[11px] font-medium text-primary uppercase">{s.situacao}</span>}
+                                <StatusBadge pago={pagoSup} previsto={totalSup} />
                               </div>
                               {s.regiao_atuacao && <p className="text-[11px] text-muted-foreground flex items-center gap-0.5 mt-0.5"><MapPin size={9} className="text-primary" />{s.regiao_atuacao}</p>}
                             </div>
-                            <span className="text-sm font-bold text-primary whitespace-nowrap">{fmt(calcTotaisFinanceiros(s).totalFinal)}</span>
+                            <div className="text-right shrink-0">
+                              <span className="text-sm font-bold text-primary whitespace-nowrap">{fmt(totalSup)}</span>
+                              {pagoSup > 0 && (
+                                <p className="text-[9px] text-green-600 dark:text-green-400 font-medium">Pago: {fmt(pagoSup)}</p>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="grid grid-cols-3 border-t border-border divide-x divide-border bg-muted/40">
@@ -731,23 +900,31 @@ export default function Dashboard() {
                 {lidList.length > 0 && (
                   <div className="space-y-3">
                     <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5"><Users size={14} /> Lideranças ({lidList.length})</h2>
-                    {visibleLid.map(l => (
-                      <div key={l.id} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden p-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="font-semibold text-foreground text-sm truncate">{l.nome}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              {l.regiao && <span className="text-[11px] text-muted-foreground flex items-center gap-0.5"><MapPin size={9} className="text-primary" />{l.regiao}</span>}
-                              {l.chave_pix && <span className="text-[10px] text-muted-foreground">PIX: {l.chave_pix}</span>}
+                    {visibleLid.map(l => {
+                      const pagoLid = pagamentosFiltrados.filter(p => p.lideranca_id === l.id && p.ano === 2026).reduce((a, p) => a + (p.valor || 0), 0);
+                      const previstoLid = (l.retirada_mensal_valor || 0) * ((l.retirada_ate_mes || MES_FIM) - MES_INICIO_LID + 1);
+                      return (
+                        <div key={l.id} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-foreground text-sm truncate">{l.nome}</p>
+                                <StatusBadge pago={pagoLid} previsto={previstoLid} />
+                              </div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                {l.regiao && <span className="text-[11px] text-muted-foreground flex items-center gap-0.5"><MapPin size={9} className="text-primary" />{l.regiao}</span>}
+                                {l.chave_pix && <span className="text-[10px] text-muted-foreground">PIX: {l.chave_pix}</span>}
+                              </div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-sm font-bold text-primary">{fmt(l.retirada_mensal_valor || 0)}</p>
+                              <p className="text-[10px] text-muted-foreground">por mês</p>
+                              {pagoLid > 0 && <p className="text-[9px] text-green-600 dark:text-green-400 font-medium">Pago: {fmt(pagoLid)}</p>}
                             </div>
                           </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-sm font-bold text-primary">{fmt(l.retirada_mensal_valor || 0)}</p>
-                            <p className="text-[10px] text-muted-foreground">por mês</p>
-                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {lidList.length > 5 && (
                       <button onClick={() => setExpandedLid(!expandedLid)} className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium text-primary bg-card rounded-2xl border border-border shadow-sm active:scale-[0.98] transition-transform">
                         {expandedLid ? <>Mostrar menos <ChevronUp size={16} /></> : <>Ver todos ({lidList.length}) <ChevronDown size={16} /></>}
@@ -760,25 +937,154 @@ export default function Dashboard() {
                 {admList.length > 0 && (
                   <div className="space-y-3">
                     <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5"><Briefcase size={14} /> Administrativo ({admList.length})</h2>
-                    {visibleAdm.map(a => (
-                      <div key={a.id} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden p-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="font-semibold text-foreground text-sm truncate">{a.nome}</p>
-                            {a.whatsapp && <p className="text-[11px] text-muted-foreground mt-0.5">{a.whatsapp}</p>}
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-sm font-bold text-primary">{fmt(a.valor_contrato || 0)}</p>
-                            <p className="text-[10px] text-muted-foreground">por mês</p>
+                    {visibleAdm.map(a => {
+                      const pagoAdm = pagamentosFiltrados.filter(p => p.admin_id === a.id && p.ano === 2026).reduce((a2, p) => a2 + (p.valor || 0), 0);
+                      const previstoAdm = (a.valor_contrato || 0) * ((a.contrato_ate_mes || MES_FIM) - MES_INICIO_ADM + 1);
+                      return (
+                        <div key={a.id} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden p-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-semibold text-foreground text-sm truncate">{a.nome}</p>
+                                <StatusBadge pago={pagoAdm} previsto={previstoAdm} />
+                              </div>
+                              {a.whatsapp && <p className="text-[11px] text-muted-foreground mt-0.5">{a.whatsapp}</p>}
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-sm font-bold text-primary">{fmt(a.valor_contrato || 0)}</p>
+                              <p className="text-[10px] text-muted-foreground">por mês</p>
+                              {pagoAdm > 0 && <p className="text-[9px] text-green-600 dark:text-green-400 font-medium">Pago: {fmt(pagoAdm)}</p>}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {admList.length > 5 && (
                       <button onClick={() => setExpandedAdm(!expandedAdm)} className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium text-primary bg-card rounded-2xl border border-border shadow-sm active:scale-[0.98] transition-transform">
                         {expandedAdm ? <>Mostrar menos <ChevronUp size={16} /></> : <>Ver todos ({admList.length}) <ChevronDown size={16} /></>}
                       </button>
                     )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════ */}
+            {/* ─── CIDADES (admin only) ──────────────────── */}
+            {/* ═══════════════════════════════════════════════ */}
+            {activeView === "cidades" && isAdmin && (
+              <div className="space-y-4">
+                {/* Total comparativo */}
+                <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+                  <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5 mb-3">
+                    <Building2 size={14} /> Comparativo por Cidade
+                  </h2>
+
+                  {dadosPorCidade.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">Selecione "Todas as Cidades" para ver o comparativo.</p>
+                  )}
+
+                  {dadosPorCidade.map(c => (
+                    <div key={c.id} className="border-b border-border last:border-0 py-3 first:pt-0 last:pb-0 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
+                          <div>
+                            <p className="text-sm font-bold text-foreground">{c.nome}</p>
+                            <p className="text-[10px] text-muted-foreground">{c.uf}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-primary">{fmt(c.orcamento)}</p>
+                          <StatusBadge pago={c.pago} previsto={c.orcamento} />
+                        </div>
+                      </div>
+
+                      {/* Métricas da cidade */}
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-muted/50 rounded-lg p-2 text-center">
+                          <p className="text-[8px] text-muted-foreground uppercase">Suplentes</p>
+                          <p className="text-sm font-bold text-foreground">{c.suplentes}</p>
+                        </div>
+                        <div className="bg-muted/50 rounded-lg p-2 text-center">
+                          <p className="text-[8px] text-muted-foreground uppercase">Lideranças</p>
+                          <p className="text-sm font-bold text-foreground">{c.liderancas}</p>
+                        </div>
+                        <div className="bg-muted/50 rounded-lg p-2 text-center">
+                          <p className="text-[8px] text-muted-foreground uppercase">Admin</p>
+                          <p className="text-sm font-bold text-foreground">{c.admin}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-muted/50 rounded-lg p-2 text-center">
+                          <p className="text-[8px] text-muted-foreground uppercase">Votos 2024</p>
+                          <p className="text-sm font-bold text-foreground">{fmtN(c.votos2024)}</p>
+                        </div>
+                        <div className="bg-muted/50 rounded-lg p-2 text-center">
+                          <p className="text-[8px] text-muted-foreground uppercase">Expect. 2026</p>
+                          <p className="text-sm font-bold text-foreground">{fmtN(c.expectativa2026)}</p>
+                        </div>
+                      </div>
+
+                      {/* Barra pago vs total */}
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="text-muted-foreground">Pago: <span className="font-bold text-green-600 dark:text-green-400">{fmt(c.pago)}</span></span>
+                          <span className="text-muted-foreground">Falta: <span className="font-medium text-foreground">{fmt(Math.max(0, c.orcamento - c.pago))}</span></span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${c.orcamento > 0 ? Math.min(100, (c.pago / c.orcamento) * 100) : 0}%`, backgroundColor: c.color }} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Gráfico comparativo de orçamento por cidade */}
+                {dadosPorCidade.length > 0 && (
+                  <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+                    <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5 mb-3">
+                      <BarChart3 size={14} /> Orçamento por Cidade
+                    </h2>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={dadosPorCidade} layout="vertical">
+                        <XAxis type="number" tickFormatter={fmtK} tick={{ fontSize: 10 }} />
+                        <YAxis type="category" dataKey="nome" tick={{ fontSize: 10 }} width={100} />
+                        <Tooltip formatter={tooltipFmt} />
+                        <Bar dataKey="orcamento" name="Orçamento" radius={[0, 6, 6, 0]}>
+                          {dadosPorCidade.map((c, i) => <Cell key={i} fill={c.color} />)}
+                        </Bar>
+                        <Bar dataKey="pago" name="Pago" radius={[0, 6, 6, 0]} fillOpacity={0.4}>
+                          {dadosPorCidade.map((c, i) => <Cell key={i} fill={c.color} />)}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+
+                {/* Resumo total multi-cidade */}
+                {dadosPorCidade.length > 0 && (
+                  <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl border border-primary/20 p-4 space-y-2">
+                    <p className="text-xs font-semibold text-primary uppercase tracking-wider">Totais Consolidados</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="text-center">
+                        <p className="text-[9px] text-muted-foreground uppercase">Orçamento Total</p>
+                        <p className="text-lg font-bold text-foreground">{fmt(dadosPorCidade.reduce((a, c) => a + c.orcamento, 0))}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[9px] text-muted-foreground uppercase">Total Pago</p>
+                        <p className="text-lg font-bold text-green-600 dark:text-green-400">{fmt(dadosPorCidade.reduce((a, c) => a + c.pago, 0))}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[9px] text-muted-foreground uppercase">Suplentes (total)</p>
+                        <p className="text-lg font-bold text-foreground">{dadosPorCidade.reduce((a, c) => a + c.suplentes, 0)}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[9px] text-muted-foreground uppercase">Lideranças (total)</p>
+                        <p className="text-lg font-bold text-foreground">{dadosPorCidade.reduce((a, c) => a + c.liderancas, 0)}</p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
