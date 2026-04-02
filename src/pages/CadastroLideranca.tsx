@@ -93,7 +93,7 @@ export default function CadastroLideranca() {
     }
     setSaving(true);
     const payload: any = { ...form, updated_at: new Date().toISOString() };
-    if (!id && cidadeAtiva) payload.municipio_id = cidadeAtiva;
+    payload.municipio_id = selectedMunicipio || cidadeAtiva || null;
     let error;
     if (id) {
       ({ error } = await (supabase as any).from("liderancas").update(payload).eq("id", id));
