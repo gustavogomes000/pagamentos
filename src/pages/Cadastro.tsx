@@ -40,6 +40,7 @@ interface FormData {
 }
 
 const defaultForm: FormData = {
+  municipio_id: "",
   nome: "",
   nome_urna: "",
   numero_urna: "",
