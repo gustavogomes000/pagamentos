@@ -1015,41 +1015,7 @@ export default function Dashboard() {
               </div>
             )}
 
-                {/* Administrativo */}
-                {admList.length > 0 && (
-                  <div className="space-y-3">
-                    <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5"><Briefcase size={14} /> Administrativo ({admList.length})</h2>
-                    {visibleAdm.map(a => {
-                      const pagoAdm = pagamentosFiltrados.filter(p => p.admin_id === a.id && p.ano === 2026).reduce((a2, p) => a2 + (p.valor || 0), 0);
-                      const previstoAdm = (a.valor_contrato || 0) * ((a.contrato_ate_mes || MES_FIM) - MES_INICIO_ADM + 1);
-                      return (
-                        <div key={a.id} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden p-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="font-semibold text-foreground text-sm truncate">{a.nome}</p>
-                                <StatusBadge pago={pagoAdm} previsto={previstoAdm} />
-                              </div>
-                              {a.whatsapp && <p className="text-[11px] text-muted-foreground mt-0.5">{a.whatsapp}</p>}
-                            </div>
-                            <div className="text-right shrink-0">
-                              <p className="text-sm font-bold text-primary">{fmt(a.valor_contrato || 0)}</p>
-                              <p className="text-[10px] text-muted-foreground">por mês</p>
-                              {pagoAdm > 0 && <p className="text-[9px] text-green-600 dark:text-green-400 font-medium">Pago: {fmt(pagoAdm)}</p>}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    {admList.length > 5 && (
-                      <button onClick={() => setExpandedAdm(!expandedAdm)} className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium text-primary bg-card rounded-2xl border border-border shadow-sm active:scale-[0.98] transition-transform">
-                        {expandedAdm ? <>Mostrar menos <ChevronUp size={16} /></> : <>Ver todos ({admList.length}) <ChevronDown size={16} /></>}
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+
 
             {/* ═══════════════════════════════════════════════ */}
             {/* ─── CIDADES (admin only) ──────────────────── */}
