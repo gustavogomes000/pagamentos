@@ -1,5 +1,5 @@
 import { NavLink } from "@/components/NavLink";
-import { Wallet, List, Users, Briefcase, MoreHorizontal, BarChart3, UserCog, LogOut, Plus } from "lucide-react";
+import { Wallet, List, Users, Briefcase, MoreHorizontal, BarChart3, UserCog, LogOut, Plus, MapPin } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
