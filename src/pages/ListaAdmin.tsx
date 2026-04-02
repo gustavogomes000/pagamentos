@@ -9,6 +9,7 @@ import { Search, Plus, Phone, Trash2, ChevronRight, Loader2, FileDown } from "lu
 import { exportAdminPDF } from "@/lib/exports";
 import { PageTransition } from "@/components/PageTransition";
 import { CardSkeletonList } from "@/components/CardSkeleton";
+import { useCidade } from "@/contexts/CidadeContext";
 
 const fmt = (v: number) => (v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
