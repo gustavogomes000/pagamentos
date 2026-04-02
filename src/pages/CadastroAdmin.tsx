@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Save, Loader2, ArrowLeft, PenLine, Trash2, FileDown } from "lucide-react";
+import { Save, Loader2, ArrowLeft, PenLine, Trash2, FileDown, MapPin } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import SignaturePad from "@/components/SignaturePad";
 import { exportAdminPDF } from "@/lib/exports";
@@ -40,7 +40,8 @@ export default function CadastroAdmin() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { cidadeAtiva } = useCidade();
+  const { cidadeAtiva, municipios } = useCidade();
+  const [selectedMunicipio, setSelectedMunicipio] = useState<string>("");
   const [showSignature, setShowSignature] = useState(false);
 
   const { data: existing, isLoading } = useQuery({
@@ -66,6 +67,7 @@ export default function CadastroAdmin() {
       contrato_ate_mes: existing.contrato_ate_mes || 9,
       assinatura: existing.assinatura || "",
     });
+    setSelectedMunicipio(existing.municipio_id || cidadeAtiva || "");
     setInitialized(true);
   }
 
@@ -79,7 +81,7 @@ export default function CadastroAdmin() {
     }
     setSaving(true);
     const payload: any = { ...form, updated_at: new Date().toISOString() };
-    if (!id && cidadeAtiva) payload.municipio_id = cidadeAtiva;
+    payload.municipio_id = selectedMunicipio || cidadeAtiva || null;
     let error;
     if (id) {
       ({ error } = await (supabase as any).from("administrativo").update(payload).eq("id", id));
@@ -116,6 +118,22 @@ export default function CadastroAdmin() {
             </Button>
           )}
         </div>
+
+        <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
+          <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+            <MapPin size={16} /> Cidade
+          </h2>
+          <Field label="Município" required>
+            <Select value={selectedMunicipio || ""} onValueChange={setSelectedMunicipio}>
+              <SelectTrigger className="bg-card shadow-sm border-border"><SelectValue placeholder="Selecione a cidade" /></SelectTrigger>
+              <SelectContent>
+                {municipios.map(m => (
+                  <SelectItem key={m.id} value={m.id}>📍 {m.nome} — {m.uf}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        </section>
 
         <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
           <h2 className="text-sm font-semibold text-primary uppercase tracking-wider">Dados do Funcionário</h2>

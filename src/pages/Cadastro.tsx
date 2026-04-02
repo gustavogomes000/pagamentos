@@ -11,8 +11,10 @@ import { Save, Calculator, PenLine, Trash2, Loader2 } from "lucide-react";
 import SignaturePad from "@/components/SignaturePad";
 import BuscaTSE from "@/components/BuscaTSE";
 import { useCidade } from "@/contexts/CidadeContext";
+import { MapPin } from "lucide-react";
 
 interface FormData {
+  municipio_id: string;
   nome: string;
   nome_urna: string;
   numero_urna: string;
@@ -38,6 +40,7 @@ interface FormData {
 }
 
 const defaultForm: FormData = {
+  municipio_id: "",
   nome: "",
   nome_urna: "",
   numero_urna: "",
@@ -71,6 +74,7 @@ function buildFormState(initial?: Props["initial"]): FormData {
   return {
     ...defaultForm,
     ...initial,
+    municipio_id: (initial as any)?.municipio_id ?? defaultForm.municipio_id,
     nome: initial?.nome ?? defaultForm.nome,
     nome_urna: initial?.nome_urna ?? defaultForm.nome_urna,
     numero_urna: initial?.numero_urna ?? defaultForm.numero_urna,
@@ -98,14 +102,16 @@ function buildFormState(initial?: Props["initial"]): FormData {
 
 export default function Cadastro({ initial, onSaved }: Props) {
   const qc = useQueryClient();
-  const { cidadeAtiva } = useCidade();
+  const { cidadeAtiva, municipios } = useCidade();
   const [form, setForm] = useState<FormData>(() => buildFormState(initial));
   const [saving, setSaving] = useState(false);
   const [showSignature, setShowSignature] = useState(false);
   const initialSnapshot = initial ? JSON.stringify(initial) : "";
 
   useEffect(() => {
-    setForm(buildFormState(initial));
+    const built = buildFormState(initial);
+    if (!built.municipio_id && cidadeAtiva) built.municipio_id = cidadeAtiva;
+    setForm(built);
   }, [initialSnapshot]);
 
   const set = (key: keyof FormData, value: string | number) =>
@@ -165,9 +171,9 @@ export default function Cadastro({ initial, onSaved }: Props) {
       }
     }
 
-    const { nome_urna, ...rest } = form;
+    const { nome_urna, municipio_id, ...rest } = form;
     const payload: any = { ...rest, numero_urna: nome_urna || rest.numero_urna || "", total_campanha: totalCampanha };
-    if (!initial?.id && cidadeAtiva) payload.municipio_id = cidadeAtiva;
+    payload.municipio_id = municipio_id || cidadeAtiva || null;
 
     let error;
     if (initial?.id) {
@@ -234,6 +240,23 @@ export default function Cadastro({ initial, onSaved }: Props) {
           />
         </section>
       )}
+
+      {/* Cidade */}
+      <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
+        <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
+          <MapPin size={16} /> Cidade
+        </h2>
+        <Field label="Município" required>
+          <Select value={form.municipio_id || ""} onValueChange={(v) => set("municipio_id", v)}>
+            <SelectTrigger className="bg-card shadow-sm border-border"><SelectValue placeholder="Selecione a cidade" /></SelectTrigger>
+            <SelectContent>
+              {municipios.map(m => (
+                <SelectItem key={m.id} value={m.id}>📍 {m.nome} — {m.uf}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+      </section>
 
       {/* Dados pessoais */}
       <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
