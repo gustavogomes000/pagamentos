@@ -21,6 +21,7 @@ export type Database = {
           cpf: string | null
           created_at: string
           id: string
+          municipio_id: string | null
           nome: string
           updated_at: string
           valor_contrato: number | null
@@ -33,6 +34,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           id?: string
+          municipio_id?: string | null
           nome: string
           updated_at?: string
           valor_contrato?: number | null
@@ -45,13 +47,22 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           id?: string
+          municipio_id?: string | null
           nome?: string
           updated_at?: string
           valor_contrato?: number | null
           valor_contrato_meses?: number | null
           whatsapp?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "administrativo_municipio_id_fkey"
+            columns: ["municipio_id"]
+            isOneToOne: false
+            referencedRelation: "municipios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fiscais: {
         Row: {
@@ -88,6 +99,7 @@ export type Database = {
           created_at: string
           id: string
           ligacao_politica: string | null
+          municipio_id: string | null
           nome: string
           rede_social: string | null
           regiao: string | null
@@ -104,6 +116,7 @@ export type Database = {
           created_at?: string
           id?: string
           ligacao_politica?: string | null
+          municipio_id?: string | null
           nome: string
           rede_social?: string | null
           regiao?: string | null
@@ -120,6 +133,7 @@ export type Database = {
           created_at?: string
           id?: string
           ligacao_politica?: string | null
+          municipio_id?: string | null
           nome?: string
           rede_social?: string | null
           regiao?: string | null
@@ -128,6 +142,38 @@ export type Database = {
           retirada_mensal_valor?: number | null
           updated_at?: string
           whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "liderancas_municipio_id_fkey"
+            columns: ["municipio_id"]
+            isOneToOne: false
+            referencedRelation: "municipios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      municipios: {
+        Row: {
+          ativo: boolean
+          criado_em: string
+          id: string
+          nome: string
+          uf: string
+        }
+        Insert: {
+          ativo?: boolean
+          criado_em?: string
+          id?: string
+          nome: string
+          uf?: string
+        }
+        Update: {
+          ativo?: boolean
+          criado_em?: string
+          id?: string
+          nome?: string
+          uf?: string
         }
         Relationships: []
       }
@@ -247,6 +293,42 @@ export type Database = {
         }
         Relationships: []
       }
+      suplente_municipio: {
+        Row: {
+          criado_em: string
+          id: string
+          municipio_id: string
+          suplente_id: string
+        }
+        Insert: {
+          criado_em?: string
+          id?: string
+          municipio_id: string
+          suplente_id: string
+        }
+        Update: {
+          criado_em?: string
+          id?: string
+          municipio_id?: string
+          suplente_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suplente_municipio_municipio_id_fkey"
+            columns: ["municipio_id"]
+            isOneToOne: false
+            referencedRelation: "municipios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "suplente_municipio_suplente_id_fkey"
+            columns: ["suplente_id"]
+            isOneToOne: false
+            referencedRelation: "suplentes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suplentes: {
         Row: {
           ano_eleicao: number | null
@@ -261,6 +343,7 @@ export type Database = {
           id: string
           liderancas_qtd: number | null
           liderancas_valor_unit: number | null
+          municipio_id: string | null
           nome: string
           numero_urna: string | null
           partido: string | null
@@ -288,6 +371,7 @@ export type Database = {
           id?: string
           liderancas_qtd?: number | null
           liderancas_valor_unit?: number | null
+          municipio_id?: string | null
           nome: string
           numero_urna?: string | null
           partido?: string | null
@@ -315,6 +399,7 @@ export type Database = {
           id?: string
           liderancas_qtd?: number | null
           liderancas_valor_unit?: number | null
+          municipio_id?: string | null
           nome?: string
           numero_urna?: string | null
           partido?: string | null
@@ -329,7 +414,15 @@ export type Database = {
           total_votos?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "suplentes_municipio_id_fkey"
+            columns: ["municipio_id"]
+            isOneToOne: false
+            referencedRelation: "municipios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -354,6 +447,7 @@ export type Database = {
           criado_em: string | null
           email: string
           id: string
+          municipio_id: string | null
           nome_usuario: string
           user_id: string
         }
@@ -361,6 +455,7 @@ export type Database = {
           criado_em?: string | null
           email: string
           id?: string
+          municipio_id?: string | null
           nome_usuario: string
           user_id: string
         }
@@ -368,10 +463,19 @@ export type Database = {
           criado_em?: string | null
           email?: string
           id?: string
+          municipio_id?: string | null
           nome_usuario?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "usuarios_municipio_id_fkey"
+            columns: ["municipio_id"]
+            isOneToOne: false
+            referencedRelation: "municipios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       visitas: {
         Row: {
@@ -434,6 +538,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      eh_super_admin: { Args: never; Returns: boolean }
       get_user_role: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
