@@ -70,6 +70,7 @@ export default function Dashboard() {
   const [filtroPartido, setFiltroPartido] = useState("");
   const [filtroSituacao, setFiltroSituacao] = useState("");
   const [activeView, setActiveView] = useState<"resumo" | "mensal" | "detalhes">("resumo");
+  const { cidadeAtiva } = useCidade();
 
   const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes"],
