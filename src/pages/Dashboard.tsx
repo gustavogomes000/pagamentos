@@ -837,127 +837,183 @@ export default function Dashboard() {
             {/* ═══════════════════════════════════════════════ */}
             {activeView === "detalhes" && (
               <div className="space-y-4">
-                {/* Resumo Geral — PRIMEIRO */}
+                {/* ORÇAMENTO TOTAL */}
                 <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl border border-primary/20 p-4 space-y-2">
-                  <p className="text-xs font-semibold text-primary uppercase tracking-wider">Resumo Geral</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <div className="text-center"><p className="text-[9px] text-muted-foreground uppercase leading-tight">Votos Eleição 2024</p><p className="text-sm font-bold text-foreground">{fmtN(totalVotos)}</p></div>
-                    <div className="text-center"><p className="text-[9px] text-muted-foreground uppercase leading-tight">Expectativa 2026</p><p className="text-sm font-bold text-foreground">{fmtN(totalExpectativa)}</p></div>
-                    <div className="text-center"><p className="text-[9px] text-muted-foreground uppercase leading-tight">Pessoas de Campo</p><p className="text-sm font-bold text-foreground">{fmtN(totalPessoas)}</p></div>
-                    <div className="text-center"><p className="text-[9px] text-muted-foreground uppercase leading-tight">Plotagem</p><p className="text-sm font-bold text-foreground">{fmtN(totalPlotagem)}</p></div>
-                  </div>
-                  <div className="space-y-1 pt-1 border-t border-primary/20">
-                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Suplentes (mensal)</span><span className="font-bold text-foreground">{fmt(totalRetiradaMensalSup)}</span></div>
-                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Lideranças (mensal)</span><span className="font-bold text-foreground">{fmt(totalLidMensal)}</span></div>
-                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Administrativo (mensal)</span><span className="font-bold text-foreground">{fmt(totalAdmMensal)}</span></div>
-                  </div>
-                  <div className="flex justify-between items-center pt-1 border-t border-accent/30">
-                    <span className="text-[11px] font-bold text-foreground">Gasto Total / Mês</span>
-                    <span className="text-sm font-bold text-primary">{fmt(totalRetiradaMensalSup + totalLidMensal + totalAdmMensal)}</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-primary/20">
-                    <span className="text-sm font-bold text-foreground">ORÇAMENTO TOTAL</span>
+                  <p className="text-xs font-semibold text-primary uppercase tracking-wider">💰 Orçamento Total</p>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-bold text-foreground">TOTAL GERAL</span>
                     <span className="text-lg font-bold text-primary">{fmt(orcamentoTotal)}</span>
                   </div>
+                  <div className="space-y-1 pt-1 border-t border-primary/20">
+                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Suplentes (campanha total)</span><span className="font-bold text-foreground">{fmt(totalCampanhaSup)}</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Lideranças (mensal × {MES_FIM - MES_INICIO_LID + 1} meses)</span><span className="font-bold text-foreground">{fmt(totalLidMensal * (MES_FIM - MES_INICIO_LID + 1))}</span></div>
+                    <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Administrativo (mensal × {MES_FIM - MES_INICIO_ADM + 1} meses)</span><span className="font-bold text-foreground">{fmt(totalAdmMensal * (MES_FIM - MES_INICIO_ADM + 1))}</span></div>
+                  </div>
+                  <MiniBar pago={totalPagoAno} total={orcamentoTotal} cor="bg-primary" />
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                    <span>Pago: <span className="font-bold text-green-600 dark:text-green-400">{fmt(totalPagoAno)}</span></span>
+                    <span>Falta: <span className="font-bold text-foreground">{fmt(saldoRestante)}</span></span>
+                  </div>
                 </div>
 
-                {/* Suplentes */}
-                <div className="space-y-3">
-                  <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
-                    <List size={14} /> Suplentes ({supList.length})
-                  </h2>
-                  {visibleSup.map((s: any) => {
-                    const liderancas = s.liderancas_qtd || 0;
-                    const fiscais = s.fiscais_qtd || 0;
-                    const pessoas = liderancas + fiscais;
-                    const plotagem = s.plotagem_qtd || 0;
-                    const retirada = (s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0);
-                    const totalSup = calcTotaisFinanceiros(s).totalFinal;
+                {/* ─── COMPOSIÇÃO POR CIDADE ─────────────── */}
+                {dadosPorCidade.length > 0 && (
+                  <div className="space-y-4">
+                    <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                      <Building2 size={14} /> 💰 De Onde Vem Cada Gasto — Por Cidade
+                    </h2>
 
-                    // Pagamentos deste suplente
-                    const pagoSup = pagamentosFiltrados.filter(p => p.suplente_id === s.id && p.ano === 2026).reduce((a, p) => a + (p.valor || 0), 0);
-
-                    return (
-                      <div key={s.id} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-                        <div className="p-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="font-bold text-foreground text-sm truncate">{s.nome}</p>
-                              {s.numero_urna && (
-                                <p className="text-[10px] text-muted-foreground truncate">Urna: <span className="font-semibold">{s.numero_urna}</span></p>
-                              )}
-                              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                                {s.partido && <span className="text-[11px] text-muted-foreground font-medium">{s.partido}</span>}
-                                {s.situacao && <span className="text-[11px] font-medium text-primary uppercase">{s.situacao}</span>}
-                                <StatusBadge pago={pagoSup} previsto={totalSup} />
+                    {dadosPorCidade.map(c => (
+                      <div key={c.id} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                        {/* Header da cidade */}
+                        <div className="p-4 pb-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: c.color }} />
+                              <div>
+                                <p className="text-sm font-bold text-foreground">{c.nome} — {c.uf}</p>
+                                <p className="text-[10px] text-muted-foreground">{c.suplentes} suplentes · {c.liderancasCount} lideranças · {c.admin} admin</p>
                               </div>
-                              {s.regiao_atuacao && <p className="text-[11px] text-muted-foreground flex items-center gap-0.5 mt-0.5"><MapPin size={9} className="text-primary" />{s.regiao_atuacao}</p>}
                             </div>
-                            <div className="text-right shrink-0">
-                              <span className="text-sm font-bold text-primary whitespace-nowrap">{fmt(totalSup)}</span>
-                              {pagoSup > 0 && (
-                                <p className="text-[9px] text-green-600 dark:text-green-400 font-medium">Pago: {fmt(pagoSup)}</p>
-                              )}
+                            <div className="text-right">
+                              <p className="text-base font-bold text-primary">{fmt(c.orcamento)}</p>
+                              <StatusBadge pago={c.pago} previsto={c.orcamento} />
                             </div>
                           </div>
                         </div>
-                        <div className="grid grid-cols-3 border-t border-border divide-x divide-border bg-muted/40">
-                          <div className="py-2 px-1 text-center"><p className="text-[8px] uppercase tracking-wider text-muted-foreground font-medium leading-tight">Votos 2024</p><p className="text-sm font-bold text-foreground">{fmtN(s.total_votos || 0)}</p></div>
-                          <div className="py-2 px-1 text-center"><p className="text-[8px] uppercase tracking-wider text-muted-foreground font-medium leading-tight">Expect. 2026</p><p className="text-sm font-bold text-foreground">{fmtN(s.expectativa_votos || 0)}</p></div>
-                          <div className="py-2 px-1 text-center"><p className="text-[8px] uppercase tracking-wider text-muted-foreground font-medium leading-tight">Pessoas Campo</p><p className="text-sm font-bold text-foreground">{fmtN(pessoas)}</p></div>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-border divide-x divide-border bg-muted/40">
-                          <div className="py-2 px-1 text-center"><p className="text-[8px] uppercase tracking-wider text-muted-foreground font-medium leading-tight">Lideranças</p><p className="text-xs font-bold text-foreground">{fmtN(liderancas)}</p><p className="text-[8px] text-muted-foreground truncate">{fmt(liderancas * (s.liderancas_valor_unit || 0))}</p></div>
-                          <div className="py-2 px-1 text-center"><p className="text-[8px] uppercase tracking-wider text-muted-foreground font-medium leading-tight">Fiscais</p><p className="text-xs font-bold text-foreground">{fmtN(fiscais)}</p><p className="text-[8px] text-muted-foreground truncate">{fmt(fiscais * (s.fiscais_valor_unit || 0))}</p></div>
-                          <div className="py-2 px-1 text-center"><p className="text-[8px] uppercase tracking-wider text-muted-foreground font-medium leading-tight">Plotagem</p><p className="text-xs font-bold text-foreground">{fmtN(plotagem)}</p><p className="text-[8px] text-muted-foreground truncate">{fmt(plotagem * (s.plotagem_valor_unit || 0))}</p></div>
-                          <div className="py-2 px-1 text-center"><p className="text-[8px] uppercase tracking-wider text-muted-foreground font-medium leading-tight">Retirada</p><p className="text-xs font-bold text-foreground truncate">{fmt(retirada)}</p><p className="text-[8px] text-muted-foreground">{s.retirada_mensal_meses || 0}× {fmt(s.retirada_mensal_valor || 0)}</p></div>
+
+                        {/* Suplentes breakdown */}
+                        {c.orcSup > 0 && (
+                          <div className="mx-4 mb-2 bg-muted/30 rounded-xl p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-xs font-bold text-foreground">Suplentes (custo de campanha)</p>
+                                <p className="text-[10px] text-muted-foreground">Salários, pessoas, material</p>
+                              </div>
+                              <p className="text-sm font-bold text-primary shrink-0">{fmt(c.orcSup)}</p>
+                            </div>
+                            <MiniBar pago={c.orcSup} total={c.orcamento} cor="bg-primary" />
+                            <div className="space-y-1 pl-2 border-l-2 border-primary/20">
+                              <div className="flex justify-between text-[11px]">
+                                <span className="text-muted-foreground">Retirada mensal dos suplentes</span>
+                                <span className="font-medium text-foreground">{fmt(c.retiradaSup)}</span>
+                              </div>
+                              <div className="flex justify-between text-[11px]">
+                                <span className="text-muted-foreground">Lideranças de campo ({fmtN(c.liderancasQtd)} pessoas)</span>
+                                <span className="font-medium text-foreground">{fmt(c.liderancasVal)}</span>
+                              </div>
+                              <div className="flex justify-between text-[11px]">
+                                <span className="text-muted-foreground">Fiscais de urna ({fmtN(c.fiscaisQtd)} pessoas)</span>
+                                <span className="font-medium text-foreground">{fmt(c.fiscaisVal)}</span>
+                              </div>
+                              <div className="flex justify-between text-[11px]">
+                                <span className="text-muted-foreground">Plotagem / Material ({fmtN(c.plotagemQtd)} un.)</span>
+                                <span className="font-medium text-foreground">{fmt(c.plotagemVal)}</span>
+                              </div>
+                              <div className="flex justify-between text-[11px] pt-1 border-t border-border/30">
+                                <span className="text-muted-foreground italic">Retirada mensal somada (todos sup.)</span>
+                                <span className="font-bold text-foreground">{fmt(c.retiradaMensalSup)}/mês</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Lideranças breakdown */}
+                        {c.lidMensal > 0 && (
+                          <div className="mx-4 mb-2 bg-muted/30 rounded-xl p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-xs font-bold text-foreground">Lideranças (mensal)</p>
+                                <p className="text-[10px] text-muted-foreground">Cabos eleitorais e líderes de bairro</p>
+                              </div>
+                              <p className="text-sm font-bold text-primary shrink-0">{fmt(c.lidMensal)}/mês</p>
+                            </div>
+                            <MiniBar pago={c.orcLid} total={c.orcamento} cor="bg-primary" />
+                            <div className="space-y-0.5 pl-2 border-l-2 border-primary/20">
+                              {c.lidCidade.map(l => (
+                                <div key={l.id} className="flex justify-between text-[11px]">
+                                  <span className="text-muted-foreground truncate mr-2">{l.nome} {l.regiao ? `(${l.regiao})` : ""}</span>
+                                  <span className="font-medium text-foreground shrink-0">{fmt(l.retirada_mensal_valor || 0)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Administrativo breakdown */}
+                        {c.admMensal > 0 && (
+                          <div className="mx-4 mb-4 bg-muted/30 rounded-xl p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-xs font-bold text-foreground">Administrativo (mensal)</p>
+                                <p className="text-[10px] text-muted-foreground">Funcionários e prestadores</p>
+                              </div>
+                              <p className="text-sm font-bold text-primary shrink-0">{fmt(c.admMensal)}/mês</p>
+                            </div>
+                            <MiniBar pago={c.orcAdm} total={c.orcamento} cor="bg-primary" />
+                            <div className="space-y-0.5 pl-2 border-l-2 border-primary/20">
+                              {c.admCidade.map(a => (
+                                <div key={a.id} className="flex justify-between text-[11px]">
+                                  <span className="text-muted-foreground truncate mr-2">{a.nome}</span>
+                                  <span className="font-medium text-foreground shrink-0">{fmt(a.valor_contrato || 0)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Votos + Pago */}
+                        <div className="grid grid-cols-4 border-t border-border divide-x divide-border bg-muted/40">
+                          <div className="py-2 px-1 text-center">
+                            <p className="text-[8px] text-muted-foreground uppercase">Votos 2024</p>
+                            <p className="text-xs font-bold text-foreground">{fmtN(c.votos2024)}</p>
+                          </div>
+                          <div className="py-2 px-1 text-center">
+                            <p className="text-[8px] text-muted-foreground uppercase">Expect. 2026</p>
+                            <p className="text-xs font-bold text-foreground">{fmtN(c.expectativa2026)}</p>
+                          </div>
+                          <div className="py-2 px-1 text-center">
+                            <p className="text-[8px] text-muted-foreground uppercase">Já Pago</p>
+                            <p className="text-xs font-bold text-green-600 dark:text-green-400">{fmt(c.pago)}</p>
+                          </div>
+                          <div className="py-2 px-1 text-center">
+                            <p className="text-[8px] text-muted-foreground uppercase">Falta</p>
+                            <p className="text-xs font-bold text-foreground">{fmt(Math.max(0, c.orcamento - c.pago))}</p>
+                          </div>
                         </div>
                       </div>
-                    );
-                  })}
-                  {supList.length > 5 && (
-                    <button onClick={() => setExpandedSup(!expandedSup)} className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium text-primary bg-card rounded-2xl border border-border shadow-sm active:scale-[0.98] transition-transform">
-                      {expandedSup ? <>Mostrar menos <ChevronUp size={16} /></> : <>Ver todos ({supList.length}) <ChevronDown size={16} /></>}
-                    </button>
-                  )}
-                </div>
+                    ))}
 
-                {/* Lideranças */}
-                {lidList.length > 0 && (
-                  <div className="space-y-3">
-                    <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5"><Users size={14} /> Lideranças ({lidList.length})</h2>
-                    {visibleLid.map(l => {
-                      const pagoLid = pagamentosFiltrados.filter(p => p.lideranca_id === l.id && p.ano === 2026).reduce((a, p) => a + (p.valor || 0), 0);
-                      const previstoLid = (l.retirada_mensal_valor || 0) * ((l.retirada_ate_mes || MES_FIM) - MES_INICIO_LID + 1);
-                      return (
-                        <div key={l.id} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden p-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="font-semibold text-foreground text-sm truncate">{l.nome}</p>
-                                <StatusBadge pago={pagoLid} previsto={previstoLid} />
-                              </div>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                {l.regiao && <span className="text-[11px] text-muted-foreground flex items-center gap-0.5"><MapPin size={9} className="text-primary" />{l.regiao}</span>}
-                                {l.chave_pix && <span className="text-[10px] text-muted-foreground">PIX: {l.chave_pix}</span>}
-                              </div>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <p className="text-sm font-bold text-primary">{fmt(l.retirada_mensal_valor || 0)}</p>
-                              <p className="text-[10px] text-muted-foreground">por mês</p>
-                              {pagoLid > 0 && <p className="text-[9px] text-green-600 dark:text-green-400 font-medium">Pago: {fmt(pagoLid)}</p>}
-                            </div>
-                          </div>
+                    {/* Totais que conferem */}
+                    <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl border border-primary/20 p-4 space-y-2">
+                      <p className="text-xs font-semibold text-primary uppercase tracking-wider">✅ Conferência — Soma das Cidades</p>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-muted-foreground">Suplentes</span>
+                          <span className="font-bold text-foreground">{fmt(dadosPorCidade.reduce((a, c) => a + c.orcSup, 0))}</span>
                         </div>
-                      );
-                    })}
-                    {lidList.length > 5 && (
-                      <button onClick={() => setExpandedLid(!expandedLid)} className="w-full flex items-center justify-center gap-2 py-3 text-sm font-medium text-primary bg-card rounded-2xl border border-border shadow-sm active:scale-[0.98] transition-transform">
-                        {expandedLid ? <>Mostrar menos <ChevronUp size={16} /></> : <>Ver todos ({lidList.length}) <ChevronDown size={16} /></>}
-                      </button>
-                    )}
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-muted-foreground">Lideranças</span>
+                          <span className="font-bold text-foreground">{fmt(dadosPorCidade.reduce((a, c) => a + c.orcLid, 0))}</span>
+                        </div>
+                        <div className="flex justify-between text-[11px]">
+                          <span className="text-muted-foreground">Administrativo</span>
+                          <span className="font-bold text-foreground">{fmt(dadosPorCidade.reduce((a, c) => a + c.orcAdm, 0))}</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center pt-2 border-t border-primary/20">
+                        <span className="text-sm font-bold text-foreground">TOTAL (soma das cidades)</span>
+                        <span className="text-lg font-bold text-primary">{fmt(dadosPorCidade.reduce((a, c) => a + c.orcamento, 0))}</span>
+                      </div>
+                    </div>
                   </div>
                 )}
+
+                {dadosPorCidade.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-8">Nenhum dado para exibir.</p>
+                )}
+              </div>
+            )}
 
                 {/* Administrativo */}
                 {admList.length > 0 && (
