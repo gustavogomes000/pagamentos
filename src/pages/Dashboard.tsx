@@ -86,9 +86,11 @@ export default function Dashboard() {
   });
 
   const { data: liderancas, isLoading: loadL } = useQuery({
-    queryKey: ["liderancas"],
+    queryKey: ["liderancas", cidadeAtiva],
     queryFn: async () => {
-      const { data, error } = await (supabase as any).from("liderancas").select("*").order("nome");
+      let query = (supabase as any).from("liderancas").select("*").order("nome");
+      if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
+      const { data, error } = await query;
       if (error) throw error;
       return data as Lideranca[];
     },
