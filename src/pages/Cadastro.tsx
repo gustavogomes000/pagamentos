@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { Save, Calculator, PenLine, Trash2, Loader2 } from "lucide-react";
 import SignaturePad from "@/components/SignaturePad";
 import BuscaTSE from "@/components/BuscaTSE";
+import { useCidade } from "@/contexts/CidadeContext";
 
 interface FormData {
   nome: string;
