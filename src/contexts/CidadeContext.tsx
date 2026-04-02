@@ -52,17 +52,25 @@ export function CidadeProvider({ children }: { children: React.ReactNode }) {
       .order("nome");
     if (!error && data) {
       setMunicipios(data);
-      // Se só tem uma cidade e nenhuma selecionada, selecionar automaticamente
-      if (data.length === 1 && !localStorage.getItem(STORAGE_KEY)) {
-        setCidadeAtivaState(data[0].id);
-        localStorage.setItem(STORAGE_KEY, data[0].id);
-      }
-      // Se a cidade salva não existe mais, resetar
+      // Se não tem cidade selecionada, selecionar Aparecida de Goiânia como padrão
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored && stored !== "todas" && !data.find((m: Municipio) => m.id === stored)) {
-        if (data.length > 0) {
+      if (!stored || stored === "") {
+        const aparecida = data.find((m: Municipio) => m.nome.toLowerCase().includes("aparecida"));
+        if (aparecida) {
+          setCidadeAtivaState(aparecida.id);
+          localStorage.setItem(STORAGE_KEY, aparecida.id);
+        } else if (data.length === 1) {
           setCidadeAtivaState(data[0].id);
           localStorage.setItem(STORAGE_KEY, data[0].id);
+        }
+      }
+      // Se a cidade salva não existe mais, resetar para Aparecida ou primeira
+      if (stored && stored !== "todas" && !data.find((m: Municipio) => m.id === stored)) {
+        const aparecida = data.find((m: Municipio) => m.nome.toLowerCase().includes("aparecida"));
+        const fallback = aparecida || data[0];
+        if (fallback) {
+          setCidadeAtivaState(fallback.id);
+          localStorage.setItem(STORAGE_KEY, fallback.id);
         }
       }
     }
