@@ -3,17 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown, Loader2, Plus } from "lucide-react";
+import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown, Loader2, Plus, ShieldCheck, X, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Cadastro from "./Cadastro";
 import { exportFichasLotePDF, exportSuplentePDF, exportExcel } from "@/lib/exports";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 import { validateAllFinancials } from "@/lib/validateFinancials";
-import { validateRequiredData } from "@/lib/validateRequiredData";
+import { validateRequiredData, RequiredDataValidationResult } from "@/lib/validateRequiredData";
 import { PageTransition } from "@/components/PageTransition";
 import { CardSkeletonList } from "@/components/CardSkeleton";
 import { useCidade } from "@/contexts/CidadeContext";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function Cadastros() {
   const navigate = useNavigate();
@@ -21,6 +22,10 @@ export default function Cadastros() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const { cidadeAtiva } = useCidade();
+  const [validating, setValidating] = useState(false);
+  const [validationProgress, setValidationProgress] = useState({ current: 0, total: 0, nome: "" });
+  const [validationResults, setValidationResults] = useState<RequiredDataValidationResult[] | null>(null);
+  const [showResults, setShowResults] = useState(false);
 
   const { data: suplentes, refetch, isLoading } = useQuery({
     queryKey: ["suplentes", cidadeAtiva],
@@ -79,28 +84,42 @@ export default function Cadastros() {
     }
   };
 
-  const runAutoValidateRequiredData = async () => {
+  const runAutoValidateRequiredData = async (manual = false) => {
     try {
-      const results = await validateRequiredData();
+      if (manual) setValidating(true);
+      const results = await validateRequiredData((current, total, nome) => {
+        if (manual) setValidationProgress({ current, total, nome });
+      });
       if (results.length > 0) {
         const updated = results.filter((r) => r.updated).length;
         const campos = [...new Set(results.map((r) => r.campo))];
+        if (manual) {
+          setValidationResults(results);
+          setShowResults(true);
+        }
         toast({
           title: `Dados corrigidos: ${updated} campo(s)`,
           description: `Campos atualizados via TSE: ${campos.join(", ")}`,
         });
         refetch();
+      } else if (manual) {
+        setValidationResults([]);
+        setShowResults(true);
+        toast({ title: "Todos os dados estão corretos!", description: "Nenhuma correção necessária." });
       }
     } catch (e: any) {
       console.error("Erro na validacao automatica de dados obrigatorios:", e?.message || e);
+      if (manual) toast({ title: "Erro na validação", description: e?.message, variant: "destructive" });
+    } finally {
+      if (manual) setValidating(false);
     }
   };
 
   useEffect(() => {
-    runAutoValidateRequiredData();
+    runAutoValidateRequiredData(false);
     runAutoValidateTotals();
     const intervalId = window.setInterval(() => {
-      runAutoValidateRequiredData();
+      runAutoValidateRequiredData(false);
       runAutoValidateTotals();
     }, 60 * 60 * 1000);
     return () => window.clearInterval(intervalId);
@@ -156,8 +175,93 @@ export default function Cadastros() {
               <FileDown size={14} />
               PDF
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => runAutoValidateRequiredData(true)}
+              disabled={validating}
+              className="text-xs gap-1.5 active:scale-95 transition-transform"
+            >
+              {validating ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
+              Validar TSE
+            </Button>
           </div>
         </div>
+
+        {/* Validation progress */}
+        {validating && (
+          <div className="bg-muted/60 rounded-xl p-3 border border-border animate-fade-in">
+            <div className="flex items-center gap-2 mb-1">
+              <Loader2 size={14} className="animate-spin text-primary" />
+              <span className="text-xs font-medium text-foreground">Validando dados via TSE...</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground truncate">{validationProgress.current}/{validationProgress.total} — {validationProgress.nome}</p>
+            <div className="w-full bg-border rounded-full h-1.5 mt-1.5">
+              <div
+                className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                style={{ width: validationProgress.total ? `${(validationProgress.current / validationProgress.total) * 100}%` : '0%' }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Validation results */}
+        {showResults && validationResults && (
+          <div className="bg-card rounded-xl border border-border shadow-sm animate-fade-in">
+            <div className="flex items-center justify-between p-3 border-b border-border">
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+                <ShieldCheck size={16} className="text-primary" />
+                Relatório de Validação TSE
+              </h3>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowResults(false)}>
+                <X size={14} />
+              </Button>
+            </div>
+            {validationResults.length === 0 ? (
+              <div className="p-6 text-center">
+                <CheckCircle2 size={32} className="mx-auto text-green-500 mb-2" />
+                <p className="text-sm font-medium text-foreground">Todos os dados estão corretos!</p>
+                <p className="text-xs text-muted-foreground">Nenhuma correção foi necessária.</p>
+              </div>
+            ) : (
+              <div className="overflow-auto max-h-[60vh]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-[10px]">Nome</TableHead>
+                      <TableHead className="text-[10px]">Campo</TableHead>
+                      <TableHead className="text-[10px]">Antes</TableHead>
+                      <TableHead className="text-[10px]">Depois</TableHead>
+                      <TableHead className="text-[10px] w-12">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {validationResults.map((r, i) => (
+                      <TableRow key={`${r.id}-${r.campo}-${i}`}>
+                        <TableCell className="text-xs font-medium py-2 max-w-[120px] truncate">{r.nome}</TableCell>
+                        <TableCell className="text-xs py-2">
+                          <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[10px] font-semibold">{r.campo}</span>
+                        </TableCell>
+                        <TableCell className="text-xs py-2 text-muted-foreground max-w-[100px] truncate">{r.antes}</TableCell>
+                        <TableCell className="text-xs py-2 font-medium max-w-[100px] truncate">{r.depois}</TableCell>
+                        <TableCell className="py-2">
+                          {r.updated ? (
+                            <CheckCircle2 size={14} className="text-green-500" />
+                          ) : (
+                            <XCircle size={14} className="text-destructive" />
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="p-2 border-t border-border text-[10px] text-muted-foreground text-center">
+                  {validationResults.filter(r => r.updated).length} atualizado(s) de {validationResults.length} alteração(ões)
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="relative">
           <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
