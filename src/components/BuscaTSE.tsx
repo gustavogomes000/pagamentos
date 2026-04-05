@@ -310,41 +310,13 @@ export default function BuscaTSE({ onSelect }: Props) {
   const [showResults, setShowResults] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
-  const votosCacheRef = useRef<Record<string, number> | null>(null);
-  const existingNamesRef = useRef<Set<string> | null>(null);
 
   const fetchExistingNames = useCallback(async (): Promise<Set<string>> => {
-    // Sempre busca dados frescos — garante que cadastros recentes sejam excluídos
-    // e que nomes com/sem acentos sejam comparados corretamente via NFD normalize
     try {
       const { data } = await supabase.from("suplentes").select("nome");
-      existingNamesRef.current = new Set((data || []).map((s: any) => normalize(s.nome || "")));
+      return new Set((data || []).map((s: any) => normalize(s.nome || "")));
     } catch {
-      existingNamesRef.current = new Set();
-    }
-    return existingNamesRef.current!;
-  }, []);
-
-  const fetchVotesForResults = useCallback(async (candidatos: CandidatoResult[]) => {
-    if (candidatos.length === 0) return candidatos;
-    if (candidatos[0].ano !== 2024) return candidatos;
-
-    try {
-      if (!votosCacheRef.current) {
-        const response = await fetch("/tse-votos-go-2024.json", { cache: "force-cache" });
-        if (!response.ok) return candidatos;
-        votosCacheRef.current = await response.json();
-      }
-
-      const votosMap = votosCacheRef.current;
-      if (!votosMap) return candidatos;
-
-      return candidatos.map((c) => ({
-        ...c,
-        totalVotos: votosMap[`${c.codigoMunicipio}:${c.id}`] || 0,
-      }));
-    } catch {
-      return candidatos;
+      return new Set();
     }
   }, []);
 
@@ -358,21 +330,45 @@ export default function BuscaTSE({ onSelect }: Props) {
     setLoading(true);
     setShowResults(true);
     try {
-      const body: Record<string, unknown> = { nome: searchTerm.trim(), ano: parseInt(year) };
-      if (codes.length > 0) body.codigosMunicipios = codes;
+      // Build municipios list from selected codes
+      const municipioNames = codes
+        .map(code => TODAS_CIDADES.find(c => c.code === code)?.name || "")
+        .filter(Boolean);
+
+      const params: Record<string, string> = {
+        nome: searchTerm.trim(),
+        ano: year,
+        limit: "50",
+        location: "US",
+      };
+
+      if (municipioNames.length > 0) {
+        params.municipios = municipioNames.join(",");
+      }
 
       const [{ data, error }, existingNames] = await Promise.all([
-        supabase.functions.invoke("buscar-candidato-tse", { body }),
+        supabase.functions.invoke("consultar-bigquery", {
+          body: { consulta: "buscar_candidatos", params },
+        }),
         fetchExistingNames(),
       ]);
       if (error) throw error;
-      // Filtra candidatos já cadastrados usando normalize (remove acentos) para comparação segura
-      let resultados: CandidatoResult[] = (data.resultados || []).filter(
-        (c: CandidatoResult) => !existingNames.has(normalize(c.nome))
-      );
 
-      // Fetch votes client-side
-      resultados = await fetchVotesForResults(resultados);
+      // Transform BigQuery response to CandidatoResult format
+      const resultados: CandidatoResult[] = ((data?.dados as any[]) || [])
+        .filter((row: any) => !existingNames.has(normalize(row.nm_candidato || "")))
+        .map((row: any) => ({
+          id: parseInt(row.sq_candidato || row.nr_candidato || "0"),
+          nome: row.nm_candidato || "",
+          nomeUrna: row.nm_urna_candidato || "",
+          numero: parseInt(row.nr_candidato || "0"),
+          partido: row.sg_partido || "",
+          cargo: row.ds_cargo || "",
+          situacao: row.ds_sit_tot_turno || "",
+          municipio: row.nm_ue || "",
+          ano: parseInt(year),
+          totalVotos: parseInt(row.total_votos || "0"),
+        }));
 
       setResults(resultados);
     } catch (e: any) {
@@ -381,7 +377,7 @@ export default function BuscaTSE({ onSelect }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [fetchVotesForResults]);
+  }, [fetchExistingNames]);
 
   const handleChange = (value: string) => {
     setNome(value);
@@ -493,7 +489,10 @@ export default function BuscaTSE({ onSelect }: Props) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="2024">2024</SelectItem>
+            <SelectItem value="2022">2022</SelectItem>
             <SelectItem value="2020">2020</SelectItem>
+            <SelectItem value="2018">2018</SelectItem>
+            <SelectItem value="2016">2016</SelectItem>
           </SelectContent>
         </Select>
       </div>

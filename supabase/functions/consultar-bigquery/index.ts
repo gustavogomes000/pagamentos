@@ -136,25 +136,59 @@ function transformResponse(bqResponse: any): Record<string, string>[] {
 
 // Allowed queries - whitelist approach for security
 const ALLOWED_QUERIES: Record<string, (params: Record<string, string>) => string> = {
+  // Busca principal: candidatos com votos agregados
+  buscar_candidatos: (p) => {
+    const ano = p.ano || "2024";
+    const nomeFilter = p.nome
+      ? `AND (UPPER(c.nm_candidato) LIKE UPPER('%${p.nome.replace(/'/g, "")}%') OR UPPER(c.nm_urna_candidato) LIKE UPPER('%${p.nome.replace(/'/g, "")}%'))`
+      : "";
+    const municipioFilter = p.municipio
+      ? `AND UPPER(c.nm_ue) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')`
+      : "";
+    const municipiosFilter = p.municipios
+      ? `AND UPPER(c.nm_ue) IN (${p.municipios.split(",").map(m => `UPPER('${m.trim().replace(/'/g, "")}')`).join(",")})`
+      : "";
+
+    return `
+      SELECT 
+        c.nm_candidato, c.nm_urna_candidato, c.nr_candidato, c.sg_partido,
+        c.ds_cargo, c.nm_ue, c.ds_sit_tot_turno, c.nr_turno,
+        c.sq_candidato,
+        COALESCE(v.total_votos, 0) as total_votos
+      FROM \`silver-idea-389314.eleicoes_go_clean.raw_candidatos_${ano}\` c
+      LEFT JOIN (
+        SELECT nr_candidato, nm_municipio, SUM(CAST(qt_votos_nominais AS INT64)) as total_votos
+        FROM \`silver-idea-389314.eleicoes_go_clean.raw_votacao_munzona_${ano}\`
+        GROUP BY nr_candidato, nm_municipio
+      ) v ON c.nr_candidato = v.nr_candidato AND UPPER(c.nm_ue) = UPPER(v.nm_municipio)
+      WHERE c.ds_cargo = 'VEREADOR'
+      ${nomeFilter}
+      ${municipioFilter}
+      ${municipiosFilter}
+      ORDER BY COALESCE(v.total_votos, 0) DESC
+      LIMIT ${p.limit || "50"}
+    `;
+  },
+
   candidatos_2024: (p) => `
-    SELECT NM_CANDIDATO, NM_URNA_CANDIDATO, NR_CANDIDATO, SG_PARTIDO, 
-           DS_CARGO, NM_UE, DS_SIT_TOT_TURNO, NR_TURNO
+    SELECT nm_candidato, nm_urna_candidato, nr_candidato, sg_partido, 
+           ds_cargo, nm_ue, ds_sit_tot_turno, nr_turno
     FROM \`silver-idea-389314.eleicoes_go_clean.raw_candidatos_2024\`
-    WHERE DS_CARGO = 'VEREADOR'
-    ${p.municipio ? `AND UPPER(NM_UE) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')` : ""}
-    ${p.nome ? `AND UPPER(NM_CANDIDATO) LIKE UPPER('%${p.nome.replace(/'/g, "")}%')` : ""}
-    ORDER BY NM_CANDIDATO
+    WHERE ds_cargo = 'VEREADOR'
+    ${p.municipio ? `AND UPPER(nm_ue) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')` : ""}
+    ${p.nome ? `AND UPPER(nm_candidato) LIKE UPPER('%${p.nome.replace(/'/g, "")}%')` : ""}
+    ORDER BY nm_candidato
     LIMIT ${p.limit || "100"}
   `,
 
   votacao_2024: (p) => `
-    SELECT NM_VOTAVEL, NR_VOTAVEL, QT_VOTOS, NM_MUNICIPIO, NR_ZONA, NR_TURNO
+    SELECT nm_candidato, nr_candidato, qt_votos_nominais, nm_municipio, nr_zona, nr_turno
     FROM \`silver-idea-389314.eleicoes_go_clean.raw_votacao_munzona_2024\`
     WHERE 1=1
-    ${p.municipio ? `AND UPPER(NM_MUNICIPIO) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')` : ""}
-    ${p.nome ? `AND UPPER(NM_VOTAVEL) LIKE UPPER('%${p.nome.replace(/'/g, "")}%')` : ""}
-    ${p.numero ? `AND NR_VOTAVEL = '${p.numero.replace(/'/g, "")}'` : ""}
-    ORDER BY CAST(QT_VOTOS AS INT64) DESC
+    ${p.municipio ? `AND UPPER(nm_municipio) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')` : ""}
+    ${p.nome ? `AND UPPER(nm_candidato) LIKE UPPER('%${p.nome.replace(/'/g, "")}%')` : ""}
+    ${p.numero ? `AND nr_candidato = '${p.numero.replace(/'/g, "")}'` : ""}
+    ORDER BY CAST(qt_votos_nominais AS INT64) DESC
     LIMIT ${p.limit || "100"}
   `,
 
@@ -171,14 +205,21 @@ const ALLOWED_QUERIES: Record<string, (params: Record<string, string>) => string
   `,
 
   candidatos_historico: (p) => `
-    SELECT NM_CANDIDATO, NM_URNA_CANDIDATO, NR_CANDIDATO, SG_PARTIDO,
-           DS_CARGO, NM_UE, DS_SIT_TOT_TURNO
+    SELECT nm_candidato, nm_urna_candidato, nr_candidato, sg_partido,
+           ds_cargo, nm_ue, ds_sit_tot_turno
     FROM \`silver-idea-389314.eleicoes_go_clean.raw_candidatos_${p.ano || "2024"}\`
-    WHERE DS_CARGO = 'VEREADOR'
-    ${p.municipio ? `AND UPPER(NM_UE) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')` : ""}
-    ${p.nome ? `AND UPPER(NM_CANDIDATO) LIKE UPPER('%${p.nome.replace(/'/g, "")}%')` : ""}
-    ORDER BY NM_CANDIDATO
+    WHERE ds_cargo = 'VEREADOR'
+    ${p.municipio ? `AND UPPER(nm_ue) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')` : ""}
+    ${p.nome ? `AND UPPER(nm_candidato) LIKE UPPER('%${p.nome.replace(/'/g, "")}%')` : ""}
+    ORDER BY nm_candidato
     LIMIT ${p.limit || "100"}
+  `,
+
+  colunas_tabela: (p) => `
+    SELECT column_name
+    FROM \`silver-idea-389314.${p.dataset || "eleicoes_go_clean"}.INFORMATION_SCHEMA.COLUMNS\`
+    WHERE table_name = '${(p.tabela || "").replace(/'/g, "")}'
+    ORDER BY ordinal_position
   `,
 };
 
