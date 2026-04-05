@@ -325,29 +325,6 @@ export default function BuscaTSE({ onSelect }: Props) {
     return existingNamesRef.current!;
   }, []);
 
-  const fetchVotesForResults = useCallback(async (candidatos: CandidatoResult[]) => {
-    if (candidatos.length === 0) return candidatos;
-    if (candidatos[0].ano !== 2024) return candidatos;
-
-    try {
-      if (!votosCacheRef.current) {
-        const response = await fetch("/tse-votos-go-2024.json", { cache: "force-cache" });
-        if (!response.ok) return candidatos;
-        votosCacheRef.current = await response.json();
-      }
-
-      const votosMap = votosCacheRef.current;
-      if (!votosMap) return candidatos;
-
-      return candidatos.map((c) => ({
-        ...c,
-        totalVotos: votosMap[`${c.codigoMunicipio}:${c.id}`] || 0,
-      }));
-    } catch {
-      return candidatos;
-    }
-  }, []);
-
   const doSearch = useCallback(async (searchTerm: string, year: string, codes: string[]) => {
     if (searchTerm.trim().length < 3) {
       setResults([]);
@@ -358,21 +335,45 @@ export default function BuscaTSE({ onSelect }: Props) {
     setLoading(true);
     setShowResults(true);
     try {
-      const body: Record<string, unknown> = { nome: searchTerm.trim(), ano: parseInt(year) };
-      if (codes.length > 0) body.codigosMunicipios = codes;
+      // Build municipios list from selected codes
+      const municipioNames = codes
+        .map(code => TODAS_CIDADES.find(c => c.code === code)?.name || "")
+        .filter(Boolean);
+
+      const params: Record<string, string> = {
+        nome: searchTerm.trim(),
+        ano: year,
+        limit: "50",
+        location: "US",
+      };
+
+      if (municipioNames.length > 0) {
+        params.municipios = municipioNames.join(",");
+      }
 
       const [{ data, error }, existingNames] = await Promise.all([
-        supabase.functions.invoke("buscar-candidato-tse", { body }),
+        supabase.functions.invoke("consultar-bigquery", {
+          body: { consulta: "buscar_candidatos", params },
+        }),
         fetchExistingNames(),
       ]);
       if (error) throw error;
-      // Filtra candidatos já cadastrados usando normalize (remove acentos) para comparação segura
-      let resultados: CandidatoResult[] = (data.resultados || []).filter(
-        (c: CandidatoResult) => !existingNames.has(normalize(c.nome))
-      );
 
-      // Fetch votes client-side
-      resultados = await fetchVotesForResults(resultados);
+      // Transform BigQuery response to CandidatoResult format
+      const resultados: CandidatoResult[] = ((data?.dados as any[]) || [])
+        .filter((row: any) => !existingNames.has(normalize(row.NM_CANDIDATO || "")))
+        .map((row: any) => ({
+          id: parseInt(row.SQ_CANDIDATO || row.NR_CANDIDATO || "0"),
+          nome: row.NM_CANDIDATO || "",
+          nomeUrna: row.NM_URNA_CANDIDATO || "",
+          numero: parseInt(row.NR_CANDIDATO || "0"),
+          partido: row.SG_PARTIDO || "",
+          cargo: row.DS_CARGO || "",
+          situacao: row.DS_SIT_TOT_TURNO || "",
+          municipio: row.NM_UE || "",
+          ano: parseInt(year),
+          totalVotos: parseInt(row.TOTAL_VOTOS || "0"),
+        }));
 
       setResults(resultados);
     } catch (e: any) {
@@ -381,7 +382,7 @@ export default function BuscaTSE({ onSelect }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [fetchVotesForResults]);
+  }, [fetchExistingNames]);
 
   const handleChange = (value: string) => {
     setNome(value);
