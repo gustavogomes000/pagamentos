@@ -24,14 +24,13 @@ export default function ListaAdmin() {
   const { data: funcionarios, isLoading } = useQuery({
     queryKey: ["administrativo", cidadeAtiva],
     queryFn: async () => {
-      let query = (supabase as any).from("administrativo").select("*").order("nome");
+      let query = (supabase as any).from("administrativo").select("id, nome, cpf, whatsapp, valor_contrato, contrato_ate_mes, municipio_id").order("nome");
       if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
       const { data, error } = await query;
       if (error) throw error;
       return data;
     },
-    staleTime: 0,
-    refetchOnMount: "always",
+    staleTime: 30_000,
   });
 
   const filtered = funcionarios?.filter((f: any) => {

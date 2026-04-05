@@ -25,14 +25,13 @@ export default function Cadastros() {
   const { data: suplentes, refetch, isLoading } = useQuery({
     queryKey: ["suplentes", cidadeAtiva],
     queryFn: async () => {
-      let query = (supabase as any).from("suplentes").select("*").order("nome");
+      let query = (supabase as any).from("suplentes").select("id, nome, numero_urna, bairro, regiao_atuacao, partido, situacao, total_votos, expectativa_votos, retirada_mensal_valor, retirada_mensal_meses, plotagem_qtd, plotagem_valor_unit, liderancas_qtd, liderancas_valor_unit, fiscais_qtd, fiscais_valor_unit, total_campanha, municipio_id, base_politica, telefone, cargo_disputado, ano_eleicao, assinatura").order("nome");
       if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
       const { data, error } = await query;
       if (error) throw error;
       return data;
     },
-    staleTime: 0,
-    refetchOnMount: "always",
+    staleTime: 30_000,
   });
 
   const normalizeStr = (str: string) =>
