@@ -207,7 +207,10 @@ export default function Cadastro({ initial, onSaved }: Props) {
           <p className="text-xs text-muted-foreground">Busque pelo nome para preencher automaticamente os dados da última eleição.</p>
           <BuscaTSE
             onSelect={async (c) => {
-              setForm((prev) => ({
+               const cidadeCandidato = c.municipio
+                 ? municipios.find(m => m.nome.toUpperCase() === c.municipio.toUpperCase())?.id || ""
+                 : "";
+               setForm((prev) => ({
                 ...prev,
                 nome: c.nome,
                 nome_urna: c.nomeUrna || "",
@@ -222,6 +225,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
                 })(),
                 total_votos: c.totalVotos > 0 ? c.totalVotos : prev.total_votos,
                 expectativa_votos: 0,
+                municipio_id: cidadeCandidato || prev.municipio_id,
               }));
               toast({ title: "Dados preenchidos!", description: `${c.nome} — ${c.partido}${c.totalVotos > 0 ? ` — ${c.totalVotos.toLocaleString("pt-BR")} votos` : ""}` });
 
@@ -244,23 +248,6 @@ export default function Cadastro({ initial, onSaved }: Props) {
           />
         </section>
       )}
-
-      {/* Cidade */}
-      <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
-        <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-2">
-          <MapPin size={16} /> Cidade
-        </h2>
-        <Field label="Município" required>
-          <Select value={form.municipio_id || ""} onValueChange={(v) => set("municipio_id", v)}>
-            <SelectTrigger className="bg-card shadow-sm border-border"><SelectValue placeholder="Selecione a cidade" /></SelectTrigger>
-            <SelectContent>
-              {municipios.map(m => (
-                <SelectItem key={m.id} value={m.id}>📍 {m.nome} — {m.uf}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-      </section>
 
       {/* Dados pessoais */}
       <section className="bg-card rounded-2xl border border-border p-4 space-y-3 shadow-sm">
