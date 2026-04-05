@@ -84,9 +84,10 @@ export default function Cadastros() {
       const results = await validateRequiredData();
       if (results.length > 0) {
         const updated = results.filter((r) => r.updated).length;
+        const campos = [...new Set(results.map((r) => r.campo))];
         toast({
-          title: `Dados obrigatorios ajustados: ${updated}`,
-          description: "Partido e votos faltantes foram atualizados automaticamente quando encontrados no TSE.",
+          title: `Dados corrigidos: ${updated} campo(s)`,
+          description: `Campos atualizados via TSE: ${campos.join(", ")}`,
         });
         refetch();
       }

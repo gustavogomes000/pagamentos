@@ -1,141 +1,211 @@
 import { supabase } from "@/integrations/supabase/client";
-import { namesMatch, normalize } from "@/lib/validateVotes";
-
-type CandidateTse = {
-  id: number;
-  nome: string;
-  nomeUrna: string;
-  codigoMunicipio: string;
-  partido?: string;
-};
-
-/**
- * Fuzzy match for ballot names (nomes de urna) that may have slight
- * character differences, e.g. "JOANA DARK" vs "JOANA DARC".
- */
-function fuzzyNamesMatch(dbName: string, tseName: string, tseNomeUrna: string): boolean {
-  if (namesMatch(dbName, tseName) || namesMatch(dbName, tseNomeUrna)) return true;
-
-  const a = normalize(dbName);
-  const b = normalize(tseNomeUrna);
-  if (!a || !b) return false;
-
-  // Check if names are very similar (allow 1-2 char difference)
-  if (Math.abs(a.length - b.length) <= 2) {
-    let diffs = 0;
-    const maxLen = Math.max(a.length, b.length);
-    for (let i = 0; i < maxLen; i++) {
-      if (a[i] !== b[i]) diffs++;
-      if (diffs > 2) break;
-    }
-    if (diffs <= 2) return true;
-  }
-
-  return false;
-}
 
 export type RequiredDataValidationResult = {
   id: string;
   nome: string;
-  partidoAntes: string;
-  partidoDepois: string;
-  votosAntes: number;
-  votosDepois: number;
+  campo: string;
+  antes: string;
+  depois: string;
   updated: boolean;
 };
 
-const MAX_CONCURRENCY = 5;
+const MAX_CONCURRENCY = 3;
 
-function isMissingParty(partido: unknown): boolean {
-  return !String(partido || "").trim();
+/**
+ * Busca candidato no BigQuery pelo nome e município
+ */
+async function searchBigQuery(nome: string, municipio?: string) {
+  const params: Record<string, string> = {
+    nome: nome.replace(/'/g, ""),
+    ano: "2024",
+    limit: "5",
+  };
+  if (municipio) params.municipio = municipio.replace(/'/g, "");
+
+  const { data, error } = await supabase.functions.invoke("consultar-bigquery", {
+    body: { consulta: "buscar_candidatos", params },
+  });
+
+  if (error || !data?.dados) return null;
+  return data.dados as Array<{
+    nm_candidato: string;
+    nm_urna_candidato: string;
+    nr_candidato: string;
+    sg_partido: string;
+    ds_cargo: string;
+    nm_ue: string;
+    ds_sit_tot_turno: string;
+    total_votos: string;
+    bairros_zona?: string;
+    sq_candidato?: string;
+  }>;
 }
 
-function isMissingVotes(votos: unknown): boolean {
-  return !Number(votos) || Number(votos) <= 0;
+function normalizeStr(s: string) {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
 }
 
+/**
+ * Tenta encontrar o melhor match pelo nome
+ */
+function findBestMatch(
+  nome: string,
+  candidatos: NonNullable<Awaited<ReturnType<typeof searchBigQuery>>>
+) {
+  const norm = normalizeStr(nome);
+  // Exact match first
+  const exact = candidatos.find(
+    (c) => normalizeStr(c.nm_candidato) === norm || normalizeStr(c.nm_urna_candidato) === norm
+  );
+  if (exact) return exact;
+
+  // Contains match
+  const contains = candidatos.find(
+    (c) => normalizeStr(c.nm_candidato).includes(norm) || norm.includes(normalizeStr(c.nm_candidato))
+  );
+  if (contains) return contains;
+
+  // Word-based match
+  const words = norm.split(/\s+/);
+  return candidatos.find((c) => {
+    const cWords = normalizeStr(c.nm_candidato).split(/\s+/);
+    const matched = words.filter((w) => cWords.includes(w)).length;
+    return matched >= Math.max(2, words.length * 0.6);
+  }) || null;
+}
+
+/**
+ * Verifica se o setor parece ser um nome de cidade ao invés de bairro
+ */
+function setorPareceCidade(setor: string): boolean {
+  if (!setor || !setor.trim()) return false;
+  const cityKeywords = [
+    "APARECIDA", "GOIANIA", "GOIÂNIA", "ANAPOLIS", "ANÁPOLIS", "TRINDADE",
+    "SENADOR CANEDO", "HIDROLANDIA", "HIDROLÂNDIA", "GOIANIRA", "NEROPOLIS",
+    "NERÓPOLIS", "INHUMAS", "JATAI", "JATAÍ", "RIO VERDE", "LUZIANIA",
+    "LUZIÂNIA", "CATALAO", "CATALÃO", "ITUMBIARA", "FORMOSA", "PLANALTINA",
+    "VALPARAISO", "VALPARAÍSO", "ÁGUAS LINDAS"
+  ];
+  const upper = setor.toUpperCase().trim();
+  return cityKeywords.some((kw) => upper === kw || upper.startsWith(kw + " DE") || upper.includes(kw));
+}
+
+/**
+ * Valida e corrige dados de todos os suplentes cadastrados:
+ * 1. Se regiao_atuacao contém nome de cidade → busca bairro correto via BigQuery
+ * 2. Se total_votos diverge do TSE → atualiza
+ * 3. Se partido/numero_urna/regiao_atuacao vazios → preenche via BigQuery
+ */
 export async function validateRequiredData(
   onProgress?: (current: number, total: number, nome: string) => void
 ): Promise<RequiredDataValidationResult[]> {
   const { data: suplentes, error } = await supabase
     .from("suplentes")
-    .select("id, nome, partido, total_votos")
+    .select("id, nome, partido, total_votos, numero_urna, regiao_atuacao, municipio_id")
     .order("nome");
 
   if (error || !suplentes) throw new Error(error?.message || "Erro ao carregar suplentes");
 
-  let votosMap: Record<string, number> = {};
-  try {
-    const resp = await fetch("/tse-votos-go-2024.json", { cache: "force-cache" });
-    if (resp.ok) votosMap = await resp.json();
-  } catch {
-    votosMap = {};
-  }
-
-  const pending = suplentes.filter((s) => isMissingParty(s.partido) || isMissingVotes(s.total_votos));
-  if (!pending.length) return [];
+  // Load municipios for name lookup
+  const { data: municipios } = await supabase.from("municipios").select("id, nome");
+  const municipioMap = new Map((municipios || []).map((m) => [m.id, m.nome]));
 
   const results: RequiredDataValidationResult[] = [];
   let progress = 0;
 
-  const worker = async (s: (typeof pending)[number]) => {
+  const worker = async (s: (typeof suplentes)[number]) => {
     progress += 1;
-    onProgress?.(progress, pending.length, s.nome);
+    onProgress?.(progress, suplentes.length, s.nome);
 
     try {
-      // Try full name, first+last, and first name only for broader matching
-      const nameParts = s.nome.trim().split(/\s+/);
-      const searchTerms = [
-        s.nome.trim(),
-        nameParts.length > 1 ? `${nameParts[0]} ${nameParts[nameParts.length - 1]}` : "",
-        nameParts[0],
-      ].filter((t) => t.length >= 3);
+      const municipioNome = s.municipio_id ? municipioMap.get(s.municipio_id) : undefined;
 
-      // Deduplicate search terms
-      const uniqueTerms = [...new Set(searchTerms)];
-      let bestMatch: CandidateTse | null = null;
+      // Search BigQuery for this candidate
+      const candidatos = await searchBigQuery(s.nome, municipioNome);
+      if (!candidatos || candidatos.length === 0) return;
 
-      for (const term of uniqueTerms) {
-        if (bestMatch) break;
-        const { data, error: fnError } = await supabase.functions.invoke("buscar-candidato-tse", {
-          body: { nome: term, ano: 2024 },
-        });
-        if (fnError || !data?.resultados) continue;
+      const match = findBestMatch(s.nome, candidatos);
+      if (!match) return;
 
-        const candidatos = data.resultados as CandidateTse[];
-        bestMatch =
-          candidatos.find((c) => fuzzyNamesMatch(s.nome, c.nome, c.nomeUrna)) || null;
-      }
-      if (!bestMatch) return;
-
-      const votosNovo = votosMap[`${bestMatch.codigoMunicipio}:${bestMatch.id}`] || 0;
       const payload: Record<string, string | number> = {};
+      const changes: RequiredDataValidationResult[] = [];
 
-      if (isMissingParty(s.partido) && String(bestMatch.partido || "").trim()) {
-        payload.partido = String(bestMatch.partido).trim();
+      // 1. Fix regiao_atuacao if it looks like a city name OR is empty
+      const setorVazio = !s.regiao_atuacao || !s.regiao_atuacao.trim();
+      const setorECidade = !setorVazio && setorPareceCidade(s.regiao_atuacao || "");
+
+      if ((setorVazio || setorECidade) && match.bairros_zona) {
+        const bairros = match.bairros_zona.split(", ");
+        const novoBairro = bairros[0];
+        if (novoBairro && novoBairro.trim()) {
+          payload.regiao_atuacao = novoBairro.trim();
+          changes.push({
+            id: s.id,
+            nome: s.nome,
+            campo: "regiao_atuacao",
+            antes: s.regiao_atuacao || "(vazio)",
+            depois: novoBairro.trim(),
+            updated: false,
+          });
+        }
       }
-      if (isMissingVotes(s.total_votos) && votosNovo > 0) {
-        payload.total_votos = votosNovo;
+
+      // 2. Validate/fix total_votos
+      const votosTSE = parseInt(match.total_votos || "0", 10);
+      const votosAtual = s.total_votos || 0;
+      if (votosTSE > 0 && votosTSE !== votosAtual) {
+        payload.total_votos = votosTSE;
+        changes.push({
+          id: s.id,
+          nome: s.nome,
+          campo: "total_votos",
+          antes: String(votosAtual),
+          depois: String(votosTSE),
+          updated: false,
+        });
       }
+
+      // 3. Fill empty partido
+      if ((!s.partido || !s.partido.trim()) && match.sg_partido) {
+        payload.partido = match.sg_partido.trim();
+        changes.push({
+          id: s.id,
+          nome: s.nome,
+          campo: "partido",
+          antes: "(vazio)",
+          depois: match.sg_partido.trim(),
+          updated: false,
+        });
+      }
+
+      // 4. Fill empty numero_urna
+      if ((!s.numero_urna || !s.numero_urna.trim()) && match.nr_candidato) {
+        payload.numero_urna = match.nr_candidato.trim();
+        changes.push({
+          id: s.id,
+          nome: s.nome,
+          campo: "numero_urna",
+          antes: "(vazio)",
+          depois: match.nr_candidato.trim(),
+          updated: false,
+        });
+      }
+
       if (!Object.keys(payload).length) return;
 
       const { error: updateError } = await supabase.from("suplentes").update(payload).eq("id", s.id);
-      results.push({
-        id: s.id,
-        nome: s.nome,
-        partidoAntes: String(s.partido || ""),
-        partidoDepois: String(payload.partido ?? s.partido ?? ""),
-        votosAntes: Number(s.total_votos || 0),
-        votosDepois: Number(payload.total_votos ?? s.total_votos ?? 0),
-        updated: !updateError,
-      });
+
+      for (const c of changes) {
+        c.updated = !updateError;
+        results.push(c);
+      }
     } catch {
-      // Continua para os próximos registros
+      // skip
     }
   };
 
-  for (let i = 0; i < pending.length; i += MAX_CONCURRENCY) {
-    const chunk = pending.slice(i, i + MAX_CONCURRENCY);
+  for (let i = 0; i < suplentes.length; i += MAX_CONCURRENCY) {
+    const chunk = suplentes.slice(i, i + MAX_CONCURRENCY);
     await Promise.all(chunk.map(worker));
   }
 
