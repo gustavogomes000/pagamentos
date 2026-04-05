@@ -165,8 +165,8 @@ const ALLOWED_QUERIES: Record<string, (params: Record<string, string>) => string
   `,
 
   listar_tabelas: (p) => `
-    SELECT table_name, row_count, size_bytes
-    FROM \`silver-idea-389314.${p.dataset || "eleicoes_go"}.INFORMATION_SCHEMA.TABLES\`
+    SELECT table_name
+    FROM \`silver-idea-389314.${p.dataset || "eleicoes_go_clean"}.INFORMATION_SCHEMA.TABLES\`
     ORDER BY table_name
   `,
 
