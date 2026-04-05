@@ -192,30 +192,20 @@ Deno.serve(async (req) => {
 
     const { consulta, params = {} } = body;
 
-    const saJson = Deno.env.get("BIGQUERY_SERVICE_ACCOUNT_JSON");
-    if (!saJson) {
-      throw new Error("BIGQUERY_SERVICE_ACCOUNT_JSON not configured");
+    const clientEmail = Deno.env.get("BIGQUERY_CLIENT_EMAIL");
+    const privateKey = Deno.env.get("BIGQUERY_PRIVATE_KEY");
+    const projectId = Deno.env.get("BIGQUERY_PROJECT_ID");
+
+    if (!clientEmail || !privateKey || !projectId) {
+      throw new Error("BigQuery credentials not configured. Need BIGQUERY_CLIENT_EMAIL, BIGQUERY_PRIVATE_KEY, BIGQUERY_PROJECT_ID");
     }
 
-    let sa: ServiceAccount;
-    try {
-      // Try parsing directly
-      const parsed = JSON.parse(saJson);
-      if (typeof parsed === 'string') {
-        // Double-encoded
-        sa = JSON.parse(parsed);
-      } else {
-        sa = parsed;
-      }
-    } catch (e) {
-      // Try stripping surrounding quotes if present
-      const cleaned = saJson.startsWith('"') ? saJson.slice(1, -1) : saJson;
-      try {
-        sa = JSON.parse(cleaned);
-      } catch {
-        throw new Error(`Cannot parse service account JSON: ${String(e)}, first 50 chars: ${saJson.substring(0, 50)}`);
-      }
-    }
+    const sa: ServiceAccount = {
+      client_email: clientEmail,
+      private_key: privateKey.replace(/\\n/g, "\n"),
+      token_uri: "https://oauth2.googleapis.com/token",
+      project_id: projectId,
+    };
 
     if (!consulta || !ALLOWED_QUERIES[consulta]) {
       return new Response(
