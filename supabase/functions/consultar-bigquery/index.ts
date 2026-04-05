@@ -163,9 +163,14 @@ const ALLOWED_QUERIES: Record<string, (params: Record<string, string>) => string
       ) tz ON c.nr_candidato = tz.nr_candidato AND c.sg_ue = tz.cd_municipio AND tz.rn = 1
       LEFT JOIN (
         SELECT nr_zona, cd_municipio, 
-               STRING_AGG(DISTINCT nm_bairro, ', ' ORDER BY nm_bairro) as bairros_zona
-        FROM ${localTable}
-        WHERE nm_bairro IS NOT NULL AND nm_bairro != '#NULO#' AND nm_bairro != '#NE#' AND nm_bairro != ''
+               STRING_AGG(bairro, ', ' ORDER BY total_eleitores DESC) as bairros_zona
+        FROM (
+          SELECT nr_zona, cd_municipio, nm_bairro as bairro,
+                 SUM(SAFE_CAST(qt_eleitor_secao AS INT64)) as total_eleitores
+          FROM ${localTable}
+          WHERE nm_bairro IS NOT NULL AND nm_bairro != '#NULO#' AND nm_bairro != '#NE#' AND nm_bairro != ''
+          GROUP BY nr_zona, cd_municipio, nm_bairro
+        )
         GROUP BY nr_zona, cd_municipio
       ) l ON tz.top_zona = l.nr_zona AND tz.cd_municipio = l.cd_municipio` : ``;
 
