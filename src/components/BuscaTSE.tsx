@@ -310,8 +310,6 @@ export default function BuscaTSE({ onSelect }: Props) {
   const [showResults, setShowResults] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
-  const votosCacheRef = useRef<Record<string, number> | null>(null);
-  const existingNamesRef = useRef<Set<string> | null>(null);
 
   const fetchExistingNames = useCallback(async (): Promise<Set<string>> => {
     // Sempre busca dados frescos — garante que cadastros recentes sejam excluídos
@@ -494,7 +492,10 @@ export default function BuscaTSE({ onSelect }: Props) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="2024">2024</SelectItem>
+            <SelectItem value="2022">2022</SelectItem>
             <SelectItem value="2020">2020</SelectItem>
+            <SelectItem value="2018">2018</SelectItem>
+            <SelectItem value="2016">2016</SelectItem>
           </SelectContent>
         </Select>
       </div>
