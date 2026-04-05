@@ -221,7 +221,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
                   return bairros[0] || prev.regiao_atuacao;
                 })(),
                 total_votos: c.totalVotos > 0 ? c.totalVotos : prev.total_votos,
-                expectativa_votos: prev.expectativa_votos > 0 ? prev.expectativa_votos : c.totalVotos > 0 ? c.totalVotos : prev.expectativa_votos,
+                expectativa_votos: 0,
               }));
               toast({ title: "Dados preenchidos!", description: `${c.nome} — ${c.partido}${c.totalVotos > 0 ? ` — ${c.totalVotos.toLocaleString("pt-BR")} votos` : ""}` });
 
