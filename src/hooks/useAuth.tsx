@@ -7,9 +7,12 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const t0 = performance.now();
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) console.error("[Auth] getSession error:", error.message);
       setUser(session?.user ?? null);
       setLoading(false);
+      console.log(`[Auth] getSession completed in ${(performance.now() - t0).toFixed(0)}ms`, session ? "authenticated" : "no session");
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {

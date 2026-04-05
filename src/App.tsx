@@ -28,8 +28,8 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       networkMode: "offlineFirst",
-      staleTime: 0,
-      gcTime: 1000 * 60 * 5,
+      staleTime: 60_000,
+      gcTime: 1000 * 60 * 10,
       refetchOnMount: "always",
       refetchOnReconnect: true,
       refetchOnWindowFocus: true,
