@@ -356,18 +356,18 @@ export default function BuscaTSE({ onSelect }: Props) {
 
       // Transform BigQuery response to CandidatoResult format
       const resultados: CandidatoResult[] = ((data?.dados as any[]) || [])
-        .filter((row: any) => !existingNames.has(normalize(row.NM_CANDIDATO || "")))
+        .filter((row: any) => !existingNames.has(normalize(row.nm_candidato || "")))
         .map((row: any) => ({
-          id: parseInt(row.SQ_CANDIDATO || row.NR_CANDIDATO || "0"),
-          nome: row.NM_CANDIDATO || "",
-          nomeUrna: row.NM_URNA_CANDIDATO || "",
-          numero: parseInt(row.NR_CANDIDATO || "0"),
-          partido: row.SG_PARTIDO || "",
-          cargo: row.DS_CARGO || "",
-          situacao: row.DS_SIT_TOT_TURNO || "",
-          municipio: row.NM_UE || "",
+          id: parseInt(row.sq_candidato || row.nr_candidato || "0"),
+          nome: row.nm_candidato || "",
+          nomeUrna: row.nm_urna_candidato || "",
+          numero: parseInt(row.nr_candidato || "0"),
+          partido: row.sg_partido || "",
+          cargo: row.ds_cargo || "",
+          situacao: row.ds_sit_tot_turno || "",
+          municipio: row.nm_ue || "",
           ano: parseInt(year),
-          totalVotos: parseInt(row.TOTAL_VOTOS || "0"),
+          totalVotos: parseInt(row.total_votos || "0"),
         }));
 
       setResults(resultados);
