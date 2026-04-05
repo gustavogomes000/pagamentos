@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
       devOptions: {
         enabled: false,
       },
-      includeAssets: ["placeholder.svg", "robots.txt"],
+      includeAssets: ["placeholder.svg", "robots.txt", "icons/icon-192.png", "icons/icon-512.png"],
       manifest: {
         name: "Sarelli - Gestão Política",
         short_name: "Sarelli",
@@ -55,23 +55,39 @@ export default defineConfig(({ mode }) => ({
         navigateFallbackDenylist: [/^\/~oauth/],
         runtimeCaching: [
           {
+            // API Supabase REST — StaleWhileRevalidate com cache curto (1 dia)
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
-            handler: "NetworkFirst",
+            handler: "StaleWhileRevalidate",
             options: {
               cacheName: "supabase-api",
               expiration: {
                 maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24 * 7,
+                maxAgeSeconds: 60 * 60 * 24, // 1 dia (era 7)
               },
-              networkTimeoutSeconds: 5,
               cacheableResponse: { statuses: [0, 200] },
             },
           },
           {
+            // Auth — NUNCA cachear
             urlPattern: /^https:\/\/.*\.supabase\.co\/auth\/.*/i,
             handler: "NetworkOnly",
           },
           {
+            // Edge Functions — NetworkFirst com timeout generoso
+            urlPattern: /^https:\/\/.*\.supabase\.co\/functions\/.*/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "supabase-functions",
+              networkTimeoutSeconds: 15,
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60, // 1 hora
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            // Google Fonts — cache longo
             urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
             handler: "CacheFirst",
             options: {
@@ -100,7 +116,8 @@ export default defineConfig(({ mode }) => ({
           vendor: ["react", "react-dom", "react-router-dom"],
           query: ["@tanstack/react-query"],
           supabase: ["@supabase/supabase-js"],
-          ui: ["recharts", "lucide-react"],
+          charts: ["recharts"],
+          icons: ["lucide-react"],
         },
       },
     },

@@ -1,7 +1,9 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 
 export default function VersionMonitor() {
+  const reloadScheduled = useRef(false);
+
   const checkForUpdates = useCallback(async () => {
     if (!("serviceWorker" in navigator)) return;
     try {
@@ -9,35 +11,49 @@ export default function VersionMonitor() {
       for (const reg of regs) {
         await reg.update();
       }
+      console.log("[SW] Update check completed", new Date().toISOString());
     } catch (err) {
-      console.error("SW Update check error", err);
+      console.error("[SW] Update check error", err);
     }
   }, []);
 
   useEffect(() => {
-    // Check on coming back online
-    const handleOnline = () => {
-      checkForUpdates();
-    };
+    const handleOnline = () => checkForUpdates();
 
-    // Check on visibility change (user returns to app)
     const handleVisibility = () => {
       if (document.visibilityState === "visible" && navigator.onLine) {
         checkForUpdates();
       }
     };
 
-    // Listen for SW controlling change (new version activated)
+    // Reload seguro: só uma vez, com confirmação visual, sem loop
     const handleControllerChange = () => {
-      toast.success("App atualizado! Recarregando...", { duration: 2000 });
-      setTimeout(() => window.location.reload(), 1500);
+      if (reloadScheduled.current) return;
+      reloadScheduled.current = true;
+      console.log("[SW] controllerchange detected — nova versão ativa", new Date().toISOString());
+
+      toast("Nova versão disponível!", {
+        description: "O app será atualizado em 3 segundos...",
+        duration: 3000,
+        action: {
+          label: "Atualizar agora",
+          onClick: () => window.location.reload(),
+        },
+      });
+
+      // Fallback: reload automático após 3s se o usuário não interagir
+      setTimeout(() => {
+        if (reloadScheduled.current) {
+          window.location.reload();
+        }
+      }, 3000);
     };
 
     window.addEventListener("online", handleOnline);
     document.addEventListener("visibilitychange", handleVisibility);
     navigator.serviceWorker?.addEventListener("controllerchange", handleControllerChange);
 
-    // Periodic check every 2 hours
+    // Check a cada 30 min
     const interval = setInterval(checkForUpdates, 30 * 60 * 1000);
 
     return () => {

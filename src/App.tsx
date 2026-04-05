@@ -45,14 +45,38 @@ const queryClient = new QueryClient({
   },
 });
 
-// ─── Limpa todo cache persistido — sempre dados reais do Supabase ────────
+// ─── Limpa caches de React Query antigos (NÃO toca no IndexedDB offline) ──
 try {
   Object.keys(window.localStorage).forEach(k => {
-    if (k.startsWith("rq_cache") || k.startsWith("REACT_QUERY") || k.startsWith("tanstack") || k === "offline_queue") {
+    if (k.startsWith("rq_cache") || k.startsWith("REACT_QUERY") || k.startsWith("tanstack")) {
       window.localStorage.removeItem(k);
     }
   });
-  indexedDB.deleteDatabase("sarelliOfflineDatabase");
+  // Migra itens pendentes do localStorage (offlineQueue antigo) para Dexie
+  const legacyQueue = window.localStorage.getItem("offline_queue");
+  if (legacyQueue) {
+    try {
+      const items = JSON.parse(legacyQueue);
+      if (Array.isArray(items) && items.length > 0) {
+        import("@/lib/dexieDb").then(({ db }) => {
+          items.forEach((item: any) => {
+            db.syncQueue.add({
+              action: (item.operation || "INSERT").toUpperCase(),
+              table: item.table,
+              payload: item.data || item.payload || {},
+              matchKey: item.filter ? { [item.filter.column]: item.filter.value } : undefined,
+              timestamp: new Date(item.timestamp || Date.now()).toISOString(),
+              status: "PENDING",
+              retryCount: 0,
+            }).catch(() => {});
+          });
+          console.log(`[Boot] Migrados ${items.length} itens do localStorage → Dexie`);
+        });
+      }
+      window.localStorage.removeItem("offline_queue");
+    } catch { window.localStorage.removeItem("offline_queue"); }
+  }
+  console.log("[Boot] Startup limpo — IndexedDB offline preservado");
 } catch {}
 
 // ─── Fallback de carregamento leve ──────────────────────────────────────
