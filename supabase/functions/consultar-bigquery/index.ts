@@ -158,9 +158,15 @@ const ALLOWED_QUERIES: Record<string, (params: Record<string, string>) => string
     LIMIT ${p.limit || "100"}
   `,
 
-  listar_tabelas: () => `
+  listar_datasets: () => `
+    SELECT schema_name 
+    FROM \`silver-idea-389314.INFORMATION_SCHEMA.SCHEMATA\`
+    ORDER BY schema_name
+  `,
+
+  listar_tabelas: (p) => `
     SELECT table_name, row_count, size_bytes
-    FROM \`silver-idea-389314.eleicoes_go.INFORMATION_SCHEMA.TABLES\`
+    FROM \`silver-idea-389314.${p.dataset || "eleicoes_go"}.INFORMATION_SCHEMA.TABLES\`
     ORDER BY table_name
   `,
 
