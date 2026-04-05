@@ -84,25 +84,39 @@ export default function Cadastros() {
     }
   };
 
-  const runAutoValidateRequiredData = async () => {
+  const runAutoValidateRequiredData = async (manual = false) => {
     try {
-      const results = await validateRequiredData();
+      if (manual) setValidating(true);
+      const results = await validateRequiredData((current, total, nome) => {
+        if (manual) setValidationProgress({ current, total, nome });
+      });
       if (results.length > 0) {
         const updated = results.filter((r) => r.updated).length;
         const campos = [...new Set(results.map((r) => r.campo))];
+        if (manual) {
+          setValidationResults(results);
+          setShowResults(true);
+        }
         toast({
           title: `Dados corrigidos: ${updated} campo(s)`,
           description: `Campos atualizados via TSE: ${campos.join(", ")}`,
         });
         refetch();
+      } else if (manual) {
+        setValidationResults([]);
+        setShowResults(true);
+        toast({ title: "Todos os dados estão corretos!", description: "Nenhuma correção necessária." });
       }
     } catch (e: any) {
       console.error("Erro na validacao automatica de dados obrigatorios:", e?.message || e);
+      if (manual) toast({ title: "Erro na validação", description: e?.message, variant: "destructive" });
+    } finally {
+      if (manual) setValidating(false);
     }
   };
 
   useEffect(() => {
-    runAutoValidateRequiredData();
+    runAutoValidateRequiredData(false);
     runAutoValidateTotals();
     const intervalId = window.setInterval(() => {
       runAutoValidateRequiredData();
