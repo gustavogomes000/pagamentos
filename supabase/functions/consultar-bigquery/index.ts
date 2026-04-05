@@ -139,7 +139,7 @@ const ALLOWED_QUERIES: Record<string, (params: Record<string, string>) => string
   candidatos_2024: (p) => `
     SELECT NM_CANDIDATO, NM_URNA_CANDIDATO, NR_CANDIDATO, SG_PARTIDO, 
            DS_CARGO, NM_UE, DS_SIT_TOT_TURNO, NR_TURNO
-    FROM \`silver-idea-389314.eleicoes_go.raw_candidatos_2024\`
+    FROM \`silver-idea-389314.eleicoes_go_clean.raw_candidatos_2024\`
     WHERE DS_CARGO = 'VEREADOR'
     ${p.municipio ? `AND UPPER(NM_UE) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')` : ""}
     ${p.nome ? `AND UPPER(NM_CANDIDATO) LIKE UPPER('%${p.nome.replace(/'/g, "")}%')` : ""}
@@ -149,7 +149,7 @@ const ALLOWED_QUERIES: Record<string, (params: Record<string, string>) => string
 
   votacao_2024: (p) => `
     SELECT NM_VOTAVEL, NR_VOTAVEL, QT_VOTOS, NM_MUNICIPIO, NR_ZONA, NR_TURNO
-    FROM \`silver-idea-389314.eleicoes_go.raw_votacao_munzona_2024\`
+    FROM \`silver-idea-389314.eleicoes_go_clean.raw_votacao_munzona_2024\`
     WHERE 1=1
     ${p.municipio ? `AND UPPER(NM_MUNICIPIO) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')` : ""}
     ${p.nome ? `AND UPPER(NM_VOTAVEL) LIKE UPPER('%${p.nome.replace(/'/g, "")}%')` : ""}
@@ -173,7 +173,7 @@ const ALLOWED_QUERIES: Record<string, (params: Record<string, string>) => string
   candidatos_historico: (p) => `
     SELECT NM_CANDIDATO, NM_URNA_CANDIDATO, NR_CANDIDATO, SG_PARTIDO,
            DS_CARGO, NM_UE, DS_SIT_TOT_TURNO
-    FROM \`silver-idea-389314.eleicoes_go.raw_candidatos_${p.ano || "2024"}\`
+    FROM \`silver-idea-389314.eleicoes_go_clean.raw_candidatos_${p.ano || "2024"}\`
     WHERE DS_CARGO = 'VEREADOR'
     ${p.municipio ? `AND UPPER(NM_UE) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')` : ""}
     ${p.nome ? `AND UPPER(NM_CANDIDATO) LIKE UPPER('%${p.nome.replace(/'/g, "")}%')` : ""}
