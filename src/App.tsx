@@ -58,7 +58,7 @@ try {
     try {
       const items = JSON.parse(legacyQueue);
       if (Array.isArray(items) && items.length > 0) {
-        import("@/lib/dexieDb").then(({ db }) => {
+        import("@/lib/dexieDb").then(({ db, generateOperationId }) => {
           items.forEach((item: any) => {
             db.syncQueue.add({
               action: (item.operation || "INSERT").toUpperCase(),
@@ -68,6 +68,7 @@ try {
               timestamp: new Date(item.timestamp || Date.now()).toISOString(),
               status: "PENDING",
               retryCount: 0,
+              operationId: generateOperationId(),
             }).catch(() => {});
           });
           console.log(`[Boot] Migrados ${items.length} itens do localStorage → Dexie`);

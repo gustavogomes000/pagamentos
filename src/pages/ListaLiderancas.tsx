@@ -25,14 +25,13 @@ export default function ListaLiderancas() {
   const { data: liderancas, isLoading } = useQuery({
     queryKey: ["liderancas", cidadeAtiva],
     queryFn: async () => {
-      let query = (supabase as any).from("liderancas").select("*").order("nome");
+      let query = (supabase as any).from("liderancas").select("id, nome, regiao, whatsapp, ligacao_politica, chave_pix, retirada_mensal_valor, municipio_id").order("nome");
       if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
       const { data, error } = await query;
       if (error) throw error;
       return data;
     },
-    staleTime: 0,
-    refetchOnMount: "always",
+    staleTime: 30_000,
   });
 
   const filtered = liderancas?.filter((l: any) => {
