@@ -57,6 +57,9 @@
     --border: 240 8% 16%;
     --input: 240 8% 16%;
     --ring: 340 82% 60%;
+    --status-success: 142 71% 50%;
+    --status-warning: 45 93% 52%;
+    --status-alert: 25 95% 58%;
   }
 }
 
