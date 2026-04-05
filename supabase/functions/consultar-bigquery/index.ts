@@ -90,7 +90,8 @@ async function getAccessToken(sa: ServiceAccount): Promise<string> {
 async function queryBigQuery(
   accessToken: string,
   projectId: string,
-  sql: string
+  sql: string,
+  location = "southamerica-east1"
 ): Promise<unknown> {
   const url = `${BIGQUERY_API}/projects/${projectId}/queries`;
 
@@ -104,6 +105,7 @@ async function queryBigQuery(
       query: sql,
       useLegacySql: false,
       maxResults: 1000,
+      location,
     }),
   });
 
