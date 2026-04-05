@@ -149,18 +149,32 @@ const ALLOWED_QUERIES: Record<string, (params: Record<string, string>) => string
       ? `AND UPPER(c.nm_ue) IN (${p.municipios.split(",").map(m => `UPPER('${m.trim().replace(/'/g, "")}')`).join(",")})`
       : "";
 
+    // Use eleitorado_local for 2020+ or comparecimento_secao for older years
+    const localTable = parseInt(ano) >= 2020
+      ? `\`silver-idea-389314.eleicoes_go_clean.raw_eleitorado_local_${ano}\``
+      : `\`silver-idea-389314.eleicoes_go_clean.raw_comparecimento_secao_${ano}\``;
+
     return `
       SELECT 
         c.nm_candidato, c.nm_urna_candidato, c.nr_candidato, c.sg_partido,
         c.ds_cargo, c.nm_ue, c.ds_sit_tot_turno, c.nr_turno,
-        c.sq_candidato,
-        COALESCE(v.total_votos, 0) as total_votos
+        c.sq_candidato, c.nr_zona,
+        COALESCE(v.total_votos, 0) as total_votos,
+        l.bairros_zona
       FROM \`silver-idea-389314.eleicoes_go_clean.raw_candidatos_${ano}\` c
       LEFT JOIN (
         SELECT nr_candidato, nm_municipio, SUM(CAST(qt_votos_nominais AS INT64)) as total_votos
         FROM \`silver-idea-389314.eleicoes_go_clean.raw_votacao_munzona_${ano}\`
         GROUP BY nr_candidato, nm_municipio
       ) v ON c.nr_candidato = v.nr_candidato AND UPPER(c.nm_ue) = UPPER(v.nm_municipio)
+      LEFT JOIN (
+        SELECT nr_zona, cd_municipio, 
+               STRING_AGG(DISTINCT nm_bairro, ', ' ORDER BY nm_bairro) as bairros_zona
+        FROM ${localTable}
+        WHERE nm_bairro IS NOT NULL AND nm_bairro != '#NULO#' AND nm_bairro != '#NE#'
+        GROUP BY nr_zona, cd_municipio
+      ) l ON SAFE_CAST(c.nr_zona AS INT64) = SAFE_CAST(l.nr_zona AS INT64) 
+         AND SAFE_CAST(c.cd_municipio AS INT64) = SAFE_CAST(l.cd_municipio AS INT64)
       WHERE c.ds_cargo = 'VEREADOR'
       ${nomeFilter}
       ${municipioFilter}
