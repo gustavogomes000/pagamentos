@@ -22,6 +22,7 @@ interface CandidatoResult {
   codigoMunicipio?: string;
   ano: number;
   totalVotos: number;
+  bairrosZona?: string;
 }
 
 
@@ -368,6 +369,7 @@ export default function BuscaTSE({ onSelect }: Props) {
           municipio: row.nm_ue || "",
           ano: parseInt(year),
           totalVotos: parseInt(row.total_votos || "0"),
+          bairrosZona: row.bairros_zona || "",
         }));
 
       setResults(resultados);
