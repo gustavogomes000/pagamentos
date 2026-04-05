@@ -22,6 +22,10 @@ export default function Cadastros() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const { cidadeAtiva } = useCidade();
+  const [validating, setValidating] = useState(false);
+  const [validationProgress, setValidationProgress] = useState({ current: 0, total: 0, nome: "" });
+  const [validationResults, setValidationResults] = useState<RequiredDataValidationResult[] | null>(null);
+  const [showResults, setShowResults] = useState(false);
 
   const { data: suplentes, refetch, isLoading } = useQuery({
     queryKey: ["suplentes", cidadeAtiva],
