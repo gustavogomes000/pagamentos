@@ -97,10 +97,10 @@ export default function Cadastros() {
   };
 
   useEffect(() => {
-    runAutoValidateRequiredData(false);
+    runAutoValidateRequiredData();
     runAutoValidateTotals();
     const intervalId = window.setInterval(() => {
-      runAutoValidateRequiredData(false);
+      runAutoValidateRequiredData();
       runAutoValidateTotals();
     }, 60 * 60 * 1000);
     return () => window.clearInterval(intervalId);
