@@ -207,7 +207,10 @@ export default function Cadastro({ initial, onSaved }: Props) {
           <p className="text-xs text-muted-foreground">Busque pelo nome para preencher automaticamente os dados da última eleição.</p>
           <BuscaTSE
             onSelect={async (c) => {
-              setForm((prev) => ({
+               const cidadeCandidato = c.municipio
+                 ? municipios.find(m => m.nome.toUpperCase() === c.municipio.toUpperCase())?.id || ""
+                 : "";
+               setForm((prev) => ({
                 ...prev,
                 nome: c.nome,
                 nome_urna: c.nomeUrna || "",
@@ -222,6 +225,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
                 })(),
                 total_votos: c.totalVotos > 0 ? c.totalVotos : prev.total_votos,
                 expectativa_votos: 0,
+                municipio_id: cidadeCandidato || prev.municipio_id,
               }));
               toast({ title: "Dados preenchidos!", description: `${c.nome} — ${c.partido}${c.totalVotos > 0 ? ` — ${c.totalVotos.toLocaleString("pt-BR")} votos` : ""}` });
 
