@@ -90,7 +90,8 @@ async function getAccessToken(sa: ServiceAccount): Promise<string> {
 async function queryBigQuery(
   accessToken: string,
   projectId: string,
-  sql: string
+  sql: string,
+  location = "southamerica-east1"
 ): Promise<unknown> {
   const url = `${BIGQUERY_API}/projects/${projectId}/queries`;
 
@@ -104,6 +105,7 @@ async function queryBigQuery(
       query: sql,
       useLegacySql: false,
       maxResults: 1000,
+      location,
     }),
   });
 
@@ -137,7 +139,7 @@ const ALLOWED_QUERIES: Record<string, (params: Record<string, string>) => string
   candidatos_2024: (p) => `
     SELECT NM_CANDIDATO, NM_URNA_CANDIDATO, NR_CANDIDATO, SG_PARTIDO, 
            DS_CARGO, NM_UE, DS_SIT_TOT_TURNO, NR_TURNO
-    FROM \`silver-idea-389314.eleicoes_go.raw_candidatos_2024\`
+    FROM \`silver-idea-389314.eleicoes_go_clean.raw_candidatos_2024\`
     WHERE DS_CARGO = 'VEREADOR'
     ${p.municipio ? `AND UPPER(NM_UE) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')` : ""}
     ${p.nome ? `AND UPPER(NM_CANDIDATO) LIKE UPPER('%${p.nome.replace(/'/g, "")}%')` : ""}
@@ -147,7 +149,7 @@ const ALLOWED_QUERIES: Record<string, (params: Record<string, string>) => string
 
   votacao_2024: (p) => `
     SELECT NM_VOTAVEL, NR_VOTAVEL, QT_VOTOS, NM_MUNICIPIO, NR_ZONA, NR_TURNO
-    FROM \`silver-idea-389314.eleicoes_go.raw_votacao_munzona_2024\`
+    FROM \`silver-idea-389314.eleicoes_go_clean.raw_votacao_munzona_2024\`
     WHERE 1=1
     ${p.municipio ? `AND UPPER(NM_MUNICIPIO) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')` : ""}
     ${p.nome ? `AND UPPER(NM_VOTAVEL) LIKE UPPER('%${p.nome.replace(/'/g, "")}%')` : ""}
@@ -156,16 +158,22 @@ const ALLOWED_QUERIES: Record<string, (params: Record<string, string>) => string
     LIMIT ${p.limit || "100"}
   `,
 
-  listar_tabelas: () => `
-    SELECT table_name, row_count, size_bytes
-    FROM \`silver-idea-389314.eleicoes_go.INFORMATION_SCHEMA.TABLES\`
+  listar_datasets: () => `
+    SELECT schema_name 
+    FROM \`silver-idea-389314.INFORMATION_SCHEMA.SCHEMATA\`
+    ORDER BY schema_name
+  `,
+
+  listar_tabelas: (p) => `
+    SELECT table_name
+    FROM \`silver-idea-389314.${p.dataset || "eleicoes_go_clean"}.INFORMATION_SCHEMA.TABLES\`
     ORDER BY table_name
   `,
 
   candidatos_historico: (p) => `
     SELECT NM_CANDIDATO, NM_URNA_CANDIDATO, NR_CANDIDATO, SG_PARTIDO,
            DS_CARGO, NM_UE, DS_SIT_TOT_TURNO
-    FROM \`silver-idea-389314.eleicoes_go.raw_candidatos_${p.ano || "2024"}\`
+    FROM \`silver-idea-389314.eleicoes_go_clean.raw_candidatos_${p.ano || "2024"}\`
     WHERE DS_CARGO = 'VEREADOR'
     ${p.municipio ? `AND UPPER(NM_UE) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')` : ""}
     ${p.nome ? `AND UPPER(NM_CANDIDATO) LIKE UPPER('%${p.nome.replace(/'/g, "")}%')` : ""}
@@ -219,7 +227,8 @@ Deno.serve(async (req) => {
 
     const sql = ALLOWED_QUERIES[consulta](params);
     const accessToken = await getAccessToken(sa);
-    const bqResponse = await queryBigQuery(accessToken, sa.project_id, sql);
+    const location = params.location || "US";
+    const bqResponse = await queryBigQuery(accessToken, sa.project_id, sql, location);
     const rows = transformResponse(bqResponse);
 
     return new Response(
