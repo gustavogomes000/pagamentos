@@ -215,7 +215,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
                 partido: c.partido,
                 cargo_disputado: c.cargo === "Vereador" ? "Vereador" : c.cargo === "Deputado Estadual" ? "Deputado Estadual" : c.cargo === "Deputado Federal" ? "Deputado Federal" : prev.cargo_disputado,
                 situacao: c.situacao.includes("Suplente") ? "Suplente" : c.situacao.includes("Eleito") ? "Eleito" : "Não Eleito",
-                regiao_atuacao: c.municipio || prev.regiao_atuacao,
+                regiao_atuacao: prev.regiao_atuacao,
                 total_votos: c.totalVotos > 0 ? c.totalVotos : prev.total_votos,
                 expectativa_votos: prev.expectativa_votos > 0 ? prev.expectativa_votos : c.totalVotos > 0 ? c.totalVotos : prev.expectativa_votos,
               }));
@@ -276,7 +276,7 @@ export default function Cadastro({ initial, onSaved }: Props) {
             <Input value={form.numero_urna} onChange={(e) => set("numero_urna", e.target.value)} placeholder="Ex: 12345" className="bg-card shadow-sm border-border" inputMode="numeric" />
           </Field>
           <Field label="Setor">
-            <Input value={form.regiao_atuacao} onChange={(e) => set("regiao_atuacao", e.target.value)} placeholder="Ex: Goiânia" className="bg-card shadow-sm border-border" />
+            <Input value={form.regiao_atuacao} onChange={(e) => set("regiao_atuacao", e.target.value)} placeholder="Ex: Setor Bueno, Vila Nova" className="bg-card shadow-sm border-border" />
           </Field>
         </div>
 
