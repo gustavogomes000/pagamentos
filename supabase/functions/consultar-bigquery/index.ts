@@ -180,13 +180,30 @@ Deno.serve(async (req) => {
   }
 
   try {
+    let body: any;
+    try {
+      body = await req.json();
+    } catch (e) {
+      return new Response(
+        JSON.stringify({ error: "Body JSON inválido", detail: String(e) }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { consulta, params = {} } = body;
+
     const saJson = Deno.env.get("BIGQUERY_SERVICE_ACCOUNT_JSON");
     if (!saJson) {
       throw new Error("BIGQUERY_SERVICE_ACCOUNT_JSON not configured");
     }
 
-    const sa: ServiceAccount = JSON.parse(saJson);
-    const { consulta, params = {} } = await req.json();
+    let sa: ServiceAccount;
+    try {
+      sa = JSON.parse(saJson);
+    } catch {
+      // If the secret is double-encoded
+      sa = JSON.parse(JSON.parse(saJson));
+    }
 
     if (!consulta || !ALLOWED_QUERIES[consulta]) {
       return new Response(
