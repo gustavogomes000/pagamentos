@@ -215,9 +215,11 @@ export default function Cadastro({ initial, onSaved }: Props) {
                 partido: c.partido,
                 cargo_disputado: c.cargo === "Vereador" ? "Vereador" : c.cargo === "Deputado Estadual" ? "Deputado Estadual" : c.cargo === "Deputado Federal" ? "Deputado Federal" : prev.cargo_disputado,
                 situacao: c.situacao.includes("Suplente") ? "Suplente" : c.situacao.includes("Eleito") ? "Eleito" : "Não Eleito",
-                regiao_atuacao: c.bairrosZona
-                  ? c.bairrosZona.split(', ').slice(0, 3).join(', ')
-                  : prev.regiao_atuacao,
+                regiao_atuacao: (() => {
+                  if (!c.bairrosZona) return prev.regiao_atuacao;
+                  const bairros = c.bairrosZona.split(', ');
+                  return bairros[0] || prev.regiao_atuacao;
+                })(),
                 total_votos: c.totalVotos > 0 ? c.totalVotos : prev.total_votos,
                 expectativa_votos: prev.expectativa_votos > 0 ? prev.expectativa_votos : c.totalVotos > 0 ? c.totalVotos : prev.expectativa_votos,
               }));
