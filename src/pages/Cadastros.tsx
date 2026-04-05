@@ -3,17 +3,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown, Loader2, Plus } from "lucide-react";
+import { Search, ChevronRight, MapPin, ArrowLeft, Trash2, FileDown, Loader2, Plus, ShieldCheck, X, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import Cadastro from "./Cadastro";
 import { exportFichasLotePDF, exportSuplentePDF, exportExcel } from "@/lib/exports";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 import { validateAllFinancials } from "@/lib/validateFinancials";
-import { validateRequiredData } from "@/lib/validateRequiredData";
+import { validateRequiredData, RequiredDataValidationResult } from "@/lib/validateRequiredData";
 import { PageTransition } from "@/components/PageTransition";
 import { CardSkeletonList } from "@/components/CardSkeleton";
 import { useCidade } from "@/contexts/CidadeContext";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default function Cadastros() {
   const navigate = useNavigate();
