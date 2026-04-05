@@ -315,13 +315,12 @@ export default function BuscaTSE({ onSelect }: Props) {
   const existingNamesRef = useRef<Set<string>>(new Set());
   const lastFetchRef = useRef(0);
 
-  const fetchExistingNames = useCallback(async (): Promise<Set<string>> => {
-    try {
-      const { data } = await supabase.from("suplentes").select("nome");
-      return new Set((data || []).map((s: any) => normalize(s.nome || "")));
-    } catch {
-      return new Set();
-    }
+  // Pre-fetch existing names once on mount
+  useEffect(() => {
+    supabase.from("suplentes").select("nome").then(({ data }) => {
+      existingNamesRef.current = new Set((data || []).map((s: any) => normalize(s.nome || "")));
+      lastFetchRef.current = Date.now();
+    });
   }, []);
 
   const doSearch = useCallback(async (searchTerm: string, year: string, codes: string[]) => {
@@ -331,10 +330,14 @@ export default function BuscaTSE({ onSelect }: Props) {
       return;
     }
 
+    // Abort previous request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setShowResults(true);
     try {
-      // Build municipios list from selected codes
       const municipioNames = codes
         .map(code => TODAS_CIDADES.find(c => c.code === code)?.name || "")
         .filter(Boolean);
@@ -342,7 +345,7 @@ export default function BuscaTSE({ onSelect }: Props) {
       const params: Record<string, string> = {
         nome: searchTerm.trim(),
         ano: year,
-        limit: "50",
+        limit: "20",
         location: "US",
       };
 
@@ -350,17 +353,23 @@ export default function BuscaTSE({ onSelect }: Props) {
         params.municipios = municipioNames.join(",");
       }
 
-      const [{ data, error }, existingNames] = await Promise.all([
-        supabase.functions.invoke("consultar-bigquery", {
-          body: { consulta: "buscar_candidatos", params },
-        }),
-        fetchExistingNames(),
-      ]);
+      // Refresh existing names if stale (>60s)
+      if (Date.now() - lastFetchRef.current > 60000) {
+        supabase.from("suplentes").select("nome").then(({ data }) => {
+          existingNamesRef.current = new Set((data || []).map((s: any) => normalize(s.nome || "")));
+          lastFetchRef.current = Date.now();
+        });
+      }
+
+      const { data, error } = await supabase.functions.invoke("consultar-bigquery", {
+        body: { consulta: "buscar_candidatos", params },
+      });
+
+      if (controller.signal.aborted) return;
       if (error) throw error;
 
-      // Transform BigQuery response to CandidatoResult format
       const resultados: CandidatoResult[] = ((data?.dados as any[]) || [])
-        .filter((row: any) => !existingNames.has(normalize(row.nm_candidato || "")))
+        .filter((row: any) => !existingNamesRef.current.has(normalize(row.nm_candidato || "")))
         .map((row: any) => ({
           id: parseInt(row.sq_candidato || row.nr_candidato || "0"),
           nome: row.nm_candidato || "",
@@ -377,21 +386,24 @@ export default function BuscaTSE({ onSelect }: Props) {
 
       setResults(resultados);
     } catch (e: any) {
+      if (controller.signal.aborted) return;
       toast({ title: "Erro na busca", description: e.message, variant: "destructive" });
       setResults([]);
     } finally {
-      setLoading(false);
+      if (!controller.signal.aborted) setLoading(false);
     }
-  }, [fetchExistingNames]);
+  }, []);
 
   const handleChange = (value: string) => {
     setNome(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (value.trim().length >= 3) {
-      debounceRef.current = setTimeout(() => doSearch(value, ano, selectedCodes), 50);
+      debounceRef.current = setTimeout(() => doSearch(value, ano, selectedCodes), 400);
     } else {
+      abortRef.current?.abort();
       setResults([]);
       setShowResults(false);
+      setLoading(false);
     }
   };
 
