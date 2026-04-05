@@ -199,10 +199,22 @@ Deno.serve(async (req) => {
 
     let sa: ServiceAccount;
     try {
-      sa = JSON.parse(saJson);
-    } catch {
-      // If the secret is double-encoded
-      sa = JSON.parse(JSON.parse(saJson));
+      // Try parsing directly
+      const parsed = JSON.parse(saJson);
+      if (typeof parsed === 'string') {
+        // Double-encoded
+        sa = JSON.parse(parsed);
+      } else {
+        sa = parsed;
+      }
+    } catch (e) {
+      // Try stripping surrounding quotes if present
+      const cleaned = saJson.startsWith('"') ? saJson.slice(1, -1) : saJson;
+      try {
+        sa = JSON.parse(cleaned);
+      } catch {
+        throw new Error(`Cannot parse service account JSON: ${String(e)}, first 50 chars: ${saJson.substring(0, 50)}`);
+      }
     }
 
     if (!consulta || !ALLOWED_QUERIES[consulta]) {
