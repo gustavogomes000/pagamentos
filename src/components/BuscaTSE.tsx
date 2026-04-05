@@ -529,20 +529,20 @@ export default function BuscaTSE({ onSelect }: Props) {
         )}
       </div>
 
-      {loading && (
-        <p className="text-xs text-muted-foreground flex items-center gap-1.5 px-1">
-          <Loader2 size={12} className="animate-spin" />
-          {selectedCodes.length > 0
-            ? `Buscando em ${getCidadeNames(selectedCodes)}...`
-            : "Buscando em todos os 246 municípios de Goiás..."}
-        </p>
+      {showResults && loading && (
+        <div className="absolute z-50 left-0 right-0 top-full mt-1 rounded-xl border border-border bg-popover shadow-lg p-4">
+          <div className="flex items-center gap-2 justify-center">
+            <Loader2 size={16} className="animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground">Buscando candidatos...</span>
+          </div>
+        </div>
       )}
 
       {showResults && !loading && results.length === 0 && nome.trim().length >= 3 && (
         <p className="text-xs text-muted-foreground px-1">Nenhum resultado. Tente outro nome, cidade ou ano.</p>
       )}
 
-      {showResults && results.length > 0 && (
+      {showResults && !loading && results.length > 0 && (
         <div className="absolute z-50 left-0 right-0 top-full mt-1 max-h-[50vh] overflow-y-auto overscroll-y-contain rounded-xl border border-border bg-popover shadow-lg"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
