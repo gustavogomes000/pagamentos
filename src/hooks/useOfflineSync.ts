@@ -39,7 +39,7 @@ export function useOfflineSync() {
         return;
       }
 
-      console.log(`📡 [Off-first] Iniciando sincronização de ${pendingOperations.length} operações...`);
+      console.log(`[Sync] Iniciando sincronização de ${pendingOperations.length} operações... (${new Date().toISOString()})`);
       toast.info(`Sincronizando ${pendingOperations.length} registros salvos offline...`, { id: 'sync-progress', duration: 10000 });
 
       let successCount = 0;
@@ -85,12 +85,14 @@ export function useOfflineSync() {
           await db.syncQueue.delete(op.id!);
           successCount++;
         } catch (err: any) {
-           console.error('[Off-first] Falha em operação na fila:', err);
+           console.error('[Sync] Falha em operação na fila:', { table: op.table, action: op.action, error: err.message, retryCount: op.retryCount });
            errorCount++;
+           // Após 5 tentativas, marca como ERROR permanente
+           const newRetry = op.retryCount + 1;
            await db.syncQueue.update(op.id!, { 
-             status: 'ERROR', 
+             status: newRetry >= 5 ? 'ERROR' : 'PENDING',
              errorMessage: err.message,
-             retryCount: op.retryCount + 1 
+             retryCount: newRetry,
            });
         }
       }
