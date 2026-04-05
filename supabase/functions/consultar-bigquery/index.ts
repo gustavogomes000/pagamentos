@@ -136,6 +136,40 @@ function transformResponse(bqResponse: any): Record<string, string>[] {
 
 // Allowed queries - whitelist approach for security
 const ALLOWED_QUERIES: Record<string, (params: Record<string, string>) => string> = {
+  // Busca principal: candidatos com votos agregados
+  buscar_candidatos: (p) => {
+    const ano = p.ano || "2024";
+    const nomeFilter = p.nome
+      ? `AND (UPPER(c.NM_CANDIDATO) LIKE UPPER('%${p.nome.replace(/'/g, "")}%') OR UPPER(c.NM_URNA_CANDIDATO) LIKE UPPER('%${p.nome.replace(/'/g, "")}%'))`
+      : "";
+    const municipioFilter = p.municipio
+      ? `AND UPPER(c.NM_UE) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')`
+      : "";
+    const municipiosFilter = p.municipios
+      ? `AND UPPER(c.NM_UE) IN (${p.municipios.split(",").map(m => `UPPER('${m.trim().replace(/'/g, "")}')`).join(",")})`
+      : "";
+
+    return `
+      SELECT 
+        c.NM_CANDIDATO, c.NM_URNA_CANDIDATO, c.NR_CANDIDATO, c.SG_PARTIDO,
+        c.DS_CARGO, c.NM_UE, c.DS_SIT_TOT_TURNO, c.NR_TURNO,
+        c.SQ_CANDIDATO,
+        COALESCE(v.total_votos, 0) as TOTAL_VOTOS
+      FROM \`silver-idea-389314.eleicoes_go_clean.raw_candidatos_${ano}\` c
+      LEFT JOIN (
+        SELECT NR_VOTAVEL, NM_MUNICIPIO, SUM(CAST(QT_VOTOS AS INT64)) as total_votos
+        FROM \`silver-idea-389314.eleicoes_go_clean.raw_votacao_munzona_${ano}\`
+        GROUP BY NR_VOTAVEL, NM_MUNICIPIO
+      ) v ON c.NR_CANDIDATO = v.NR_VOTAVEL AND UPPER(c.NM_UE) = UPPER(v.NM_MUNICIPIO)
+      WHERE c.DS_CARGO = 'VEREADOR'
+      ${nomeFilter}
+      ${municipioFilter}
+      ${municipiosFilter}
+      ORDER BY COALESCE(v.total_votos, 0) DESC
+      LIMIT ${p.limit || "50"}
+    `;
+  },
+
   candidatos_2024: (p) => `
     SELECT NM_CANDIDATO, NM_URNA_CANDIDATO, NR_CANDIDATO, SG_PARTIDO, 
            DS_CARGO, NM_UE, DS_SIT_TOT_TURNO, NR_TURNO
