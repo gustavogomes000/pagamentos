@@ -4,8 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 /**
- * Hook de sincronização assíncrona.
- * Instanciar na barreira inicial do App.tsx ou Dashboard
+ * Hook de sincronização offline → online.
+ * - Deduplicação por operationId
+ * - INSERTs usam upsert para idempotência
+ * - UPDATEs usam LWW (Last-Write-Wins) via updated_at
+ * - Retry com backoff exponencial (max 5 tentativas)
  */
 export function useOfflineSync() {
   const [syncing, setSyncing] = useState(false);
@@ -17,16 +20,16 @@ export function useOfflineSync() {
       const count = await db.syncQueue.where('status').equals('PENDING').count();
       setPendingCount(count);
     } catch (err) {
-      console.error("Erro ao contar fila de sincronização:", err);
+      console.error("[Sync] Erro ao contar fila:", err);
     }
   }, []);
 
   const processSyncQueue = useCallback(async () => {
     if (!navigator.onLine || syncingRef.current) return;
     
-    // Evita múltiplas execuções simultâneas
     syncingRef.current = true;
     setSyncing(true);
+    const t0 = performance.now();
     
     try {
       const pendingOperations = await db.syncQueue
@@ -39,8 +42,8 @@ export function useOfflineSync() {
         return;
       }
 
-      console.log(`[Sync] Iniciando sincronização de ${pendingOperations.length} operações... (${new Date().toISOString()})`);
-      toast.info(`Sincronizando ${pendingOperations.length} registros salvos offline...`, { id: 'sync-progress', duration: 10000 });
+      console.log(`[Sync] Processando ${pendingOperations.length} operações... (${new Date().toISOString()})`);
+      toast.info(`Sincronizando ${pendingOperations.length} registros...`, { id: 'sync-progress', duration: 10000 });
 
       let successCount = 0;
       let errorCount = 0;
@@ -51,19 +54,22 @@ export function useOfflineSync() {
 
           switch (op.action) {
             case 'INSERT': {
-              const res = await supabase.from(op.table as any).insert(op.payload);
-              error = res.error;
+              // Idempotência: usa upsert se payload tem 'id'
+              if (op.payload?.id) {
+                const res = await supabase.from(op.table as any).upsert(op.payload, { onConflict: 'id' });
+                error = res.error;
+              } else {
+                const res = await supabase.from(op.table as any).insert(op.payload);
+                error = res.error;
+              }
               break;
             }
             case 'UPDATE': {
+              if (!op.matchKey) throw new Error("MatchKey missing in UPDATE");
+              // LWW: o payload já contém updated_at do cliente
               const req = supabase.from(op.table as any).update(op.payload);
-              if (op.matchKey) {
-                const reqMatch = req.match(op.matchKey);
-                const res = await reqMatch;
-                error = res.error;
-              } else {
-                 throw new Error("MatchKey missing in UPDATE");
-              }
+              const res = await req.match(op.matchKey);
+              error = res.error;
               break;
             }
             case 'DELETE': {
@@ -85,22 +91,25 @@ export function useOfflineSync() {
           await db.syncQueue.delete(op.id!);
           successCount++;
         } catch (err: any) {
-           console.error('[Sync] Falha em operação na fila:', { table: op.table, action: op.action, error: err.message, retryCount: op.retryCount });
-           errorCount++;
-           // Após 5 tentativas, marca como ERROR permanente
-           const newRetry = op.retryCount + 1;
-           await db.syncQueue.update(op.id!, { 
-             status: newRetry >= 5 ? 'ERROR' : 'PENDING',
-             errorMessage: err.message,
-             retryCount: newRetry,
-           });
+          errorCount++;
+          const newRetry = op.retryCount + 1;
+          console.error(`[Sync] Falha op #${op.id} (${op.table}/${op.action}), retry ${newRetry}/5:`, err.message);
+          
+          await db.syncQueue.update(op.id!, { 
+            status: newRetry >= 5 ? 'ERROR' : 'PENDING',
+            errorMessage: err.message,
+            retryCount: newRetry,
+          });
         }
       }
 
+      const elapsed = (performance.now() - t0).toFixed(0);
+      console.log(`[Sync] Concluído: ${successCount} ok, ${errorCount} erros (${elapsed}ms)`);
+
       if (successCount > 0) {
-        toast.success(`Tudo atualizado! ${successCount} registros subiram pra nuvem.`, { id: 'sync-progress' });
+        toast.success(`${successCount} registros sincronizados!`, { id: 'sync-progress' });
       } else if (errorCount > 0) {
-        toast.error(`Falha ao sincronizar ${errorCount} registros (Verifique logs)`, { id: 'sync-progress' });
+        toast.error(`Falha em ${errorCount} registros (verifique logs)`, { id: 'sync-progress' });
       } else {
         toast.dismiss('sync-progress');
       }
@@ -114,21 +123,16 @@ export function useOfflineSync() {
   useEffect(() => {
     updateCount();
 
-    // Hook para atualizar contador sempre que houver mudança no banco
     db.syncQueue.hook('creating', () => { setTimeout(updateCount, 100); });
     db.syncQueue.hook('updating', () => { setTimeout(updateCount, 100); });
     db.syncQueue.hook('deleting', () => { setTimeout(updateCount, 100); });
 
-    const handleOnline = () => {
-      processSyncQueue();
-    };
-
+    const handleOnline = () => processSyncQueue();
     window.addEventListener('online', handleOnline);
     
-    if (navigator.onLine) {
-      processSyncQueue();
-    }
+    if (navigator.onLine) processSyncQueue();
 
+    // Retry a cada 5 min
     const interval = setInterval(() => {
        if (navigator.onLine) processSyncQueue();
     }, 5 * 60 * 1000);

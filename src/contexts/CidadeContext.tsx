@@ -12,7 +12,7 @@ export interface Municipio {
 
 interface CidadeContextType {
   municipios: Municipio[];
-  cidadeAtiva: string | null; // null = "Todas as Cidades"
+  cidadeAtiva: string | null;
   cidadeAtivaNome: string;
   setCidadeAtiva: (id: string | null) => void;
   isAdmin: boolean;
@@ -39,7 +39,7 @@ export function CidadeProvider({ children }: { children: React.ReactNode }) {
   const [municipios, setMunicipios] = useState<Municipio[]>([]);
   const [cidadeAtiva, setCidadeAtivaState] = useState<string | null>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored || null;
+    return stored && stored !== "todas" ? stored : null;
   });
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -47,12 +47,11 @@ export function CidadeProvider({ children }: { children: React.ReactNode }) {
   const fetchMunicipios = useCallback(async () => {
     const { data, error } = await (supabase as any)
       .from("municipios")
-      .select("*")
+      .select("id, nome, uf, ativo, criado_em")
       .eq("ativo", true)
       .order("nome");
     if (!error && data) {
       setMunicipios(data);
-      // Se não tem cidade selecionada, selecionar Aparecida de Goiânia como padrão
       const stored = localStorage.getItem(STORAGE_KEY);
       if (!stored || stored === "") {
         const aparecida = data.find((m: Municipio) => m.nome.toLowerCase().includes("aparecida"));
@@ -64,7 +63,6 @@ export function CidadeProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem(STORAGE_KEY, data[0].id);
         }
       }
-      // Se a cidade salva não existe mais, resetar para Aparecida ou primeira
       if (stored && stored !== "todas" && !data.find((m: Municipio) => m.id === stored)) {
         const aparecida = data.find((m: Municipio) => m.nome.toLowerCase().includes("aparecida"));
         const fallback = aparecida || data[0];
@@ -74,7 +72,6 @@ export function CidadeProvider({ children }: { children: React.ReactNode }) {
         }
       }
     }
-    setLoading(false);
   }, []);
 
   const checkAdmin = useCallback(async () => {
@@ -83,21 +80,22 @@ export function CidadeProvider({ children }: { children: React.ReactNode }) {
     setIsAdmin(!!data);
   }, [user]);
 
+  // Paralelizar fetchMunicipios + checkAdmin
   useEffect(() => {
-    fetchMunicipios();
-    checkAdmin();
+    const t0 = performance.now();
+    Promise.all([fetchMunicipios(), checkAdmin()])
+      .then(() => {
+        console.log(`[CidadeProvider] Init completed in ${(performance.now() - t0).toFixed(0)}ms`);
+      })
+      .catch(err => console.error("[CidadeProvider] Init error:", err))
+      .finally(() => setLoading(false));
   }, [fetchMunicipios, checkAdmin]);
 
   const setCidadeAtiva = useCallback((id: string | null) => {
     setCidadeAtivaState(id);
-    if (id) {
-      localStorage.setItem(STORAGE_KEY, id);
-    } else {
-      localStorage.setItem(STORAGE_KEY, "todas");
-    }
+    localStorage.setItem(STORAGE_KEY, id || "todas");
   }, []);
 
-  // Restaurar "todas" do localStorage
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored === "todas") {
