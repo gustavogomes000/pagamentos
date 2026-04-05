@@ -310,7 +310,10 @@ export default function BuscaTSE({ onSelect }: Props) {
   const [results, setResults] = useState<CandidatoResult[]>([]);
   const [showResults, setShowResults] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const abortRef = useRef<AbortController>();
   const containerRef = useRef<HTMLDivElement>(null);
+  const existingNamesRef = useRef<Set<string>>(new Set());
+  const lastFetchRef = useRef(0);
 
   const fetchExistingNames = useCallback(async (): Promise<Set<string>> => {
     try {
