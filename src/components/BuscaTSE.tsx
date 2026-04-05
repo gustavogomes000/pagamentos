@@ -312,15 +312,12 @@ export default function BuscaTSE({ onSelect }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const fetchExistingNames = useCallback(async (): Promise<Set<string>> => {
-    // Sempre busca dados frescos — garante que cadastros recentes sejam excluídos
-    // e que nomes com/sem acentos sejam comparados corretamente via NFD normalize
     try {
       const { data } = await supabase.from("suplentes").select("nome");
-      existingNamesRef.current = new Set((data || []).map((s: any) => normalize(s.nome || "")));
+      return new Set((data || []).map((s: any) => normalize(s.nome || "")));
     } catch {
-      existingNamesRef.current = new Set();
+      return new Set();
     }
-    return existingNamesRef.current!;
   }, []);
 
   const doSearch = useCallback(async (searchTerm: string, year: string, codes: string[]) => {
