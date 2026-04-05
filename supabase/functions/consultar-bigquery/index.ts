@@ -227,7 +227,8 @@ Deno.serve(async (req) => {
 
     const sql = ALLOWED_QUERIES[consulta](params);
     const accessToken = await getAccessToken(sa);
-    const bqResponse = await queryBigQuery(accessToken, sa.project_id, sql);
+    const location = params.location || "US";
+    const bqResponse = await queryBigQuery(accessToken, sa.project_id, sql, location);
     const rows = transformResponse(bqResponse);
 
     return new Response(
