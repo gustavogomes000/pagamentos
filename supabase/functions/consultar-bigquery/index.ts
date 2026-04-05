@@ -214,6 +214,13 @@ const ALLOWED_QUERIES: Record<string, (params: Record<string, string>) => string
     ORDER BY NM_CANDIDATO
     LIMIT ${p.limit || "100"}
   `,
+
+  colunas_tabela: (p) => `
+    SELECT column_name
+    FROM \`silver-idea-389314.${p.dataset || "eleicoes_go_clean"}.INFORMATION_SCHEMA.COLUMNS\`
+    WHERE table_name = '${(p.tabela || "").replace(/'/g, "")}'
+    ORDER BY ordinal_position
+  `,
 };
 
 Deno.serve(async (req) => {
