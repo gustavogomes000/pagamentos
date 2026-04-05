@@ -119,7 +119,7 @@ export default function Cadastros() {
     runAutoValidateRequiredData(false);
     runAutoValidateTotals();
     const intervalId = window.setInterval(() => {
-      runAutoValidateRequiredData();
+      runAutoValidateRequiredData(false);
       runAutoValidateTotals();
     }, 60 * 60 * 1000);
     return () => window.clearInterval(intervalId);
