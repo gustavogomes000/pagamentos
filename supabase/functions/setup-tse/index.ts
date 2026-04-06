@@ -143,7 +143,24 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, votacao_after_dedup: Number(r.rows[0][0]) }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    } else if (acao === "validar_amostra") {
+    } else if (acao === "validar_bairros") {
+      // Check bairros for a specific candidate's top zone
+      const r = await client.queryArray(`
+        WITH votos_zona AS (
+          SELECT nr_candidato, cd_municipio, nr_zona, SUM(qt_votos_nominais) as votos
+          FROM public.tse_votacao WHERE ano = 2024 AND nr_candidato = '40233'
+          GROUP BY nr_candidato, cd_municipio, nr_zona ORDER BY votos DESC LIMIT 1
+        )
+        SELECT e.nm_bairro, e.qt_eleitor_secao
+        FROM votos_zona vz
+        JOIN public.tse_eleitorado e ON vz.nr_zona = e.nr_zona AND vz.cd_municipio = e.cd_municipio AND e.ano = 2024
+        ORDER BY e.qt_eleitor_secao DESC LIMIT 10
+      `);
+      await client.end();
+      const bairros = r.rows.map((row: any[]) => ({ bairro: row[0], eleitores: Number(row[1]) }));
+      return new Response(JSON.stringify({ ok: true, bairros }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
       // Check specific candidate exists with correct data
       const { nome, ano: anoParam } = await req.json().catch(() => ({ nome: "ADRIANA", ano: 2024 }));
       const r = await client.queryArray(`
