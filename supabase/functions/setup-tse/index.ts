@@ -144,8 +144,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } else if (acao === "validar_bairros") {
-      // Check bairros for a specific candidate's top zone
-      const r = await client.queryArray(`
+      const rb = await client.queryArray(`
         WITH votos_zona AS (
           SELECT nr_candidato, cd_municipio, nr_zona, SUM(qt_votos_nominais) as votos
           FROM public.tse_votacao WHERE ano = 2024 AND nr_candidato = '40233'
@@ -157,32 +156,27 @@ Deno.serve(async (req) => {
         ORDER BY e.qt_eleitor_secao DESC LIMIT 10
       `);
       await client.end();
-      const bairros = r.rows.map((row: any[]) => ({ bairro: row[0], eleitores: Number(row[1]) }));
+      const bairros = rb.rows.map((row: any[]) => ({ bairro: row[0], eleitores: Number(row[1]) }));
       return new Response(JSON.stringify({ ok: true, bairros }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-      // Check specific candidate exists with correct data
-      const { nome, ano: anoParam } = await req.json().catch(() => ({ nome: "ADRIANA", ano: 2024 }));
-      const r = await client.queryArray(`
+    } else if (acao === "validar_amostra") {
+      const ra = await client.queryArray(`
         SELECT c.nm_candidato, c.nm_urna_candidato, c.nr_candidato, c.sg_partido, c.sq_candidato,
                COALESCE(SUM(v.qt_votos_nominais), 0) as total_votos
         FROM public.tse_candidatos c
         LEFT JOIN public.tse_votacao v ON c.nr_candidato = v.nr_candidato AND UPPER(c.nm_ue) = UPPER(v.nm_municipio) AND c.ano = v.ano
-        WHERE c.ano = ${anoParam || 2024} AND c.ds_cargo = 'VEREADOR'
-          AND UPPER(c.nm_candidato) LIKE UPPER('%${(nome || "ADRIANA").replace(/'/g, "")}%')
+        WHERE c.ano = 2024 AND c.ds_cargo = 'VEREADOR'
+          AND UPPER(c.nm_candidato) LIKE '%ADRIANA%'
           AND UPPER(c.nm_ue) = 'GOIÂNIA'
         GROUP BY c.nm_candidato, c.nm_urna_candidato, c.nr_candidato, c.sg_partido, c.sq_candidato
         ORDER BY total_votos DESC
         LIMIT 5
       `);
       await client.end();
-      const results = r.rows.map((row: any[]) => ({
-        nm_candidato: row[0],
-        nm_urna_candidato: row[1],
-        nr_candidato: row[2],
-        sg_partido: row[3],
-        sq_candidato: row[4],
-        total_votos: Number(row[5]),
+      const results = ra.rows.map((row: any[]) => ({
+        nm_candidato: row[0], nm_urna_candidato: row[1], nr_candidato: row[2],
+        sg_partido: row[3], sq_candidato: row[4], total_votos: Number(row[5]),
       }));
       return new Response(JSON.stringify({ ok: true, results }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
