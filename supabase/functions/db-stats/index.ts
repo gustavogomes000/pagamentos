@@ -16,33 +16,21 @@ Deno.serve(async (req) => {
   try {
     const results: Record<string, any> = {};
 
-    // Counts per table
     for (const t of ["tse_candidatos", "tse_votacao", "tse_eleitorado"]) {
-      const r = await client.queryObject(`SELECT count(*) as total FROM ${t}`);
-      results[`total_${t}`] = r.rows[0];
+      const r = await client.queryArray(`SELECT count(*)::int FROM ${t}`);
+      results[`total_${t}`] = r.rows[0][0];
     }
 
-    // By year
     for (const t of ["tse_candidatos", "tse_votacao", "tse_eleitorado"]) {
-      const r = await client.queryObject(`SELECT ano, count(*) as total FROM ${t} GROUP BY ano ORDER BY ano`);
-      results[`${t}_por_ano`] = r.rows;
+      const r = await client.queryArray(`SELECT ano::int, count(*)::int FROM ${t} GROUP BY ano ORDER BY ano`);
+      results[`${t}_por_ano`] = r.rows.map((row: any) => ({ ano: row[0], total: row[1] }));
     }
 
-    // Non-vereador
-    const nv = await client.queryObject(`SELECT ds_cargo, count(*) as total FROM tse_candidatos WHERE ds_cargo != 'VEREADOR' OR ds_cargo IS NULL GROUP BY ds_cargo ORDER BY count(*) DESC`);
-    results["nao_vereador"] = nv.rows;
+    const nv = await client.queryArray(`SELECT COALESCE(ds_cargo,'NULL'), count(*)::int FROM tse_candidatos WHERE ds_cargo != 'VEREADOR' OR ds_cargo IS NULL GROUP BY ds_cargo ORDER BY count(*) DESC`);
+    results["nao_vereador"] = nv.rows.map((r: any) => ({ cargo: r[0], total: r[1] }));
 
-    // Votacao for non-vereador candidates
-    const nvVot = await client.queryObject(`
-      SELECT count(*) as total FROM tse_votacao v 
-      WHERE NOT EXISTS (SELECT 1 FROM tse_candidatos c WHERE c.nr_candidato = v.nr_candidato AND c.ano = v.ano AND c.ds_cargo = 'VEREADOR')
-      AND v.ano IN (2020, 2022, 2024)
-    `);
-    results["votacao_nao_vereador"] = nvVot.rows[0];
-
-    // Eleitorado distinct zones
-    const ed = await client.queryObject(`SELECT count(*) as total_rows, count(DISTINCT (nr_zona, cd_municipio, ano)) as distinct_zones FROM tse_eleitorado`);
-    results["eleitorado_stats"] = ed.rows[0];
+    const ed = await client.queryArray(`SELECT count(*)::int, count(DISTINCT (nr_zona, cd_municipio, ano))::int FROM tse_eleitorado`);
+    results["eleitorado_rows_vs_zones"] = { total_rows: ed.rows[0][0], distinct_zones: ed.rows[0][1] };
 
     return new Response(JSON.stringify(results, null, 2), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
