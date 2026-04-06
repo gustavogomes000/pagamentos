@@ -1,11 +1,22 @@
-## Migration SQL (atualizar a existente)
-1. Criar tabela `municipios` com RLS
-2. Inserir **Aparecida de Goiânia** e **Goiânia**
-3. Adicionar `municipio_id` em suplentes, liderancas, administrativo, usuarios
-4. Vincular TODOS os registros existentes a **Aparecida de Goiânia**
-5. Criar tabela `suplente_municipio`
+## Migração BigQuery → Supabase (Opção B - Espelhada)
 
-## Frontend
-1. Atualizar migration SQL para incluir Aparecida como padrão
-2. Nos formulários, pré-selecionar Aparecida de Goiânia como cidade padrão
-3. Na página Index, adicionar seletor de cidade antes de redirecionar (ou no Dashboard)
+### 1. Criar tabelas no Supabase
+- `tse_candidatos` (candidatos por ano/município)
+- `tse_votacao` (votos por zona/município) 
+- `tse_eleitorado` (bairros por zona, só 2020+)
+- Índices otimizados para as queries existentes
+
+### 2. Edge Function `importar-tse`
+- Lê do BigQuery em batches de 1000
+- Insere no Supabase via service_role
+- Executa por ano (2016, 2018, 2020, 2022, 2024)
+
+### 3. Atualizar `consultar-bigquery`
+- Queries passam a consultar tabelas locais Supabase
+- Mesma interface de resposta (sem quebrar frontend)
+- BigQuery vira fallback temporário
+
+### 4. Validar
+- Contar registros importados
+- Testar BuscaTSE com dados locais
+- Confirmar campo Setor automático funciona
