@@ -14,40 +14,41 @@ Deno.serve(async (req) => {
   await client.connect();
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const action = body.action || "stats";
+    const results: Record<string, any> = {};
 
-    if (action === "stats") {
-      const queries = [
-        // Total per table
-        "SELECT 'tse_candidatos' as t, count(*) as total FROM tse_candidatos",
-        "SELECT 'tse_votacao' as t, count(*) as total FROM tse_votacao",
-        "SELECT 'tse_eleitorado' as t, count(*) as total FROM tse_eleitorado",
-        // By year
-        "SELECT 'cand_por_ano' as t, ano, count(*) as total FROM tse_candidatos GROUP BY ano ORDER BY ano",
-        "SELECT 'vot_por_ano' as t, ano, count(*) as total FROM tse_votacao GROUP BY ano ORDER BY ano",
-        "SELECT 'eleit_por_ano' as t, ano, count(*) as total FROM tse_eleitorado GROUP BY ano ORDER BY ano",
-        // Non-vereador count
-        "SELECT 'nao_vereador' as t, ds_cargo, count(*) as total FROM tse_candidatos WHERE ds_cargo != 'VEREADOR' GROUP BY ds_cargo ORDER BY count(*) DESC",
-        // Eleitorado duplicates potential
-        "SELECT 'eleit_distinct_zona_mun' as t, count(DISTINCT (nr_zona, cd_municipio, ano)) as total FROM tse_eleitorado",
-        // Table sizes
-        "SELECT tablename, pg_size_pretty(pg_total_relation_size('public.' || tablename)) as size FROM pg_tables WHERE schemaname='public' AND tablename LIKE 'tse_%' ORDER BY pg_total_relation_size('public.' || tablename) DESC",
-      ];
-
-      const results: Record<string, any> = {};
-      for (const sql of queries) {
-        const r = await client.queryObject(sql);
-        const key = sql.substring(0, 60);
-        results[key] = r.rows;
-      }
-
-      return new Response(JSON.stringify(results, null, 2), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Counts per table
+    for (const t of ["tse_candidatos", "tse_votacao", "tse_eleitorado"]) {
+      const r = await client.queryObject(`SELECT count(*) as total FROM ${t}`);
+      results[`total_${t}`] = r.rows[0];
     }
 
-    return new Response(JSON.stringify({ error: "unknown action" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // By year
+    for (const t of ["tse_candidatos", "tse_votacao", "tse_eleitorado"]) {
+      const r = await client.queryObject(`SELECT ano, count(*) as total FROM ${t} GROUP BY ano ORDER BY ano`);
+      results[`${t}_por_ano`] = r.rows;
+    }
+
+    // Non-vereador
+    const nv = await client.queryObject(`SELECT ds_cargo, count(*) as total FROM tse_candidatos WHERE ds_cargo != 'VEREADOR' OR ds_cargo IS NULL GROUP BY ds_cargo ORDER BY count(*) DESC`);
+    results["nao_vereador"] = nv.rows;
+
+    // Votacao for non-vereador candidates
+    const nvVot = await client.queryObject(`
+      SELECT count(*) as total FROM tse_votacao v 
+      WHERE NOT EXISTS (SELECT 1 FROM tse_candidatos c WHERE c.nr_candidato = v.nr_candidato AND c.ano = v.ano AND c.ds_cargo = 'VEREADOR')
+      AND v.ano IN (2020, 2022, 2024)
+    `);
+    results["votacao_nao_vereador"] = nvVot.rows[0];
+
+    // Eleitorado distinct zones
+    const ed = await client.queryObject(`SELECT count(*) as total_rows, count(DISTINCT (nr_zona, cd_municipio, ano)) as distinct_zones FROM tse_eleitorado`);
+    results["eleitorado_stats"] = ed.rows[0];
+
+    return new Response(JSON.stringify(results, null, 2), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } finally {
     await client.end();
   }
