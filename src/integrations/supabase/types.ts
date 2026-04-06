@@ -424,6 +424,114 @@ export type Database = {
           },
         ]
       }
+      tse_candidatos: {
+        Row: {
+          ano: number
+          ds_cargo: string | null
+          ds_sit_tot_turno: string | null
+          id: number
+          nm_candidato: string
+          nm_ue: string | null
+          nm_urna_candidato: string | null
+          nr_candidato: string
+          nr_turno: number | null
+          sg_partido: string | null
+          sg_ue: string | null
+          sq_candidato: string | null
+        }
+        Insert: {
+          ano: number
+          ds_cargo?: string | null
+          ds_sit_tot_turno?: string | null
+          id?: number
+          nm_candidato: string
+          nm_ue?: string | null
+          nm_urna_candidato?: string | null
+          nr_candidato: string
+          nr_turno?: number | null
+          sg_partido?: string | null
+          sg_ue?: string | null
+          sq_candidato?: string | null
+        }
+        Update: {
+          ano?: number
+          ds_cargo?: string | null
+          ds_sit_tot_turno?: string | null
+          id?: number
+          nm_candidato?: string
+          nm_ue?: string | null
+          nm_urna_candidato?: string | null
+          nr_candidato?: string
+          nr_turno?: number | null
+          sg_partido?: string | null
+          sg_ue?: string | null
+          sq_candidato?: string | null
+        }
+        Relationships: []
+      }
+      tse_eleitorado: {
+        Row: {
+          ano: number
+          cd_municipio: string | null
+          id: number
+          nm_bairro: string | null
+          nr_zona: string | null
+          qt_eleitor_secao: number | null
+        }
+        Insert: {
+          ano: number
+          cd_municipio?: string | null
+          id?: number
+          nm_bairro?: string | null
+          nr_zona?: string | null
+          qt_eleitor_secao?: number | null
+        }
+        Update: {
+          ano?: number
+          cd_municipio?: string | null
+          id?: number
+          nm_bairro?: string | null
+          nr_zona?: string | null
+          qt_eleitor_secao?: number | null
+        }
+        Relationships: []
+      }
+      tse_votacao: {
+        Row: {
+          ano: number
+          cd_municipio: string | null
+          id: number
+          nm_candidato: string | null
+          nm_municipio: string | null
+          nr_candidato: string
+          nr_turno: number | null
+          nr_zona: string | null
+          qt_votos_nominais: number | null
+        }
+        Insert: {
+          ano: number
+          cd_municipio?: string | null
+          id?: number
+          nm_candidato?: string | null
+          nm_municipio?: string | null
+          nr_candidato: string
+          nr_turno?: number | null
+          nr_zona?: string | null
+          qt_votos_nominais?: number | null
+        }
+        Update: {
+          ano?: number
+          cd_municipio?: string | null
+          id?: number
+          nm_candidato?: string | null
+          nm_municipio?: string | null
+          nr_candidato?: string
+          nr_turno?: number | null
+          nr_zona?: string | null
+          qt_votos_nominais?: number | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
