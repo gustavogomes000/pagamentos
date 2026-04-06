@@ -160,25 +160,37 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, bairros }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    } else if (acao === "validar_amostra") {
-      const ra = await client.queryArray(`
-        SELECT c.nm_candidato, c.nm_urna_candidato, c.nr_candidato, c.sg_partido, c.sq_candidato,
-               COALESCE(SUM(v.qt_votos_nominais), 0) as total_votos
-        FROM public.tse_candidatos c
-        LEFT JOIN public.tse_votacao v ON c.nr_candidato = v.nr_candidato AND UPPER(c.nm_ue) = UPPER(v.nm_municipio) AND c.ano = v.ano
-        WHERE c.ano = 2024 AND c.ds_cargo = 'VEREADOR'
-          AND UPPER(c.nm_candidato) LIKE '%ADRIANA%'
-          AND UPPER(c.nm_ue) = 'GOIÂNIA'
-        GROUP BY c.nm_candidato, c.nm_urna_candidato, c.nr_candidato, c.sg_partido, c.sq_candidato
-        ORDER BY total_votos DESC
-        LIMIT 5
-      `);
+    } else if (acao === "validar_completo") {
+      // Validate multiple cities, years and candidates at once
+      const queries = [
+        { ano: 2024, municipio: 'APARECIDA DE GOIÂNIA', nome: 'CARLOS', label: '2024-Aparecida-CARLOS' },
+        { ano: 2020, municipio: 'APARECIDA DE GOIÂNIA', nome: 'CARLOS', label: '2020-Aparecida-CARLOS' },
+        { ano: 2016, municipio: 'GOIÂNIA', nome: 'CARLOS', label: '2016-Goiania-CARLOS' },
+        { ano: 2024, municipio: 'GOIÂNIA', nome: 'MARIA', label: '2024-Goiania-MARIA' },
+        { ano: 2020, municipio: 'ANÁPOLIS', nome: 'JOSE', label: '2020-Anapolis-JOSE' },
+        { ano: 2016, municipio: 'APARECIDA DE GOIÂNIA', nome: 'SILVA', label: '2016-Aparecida-SILVA' },
+      ];
+      const allResults: Record<string, any[]> = {};
+      for (const q of queries) {
+        const r = await client.queryArray(`
+          SELECT c.nm_candidato, c.nr_candidato, c.sg_partido, c.sq_candidato,
+                 COALESCE(SUM(v.qt_votos_nominais), 0) as total_votos
+          FROM public.tse_candidatos c
+          LEFT JOIN public.tse_votacao v ON c.nr_candidato = v.nr_candidato AND UPPER(c.nm_ue) = UPPER(v.nm_municipio) AND c.ano = v.ano
+          WHERE c.ano = ${q.ano} AND c.ds_cargo = 'VEREADOR'
+            AND UPPER(c.nm_candidato) LIKE '%${q.nome}%'
+            AND UPPER(c.nm_ue) = '${q.municipio}'
+          GROUP BY c.nm_candidato, c.nr_candidato, c.sg_partido, c.sq_candidato
+          ORDER BY total_votos DESC
+          LIMIT 3
+        `);
+        allResults[q.label] = r.rows.map((row: any[]) => ({
+          nm_candidato: row[0], nr_candidato: row[1], sg_partido: row[2],
+          sq_candidato: row[3], total_votos: Number(row[4]),
+        }));
+      }
       await client.end();
-      const results = ra.rows.map((row: any[]) => ({
-        nm_candidato: row[0], nm_urna_candidato: row[1], nr_candidato: row[2],
-        sg_partido: row[3], sq_candidato: row[4], total_votos: Number(row[5]),
-      }));
-      return new Response(JSON.stringify({ ok: true, results }), {
+      return new Response(JSON.stringify({ ok: true, validacao: allResults }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
