@@ -115,16 +115,32 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } else if (acao === "verificar") {
-      const r1 = await client.queryArray(`SELECT COUNT(*) FROM public.tse_candidatos`);
-      const r2 = await client.queryArray(`SELECT COUNT(*) FROM public.tse_votacao`);
-      const r3 = await client.queryArray(`SELECT COUNT(*) FROM public.tse_eleitorado`);
+      const r1 = await client.queryArray(`SELECT ano, COUNT(*) as cnt FROM public.tse_candidatos GROUP BY ano ORDER BY ano`);
+      const r2 = await client.queryArray(`SELECT ano, COUNT(*) as cnt FROM public.tse_votacao GROUP BY ano ORDER BY ano`);
+      const r3 = await client.queryArray(`SELECT ano, COUNT(*) as cnt FROM public.tse_eleitorado GROUP BY ano ORDER BY ano`);
       await client.end();
+      const fmt = (rows: any[][]) => rows.map(r => ({ ano: Number(r[0]), count: Number(r[1]) }));
       return new Response(JSON.stringify({
         ok: true,
-        candidatos: Number(r1.rows[0][0]),
-        votacao: Number(r2.rows[0][0]),
-        eleitorado: Number(r3.rows[0][0]),
+        candidatos: fmt(r1.rows),
+        votacao: fmt(r2.rows),
+        eleitorado: fmt(r3.rows),
       }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    } else if (acao === "dedup_votacao") {
+      // Remove duplicate rows in tse_votacao
+      await client.queryArray(`
+        DELETE FROM public.tse_votacao a USING public.tse_votacao b
+        WHERE a.id > b.id
+          AND a.ano = b.ano
+          AND a.nr_candidato = b.nr_candidato
+          AND COALESCE(a.cd_municipio,'') = COALESCE(b.cd_municipio,'')
+          AND COALESCE(a.nr_zona,'') = COALESCE(b.nr_zona,'')
+      `);
+      const r = await client.queryArray(`SELECT COUNT(*) FROM public.tse_votacao`);
+      await client.end();
+      return new Response(JSON.stringify({ ok: true, votacao_after_dedup: Number(r.rows[0][0]) }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
