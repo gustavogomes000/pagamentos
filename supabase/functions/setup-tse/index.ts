@@ -121,9 +121,9 @@ Deno.serve(async (req) => {
       await client.end();
       return new Response(JSON.stringify({
         ok: true,
-        candidatos: r1.rows[0][0],
-        votacao: r2.rows[0][0],
-        eleitorado: r3.rows[0][0],
+        candidatos: Number(r1.rows[0][0]),
+        votacao: Number(r2.rows[0][0]),
+        eleitorado: Number(r3.rows[0][0]),
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
