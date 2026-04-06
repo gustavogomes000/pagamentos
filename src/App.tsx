@@ -141,7 +141,7 @@ const App = () => {
       <TooltipProvider>
         <CidadeProvider>
           <GlobalOfflineSync />
-          <InstallPWA />
+          
           <VersionMonitor />
           <Toaster />
           <Sonner />
