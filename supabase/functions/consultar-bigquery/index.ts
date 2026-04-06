@@ -1,254 +1,13 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const BIGQUERY_API = "https://bigquery.googleapis.com/bigquery/v2";
-
-interface ServiceAccount {
-  client_email: string;
-  private_key: string;
-  token_uri: string;
-  project_id: string;
+function sanitize(str: string): string {
+  return (str || "").replace(/'/g, "").trim();
 }
-
-/**
- * Creates a JWT for Google Service Account authentication
- */
-async function createJWT(sa: ServiceAccount): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
-  const header = { alg: "RS256", typ: "JWT" };
-  const payload = {
-    iss: sa.client_email,
-    scope: "https://www.googleapis.com/auth/bigquery.readonly",
-    aud: sa.token_uri,
-    iat: now,
-    exp: now + 3600,
-  };
-
-  const enc = (obj: unknown) =>
-    btoa(JSON.stringify(obj)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-
-  const headerB64 = enc(header);
-  const payloadB64 = enc(payload);
-  const signingInput = `${headerB64}.${payloadB64}`;
-
-  // Import the private key
-  const pemContent = sa.private_key
-    .replace("-----BEGIN PRIVATE KEY-----", "")
-    .replace("-----END PRIVATE KEY-----", "")
-    .replace(/\n/g, "");
-
-  const binaryDer = Uint8Array.from(atob(pemContent), (c) => c.charCodeAt(0));
-
-  const key = await crypto.subtle.importKey(
-    "pkcs8",
-    binaryDer,
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    key,
-    new TextEncoder().encode(signingInput)
-  );
-
-  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-
-  return `${signingInput}.${sigB64}`;
-}
-
-/**
- * Gets an access token from Google OAuth2
- */
-async function getAccessToken(sa: ServiceAccount): Promise<string> {
-  const jwt = await createJWT(sa);
-
-  const resp = await fetch(sa.token_uri, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`,
-  });
-
-  if (!resp.ok) {
-    const err = await resp.text();
-    throw new Error(`Failed to get access token: ${resp.status} - ${err}`);
-  }
-
-  const data = await resp.json();
-  return data.access_token;
-}
-
-/**
- * Runs a BigQuery SQL query
- */
-async function queryBigQuery(
-  accessToken: string,
-  projectId: string,
-  sql: string,
-  location = "southamerica-east1"
-): Promise<unknown> {
-  const url = `${BIGQUERY_API}/projects/${projectId}/queries`;
-
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      query: sql,
-      useLegacySql: false,
-      maxResults: 1000,
-      location,
-    }),
-  });
-
-  if (!resp.ok) {
-    const err = await resp.text();
-    throw new Error(`BigQuery query failed: ${resp.status} - ${err}`);
-  }
-
-  return await resp.json();
-}
-
-/**
- * Transforms BigQuery response into a simple array of objects
- */
-function transformResponse(bqResponse: any): Record<string, string>[] {
-  if (!bqResponse.rows || !bqResponse.schema?.fields) return [];
-
-  const fields = bqResponse.schema.fields.map((f: any) => f.name);
-
-  return bqResponse.rows.map((row: any) => {
-    const obj: Record<string, string> = {};
-    row.f.forEach((cell: any, i: number) => {
-      obj[fields[i]] = cell.v;
-    });
-    return obj;
-  });
-}
-
-// Allowed queries - whitelist approach for security
-const ALLOWED_QUERIES: Record<string, (params: Record<string, string>) => string> = {
-  // Busca principal: candidatos com votos agregados
-  buscar_candidatos: (p) => {
-    const ano = p.ano || "2024";
-    const nomeFilter = p.nome
-      ? `AND (UPPER(c.nm_candidato) LIKE UPPER('%${p.nome.replace(/'/g, "")}%') OR UPPER(c.nm_urna_candidato) LIKE UPPER('%${p.nome.replace(/'/g, "")}%'))`
-      : "";
-    const municipioFilter = p.municipio
-      ? `AND UPPER(c.nm_ue) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')`
-      : "";
-    const municipiosFilter = p.municipios
-      ? `AND UPPER(c.nm_ue) IN (${p.municipios.split(",").map(m => `UPPER('${m.trim().replace(/'/g, "")}')`).join(",")})`
-      : "";
-
-    const localTable = parseInt(ano) >= 2020
-      ? `\`silver-idea-389314.eleicoes_go_clean.raw_eleitorado_local_${ano}\``
-      : null;
-
-    const bairroSelect = localTable ? `, l.bairros_zona` : ``;
-    const bairroJoin = localTable ? `
-      LEFT JOIN (
-        SELECT vz.nr_candidato, vz.cd_municipio, vz.nr_zona as top_zona,
-               ROW_NUMBER() OVER (PARTITION BY vz.nr_candidato, vz.cd_municipio ORDER BY SUM(SAFE_CAST(vz.qt_votos_nominais AS INT64)) DESC) as rn
-        FROM \`silver-idea-389314.eleicoes_go_clean.raw_votacao_munzona_${ano}\` vz
-        GROUP BY vz.nr_candidato, vz.cd_municipio, vz.nr_zona
-      ) tz ON c.nr_candidato = tz.nr_candidato AND c.sg_ue = tz.cd_municipio AND tz.rn = 1
-      LEFT JOIN (
-        SELECT nr_zona, cd_municipio, 
-               STRING_AGG(bairro, ', ' ORDER BY total_eleitores DESC) as bairros_zona
-        FROM (
-          SELECT nr_zona, cd_municipio, nm_bairro as bairro,
-                 SUM(SAFE_CAST(qt_eleitor_secao AS INT64)) as total_eleitores
-          FROM ${localTable}
-          WHERE nm_bairro IS NOT NULL AND nm_bairro != '#NULO#' AND nm_bairro != '#NE#' AND nm_bairro != ''
-          GROUP BY nr_zona, cd_municipio, nm_bairro
-        )
-        GROUP BY nr_zona, cd_municipio
-      ) l ON tz.top_zona = l.nr_zona AND tz.cd_municipio = l.cd_municipio` : ``;
-
-    return `
-      SELECT 
-        c.nm_candidato, c.nm_urna_candidato, c.nr_candidato, c.sg_partido,
-        c.ds_cargo, c.nm_ue, c.ds_sit_tot_turno, c.nr_turno,
-        c.sq_candidato,
-        COALESCE(v.total_votos, 0) as total_votos
-        ${bairroSelect}
-      FROM \`silver-idea-389314.eleicoes_go_clean.raw_candidatos_${ano}\` c
-      LEFT JOIN (
-        SELECT nr_candidato, nm_municipio, SUM(CAST(qt_votos_nominais AS INT64)) as total_votos
-        FROM \`silver-idea-389314.eleicoes_go_clean.raw_votacao_munzona_${ano}\`
-        GROUP BY nr_candidato, nm_municipio
-      ) v ON c.nr_candidato = v.nr_candidato AND UPPER(c.nm_ue) = UPPER(v.nm_municipio)
-      ${bairroJoin}
-      WHERE c.ds_cargo = 'VEREADOR'
-      ${nomeFilter}
-      ${municipioFilter}
-      ${municipiosFilter}
-      ORDER BY COALESCE(v.total_votos, 0) DESC
-      LIMIT ${p.limit || "50"}
-    `;
-  },
-
-  candidatos_2024: (p) => `
-    SELECT nm_candidato, nm_urna_candidato, nr_candidato, sg_partido, 
-           ds_cargo, nm_ue, ds_sit_tot_turno, nr_turno
-    FROM \`silver-idea-389314.eleicoes_go_clean.raw_candidatos_2024\`
-    WHERE ds_cargo = 'VEREADOR'
-    ${p.municipio ? `AND UPPER(nm_ue) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')` : ""}
-    ${p.nome ? `AND UPPER(nm_candidato) LIKE UPPER('%${p.nome.replace(/'/g, "")}%')` : ""}
-    ORDER BY nm_candidato
-    LIMIT ${p.limit || "100"}
-  `,
-
-  votacao_2024: (p) => `
-    SELECT nm_candidato, nr_candidato, qt_votos_nominais, nm_municipio, nr_zona, nr_turno
-    FROM \`silver-idea-389314.eleicoes_go_clean.raw_votacao_munzona_2024\`
-    WHERE 1=1
-    ${p.municipio ? `AND UPPER(nm_municipio) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')` : ""}
-    ${p.nome ? `AND UPPER(nm_candidato) LIKE UPPER('%${p.nome.replace(/'/g, "")}%')` : ""}
-    ${p.numero ? `AND nr_candidato = '${p.numero.replace(/'/g, "")}'` : ""}
-    ORDER BY CAST(qt_votos_nominais AS INT64) DESC
-    LIMIT ${p.limit || "100"}
-  `,
-
-  listar_datasets: () => `
-    SELECT schema_name 
-    FROM \`silver-idea-389314.INFORMATION_SCHEMA.SCHEMATA\`
-    ORDER BY schema_name
-  `,
-
-  listar_tabelas: (p) => `
-    SELECT table_name
-    FROM \`silver-idea-389314.${p.dataset || "eleicoes_go_clean"}.INFORMATION_SCHEMA.TABLES\`
-    ORDER BY table_name
-  `,
-
-  candidatos_historico: (p) => `
-    SELECT nm_candidato, nm_urna_candidato, nr_candidato, sg_partido,
-           ds_cargo, nm_ue, ds_sit_tot_turno
-    FROM \`silver-idea-389314.eleicoes_go_clean.raw_candidatos_${p.ano || "2024"}\`
-    WHERE ds_cargo = 'VEREADOR'
-    ${p.municipio ? `AND UPPER(nm_ue) LIKE UPPER('%${p.municipio.replace(/'/g, "")}%')` : ""}
-    ${p.nome ? `AND UPPER(nm_candidato) LIKE UPPER('%${p.nome.replace(/'/g, "")}%')` : ""}
-    ORDER BY nm_candidato
-    LIMIT ${p.limit || "100"}
-  `,
-
-  colunas_tabela: (p) => `
-    SELECT column_name
-    FROM \`silver-idea-389314.${p.dataset || "eleicoes_go_clean"}.INFORMATION_SCHEMA.COLUMNS\`
-    WHERE table_name = '${(p.tabela || "").replace(/'/g, "")}'
-    ORDER BY ordinal_position
-  `,
-};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -267,48 +26,43 @@ Deno.serve(async (req) => {
     }
 
     const { consulta, params = {} } = body;
+    const supaUrl = Deno.env.get("SUPA_URL") || Deno.env.get("SUPABASE_URL")!;
+    const supaKey = Deno.env.get("SUPA_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supaUrl, supaKey);
 
-    const clientEmail = Deno.env.get("BIGQUERY_CLIENT_EMAIL");
-    const privateKey = Deno.env.get("BIGQUERY_PRIVATE_KEY");
-    const projectId = Deno.env.get("BIGQUERY_PROJECT_ID");
-
-    if (!clientEmail || !privateKey || !projectId) {
-      throw new Error("BigQuery credentials not configured. Need BIGQUERY_CLIENT_EMAIL, BIGQUERY_PRIVATE_KEY, BIGQUERY_PROJECT_ID");
-    }
-
-    const sa: ServiceAccount = {
-      client_email: clientEmail,
-      private_key: privateKey.replace(/\\n/g, "\n"),
-      token_uri: "https://oauth2.googleapis.com/token",
-      project_id: projectId,
-    };
-
-    if (!consulta || !ALLOWED_QUERIES[consulta]) {
+    if (!consulta) {
       return new Response(
         JSON.stringify({
           error: "Consulta inválida",
-          consultas_disponiveis: Object.keys(ALLOWED_QUERIES),
+          consultas_disponiveis: ["buscar_candidatos", "candidatos_2024", "votacao_2024", "candidatos_historico"],
         }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const sql = ALLOWED_QUERIES[consulta](params);
-    const accessToken = await getAccessToken(sa);
-    const location = params.location || "US";
-    const bqResponse = await queryBigQuery(accessToken, sa.project_id, sql, location);
-    const rows = transformResponse(bqResponse);
+    let rows: Record<string, string>[] = [];
+
+    if (consulta === "buscar_candidatos") {
+      rows = await buscarCandidatos(supabase, params);
+    } else if (consulta === "candidatos_2024") {
+      rows = await candidatosPorAno(supabase, params, 2024);
+    } else if (consulta === "candidatos_historico") {
+      rows = await candidatosPorAno(supabase, params, parseInt(params.ano || "2024"));
+    } else if (consulta === "votacao_2024") {
+      rows = await votacaoPorAno(supabase, params);
+    } else {
+      return new Response(
+        JSON.stringify({ error: "Consulta não suportada", consulta }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     return new Response(
-      JSON.stringify({
-        consulta,
-        total: rows.length,
-        dados: rows,
-      }),
+      JSON.stringify({ consulta, total: rows.length, dados: rows }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
-    console.error("BigQuery error:", error);
+    console.error("Query error:", error);
     const msg = error instanceof Error ? error.message : "Erro desconhecido";
     return new Response(
       JSON.stringify({ error: msg }),
@@ -316,3 +70,183 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+/**
+ * Main search: candidates with aggregated votes and neighborhood data
+ * Replicates the BigQuery "buscar_candidatos" query using local Supabase tables
+ */
+async function buscarCandidatos(supabase: any, params: Record<string, string>): Promise<Record<string, string>[]> {
+  const ano = parseInt(params.ano || "2024");
+  const limit = parseInt(params.limit || "50");
+  const nome = sanitize(params.nome || "");
+  const municipio = sanitize(params.municipio || "");
+  const municipios = params.municipios
+    ? params.municipios.split(",").map((m: string) => sanitize(m).toUpperCase())
+    : [];
+
+  const dbUrl = Deno.env.get("SUPABASE_DB_URL");
+  if (!dbUrl) throw new Error("SUPABASE_DB_URL não configurado");
+
+  const { Client } = await import("https://deno.land/x/postgres@v0.19.3/mod.ts");
+  const client = new Client(dbUrl);
+  await client.connect();
+
+  try {
+    // Build WHERE filters
+    const conditions = [`c.ano = ${ano}`, `c.ds_cargo = 'VEREADOR'`];
+    
+    if (nome) {
+      conditions.push(`(UPPER(c.nm_candidato) LIKE '%${nome.toUpperCase()}%' OR UPPER(c.nm_urna_candidato) LIKE '%${nome.toUpperCase()}%')`);
+    }
+    if (municipio) {
+      conditions.push(`UPPER(c.nm_ue) LIKE '%${municipio.toUpperCase()}%'`);
+    }
+    if (municipios.length > 0) {
+      const inList = municipios.map((m: string) => `'${m}'`).join(",");
+      conditions.push(`UPPER(c.nm_ue) IN (${inList})`);
+    }
+
+    const whereClause = conditions.join(" AND ");
+
+    // Check if we have bairro data for this year
+    const hasBairros = ano >= 2020;
+
+    let sql: string;
+    if (hasBairros) {
+      sql = `
+        WITH votos_agg AS (
+          SELECT nr_candidato, nm_municipio, SUM(qt_votos_nominais) as total_votos
+          FROM public.tse_votacao WHERE ano = ${ano}
+          GROUP BY nr_candidato, nm_municipio
+        ),
+        top_zona AS (
+          SELECT nr_candidato, cd_municipio, nr_zona,
+                 ROW_NUMBER() OVER (PARTITION BY nr_candidato, cd_municipio ORDER BY SUM(qt_votos_nominais) DESC) as rn
+          FROM public.tse_votacao WHERE ano = ${ano}
+          GROUP BY nr_candidato, cd_municipio, nr_zona
+        ),
+        bairros_agg AS (
+          SELECT e.nr_zona, e.cd_municipio,
+                 STRING_AGG(e.nm_bairro, ', ' ORDER BY e.qt_eleitor_secao DESC) as bairros_zona
+          FROM public.tse_eleitorado e
+          WHERE e.ano = ${ano}
+          GROUP BY e.nr_zona, e.cd_municipio
+        )
+        SELECT c.nm_candidato, c.nm_urna_candidato, c.nr_candidato, c.sg_partido,
+               c.ds_cargo, c.nm_ue, c.ds_sit_tot_turno, c.nr_turno::text,
+               c.sq_candidato,
+               COALESCE(v.total_votos, 0)::text as total_votos,
+               b.bairros_zona
+        FROM public.tse_candidatos c
+        LEFT JOIN votos_agg v ON c.nr_candidato = v.nr_candidato AND UPPER(c.nm_ue) = UPPER(v.nm_municipio)
+        LEFT JOIN top_zona tz ON c.nr_candidato = tz.nr_candidato AND c.sg_ue = tz.cd_municipio AND tz.rn = 1
+        LEFT JOIN bairros_agg b ON tz.nr_zona = b.nr_zona AND tz.cd_municipio = b.cd_municipio
+        WHERE ${whereClause}
+        ORDER BY COALESCE(v.total_votos, 0) DESC
+        LIMIT ${limit}
+      `;
+    } else {
+      sql = `
+        WITH votos_agg AS (
+          SELECT nr_candidato, nm_municipio, SUM(qt_votos_nominais) as total_votos
+          FROM public.tse_votacao WHERE ano = ${ano}
+          GROUP BY nr_candidato, nm_municipio
+        )
+        SELECT c.nm_candidato, c.nm_urna_candidato, c.nr_candidato, c.sg_partido,
+               c.ds_cargo, c.nm_ue, c.ds_sit_tot_turno, c.nr_turno::text,
+               c.sq_candidato,
+               COALESCE(v.total_votos, 0)::text as total_votos,
+               NULL as bairros_zona
+        FROM public.tse_candidatos c
+        LEFT JOIN votos_agg v ON c.nr_candidato = v.nr_candidato AND UPPER(c.nm_ue) = UPPER(v.nm_municipio)
+        WHERE ${whereClause}
+        ORDER BY COALESCE(v.total_votos, 0) DESC
+        LIMIT ${limit}
+      `;
+    }
+
+    const result = await client.queryArray(sql);
+    return result.rows.map((row: any[]) => ({
+      nm_candidato: row[0] || "",
+      nm_urna_candidato: row[1] || "",
+      nr_candidato: row[2] || "",
+      sg_partido: row[3] || "",
+      ds_cargo: row[4] || "",
+      nm_ue: row[5] || "",
+      ds_sit_tot_turno: row[6] || "",
+      nr_turno: String(row[7] || "1"),
+      sq_candidato: row[8] || "",
+      total_votos: String(row[9] || "0"),
+      bairros_zona: row[10] || null,
+    }));
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * Simple candidate list by year
+ */
+async function candidatosPorAno(supabase: any, params: Record<string, string>, ano: number): Promise<Record<string, string>[]> {
+  const limit = parseInt(params.limit || "100");
+  const nome = sanitize(params.nome || "");
+  const municipio = sanitize(params.municipio || "");
+
+  let query = supabase
+    .from("tse_candidatos")
+    .select("nm_candidato, nm_urna_candidato, nr_candidato, sg_partido, ds_cargo, nm_ue, ds_sit_tot_turno, nr_turno")
+    .eq("ano", ano)
+    .eq("ds_cargo", "VEREADOR")
+    .order("nm_candidato")
+    .limit(limit);
+
+  if (nome) query = query.ilike("nm_candidato", `%${nome}%`);
+  if (municipio) query = query.ilike("nm_ue", `%${municipio}%`);
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+
+  return (data || []).map((r: any) => ({
+    nm_candidato: r.nm_candidato || "",
+    nm_urna_candidato: r.nm_urna_candidato || "",
+    nr_candidato: r.nr_candidato || "",
+    sg_partido: r.sg_partido || "",
+    ds_cargo: r.ds_cargo || "",
+    nm_ue: r.nm_ue || "",
+    ds_sit_tot_turno: r.ds_sit_tot_turno || "",
+    nr_turno: String(r.nr_turno || "1"),
+  }));
+}
+
+/**
+ * Vote details for 2024
+ */
+async function votacaoPorAno(supabase: any, params: Record<string, string>): Promise<Record<string, string>[]> {
+  const limit = parseInt(params.limit || "100");
+  const nome = sanitize(params.nome || "");
+  const municipio = sanitize(params.municipio || "");
+  const numero = sanitize(params.numero || "");
+
+  let query = supabase
+    .from("tse_votacao")
+    .select("nm_candidato, nr_candidato, qt_votos_nominais, nm_municipio, nr_zona, nr_turno")
+    .eq("ano", 2024)
+    .order("qt_votos_nominais", { ascending: false })
+    .limit(limit);
+
+  if (nome) query = query.ilike("nm_candidato", `%${nome}%`);
+  if (municipio) query = query.ilike("nm_municipio", `%${municipio}%`);
+  if (numero) query = query.eq("nr_candidato", numero);
+
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+
+  return (data || []).map((r: any) => ({
+    nm_candidato: r.nm_candidato || "",
+    nr_candidato: r.nr_candidato || "",
+    qt_votos_nominais: String(r.qt_votos_nominais || "0"),
+    nm_municipio: r.nm_municipio || "",
+    nr_zona: r.nr_zona || "",
+    nr_turno: String(r.nr_turno || "1"),
+  }));
+}
