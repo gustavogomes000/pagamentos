@@ -14,27 +14,49 @@ Deno.serve(async (req) => {
   await client.connect();
 
   try {
-    const results: Record<string, any> = {};
+    const body = await req.json().catch(() => ({}));
+    const action = body.action || "stats";
 
-    for (const t of ["tse_candidatos", "tse_votacao", "tse_eleitorado"]) {
-      const r = await client.queryArray(`SELECT count(*)::int FROM ${t}`);
-      results[`total_${t}`] = r.rows[0][0];
+    if (action === "stats") {
+      const results: Record<string, any> = {};
+      for (const t of ["tse_candidatos", "tse_votacao", "tse_eleitorado"]) {
+        const r = await client.queryArray(`SELECT count(*)::int FROM ${t}`);
+        results[`total_${t}`] = r.rows[0][0];
+      }
+      for (const t of ["tse_candidatos", "tse_votacao", "tse_eleitorado"]) {
+        const r = await client.queryArray(`SELECT ano::int, count(*)::int FROM ${t} GROUP BY ano ORDER BY ano`);
+        results[`${t}_por_ano`] = r.rows.map((row: any) => ({ ano: row[0], total: row[1] }));
+      }
+      return new Response(JSON.stringify(results, null, 2), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    for (const t of ["tse_candidatos", "tse_votacao", "tse_eleitorado"]) {
-      const r = await client.queryArray(`SELECT ano::int, count(*)::int FROM ${t} GROUP BY ano ORDER BY ano`);
-      results[`${t}_por_ano`] = r.rows.map((row: any) => ({ ano: row[0], total: row[1] }));
+    if (action === "delete_2016") {
+      const r1 = await client.queryArray(`DELETE FROM tse_candidatos WHERE ano = 2016`);
+      const r2 = await client.queryArray(`DELETE FROM tse_votacao WHERE ano = 2016`);
+      return new Response(JSON.stringify({
+        deleted_candidatos: r1.rowCount,
+        deleted_votacao: r2.rowCount,
+        message: "Ano 2016 removido com sucesso"
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const nv = await client.queryArray(`SELECT COALESCE(ds_cargo,'NULL'), count(*)::int FROM tse_candidatos WHERE ds_cargo != 'VEREADOR' OR ds_cargo IS NULL GROUP BY ds_cargo ORDER BY count(*) DESC`);
-    results["nao_vereador"] = nv.rows.map((r: any) => ({ cargo: r[0], total: r[1] }));
+    if (action === "vacuum") {
+      // VACUUM FULL requires exclusive lock, run on each table
+      for (const t of ["tse_candidatos", "tse_votacao", "tse_eleitorado"]) {
+        await client.queryArray(`VACUUM FULL ${t}`);
+      }
+      // Reindex
+      for (const t of ["tse_candidatos", "tse_votacao", "tse_eleitorado"]) {
+        await client.queryArray(`REINDEX TABLE ${t}`);
+      }
+      return new Response(JSON.stringify({ message: "VACUUM FULL + REINDEX concluídos" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    const ed = await client.queryArray(`SELECT count(*)::int, count(DISTINCT (nr_zona, cd_municipio, ano))::int FROM tse_eleitorado`);
-    results["eleitorado_rows_vs_zones"] = { total_rows: ed.rows[0][0], distinct_zones: ed.rows[0][1] };
-
-    return new Response(JSON.stringify(results, null, 2), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: "action inválida" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } finally {
