@@ -214,22 +214,24 @@ export default function Cadastro({ initial, onSaved }: Props) {
                  ? municipios.find(m => m.nome.toUpperCase() === c.municipio.toUpperCase())?.id || ""
                  : "";
                setForm((prev) => ({
-                ...prev,
-                nome: c.nome,
-                nome_urna: c.nomeUrna || "",
-                numero_urna: c.numero ? String(c.numero) : prev.numero_urna,
-                partido: c.partido,
-                cargo_disputado: c.cargo === "Vereador" ? "Vereador" : c.cargo === "Deputado Estadual" ? "Deputado Estadual" : c.cargo === "Deputado Federal" ? "Deputado Federal" : prev.cargo_disputado,
-                situacao: c.situacao.includes("Suplente") ? "Suplente" : c.situacao.includes("Eleito") ? "Eleito" : "Não Eleito",
-                regiao_atuacao: (() => {
-                  if (!c.bairrosZona) return prev.regiao_atuacao;
-                  const bairros = c.bairrosZona.split(', ');
-                  return bairros[0] || prev.regiao_atuacao;
-                })(),
-                total_votos: c.totalVotos > 0 ? c.totalVotos : prev.total_votos,
-                expectativa_votos: 0,
-                municipio_id: cidadeCandidato || prev.municipio_id,
-              }));
+                 ...prev,
+                 nome: c.nome,
+                 nome_urna: c.nomeUrna || "",
+                 numero_urna: c.numero ? String(c.numero) : prev.numero_urna,
+                 partido: c.partido,
+                 cargo_disputado: c.cargo === "Vereador" ? "Vereador" : c.cargo === "Deputado Estadual" ? "Deputado Estadual" : c.cargo === "Deputado Federal" ? "Deputado Federal" : prev.cargo_disputado,
+                 situacao: c.situacao.includes("Suplente") ? "Suplente" : c.situacao.includes("Eleito") ? "Eleito" : "Não Eleito",
+                 regiao_atuacao: (() => {
+                   const bairros = (c.bairrosZona || "")
+                     .split(",")
+                     .map((bairro) => bairro.trim())
+                     .filter(Boolean);
+                   return bairros[0] || c.municipio || prev.regiao_atuacao;
+                 })(),
+                 total_votos: c.totalVotos > 0 ? c.totalVotos : prev.total_votos,
+                 expectativa_votos: 0,
+                 municipio_id: cidadeCandidato || prev.municipio_id,
+               }));
               toast({ title: "Dados preenchidos!", description: `${c.nome} — ${c.partido}${c.totalVotos > 0 ? ` — ${c.totalVotos.toLocaleString("pt-BR")} votos` : ""}` });
 
               if (c.totalVotos > 0) {
