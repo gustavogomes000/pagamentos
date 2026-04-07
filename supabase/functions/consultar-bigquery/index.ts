@@ -179,6 +179,7 @@ async function buscarCandidatos(supabase: any, params: Record<string, string>): 
       sq_candidato: row[8] || "",
       total_votos: String(row[9] || "0"),
       bairros_zona: row[10] || null,
+      _debug: { sg_ue: row[11], tz_mun: row[12], tz_zona: row[13], b_cd: row[14] },
     }));
   } finally {
     await client.end();
