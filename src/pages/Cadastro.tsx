@@ -40,7 +40,7 @@ interface FormData {
 }
 
 // Meses restantes até setembro (MES_FIM = 9), mínimo 1
-const calcMesesRestantes = () => Math.max(1, 9 - new Date().getMonth()); // getMonth() jan=0..ago=8
+const calcMesesRestantes = () => Math.max(1, 9 - (new Date().getMonth() + 1)); // getMonth()+1 → abr=4, 9-4=5
 
 const defaultForm: FormData = {
   municipio_id: "",
