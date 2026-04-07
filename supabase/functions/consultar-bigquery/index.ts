@@ -55,15 +55,12 @@ Deno.serve(async (req) => {
       const dbUrl = Deno.env.get("SUPABASE_DB_URL")!;
       const { Client } = await import("https://deno.land/x/postgres@v0.19.3/mod.ts");
       const cl = new Client(dbUrl); await cl.connect();
-      const r = await cl.queryArray(`
-        SELECT 'votacao' as src, cd_municipio, nm_municipio, nr_zona FROM tse_votacao WHERE ano=2024 AND UPPER(nm_municipio) LIKE '%APARECIDA%' LIMIT 3
-        UNION ALL
-        SELECT 'eleitorado', cd_municipio, NULL, nr_zona FROM tse_eleitorado WHERE ano=2024 AND cd_municipio IN (SELECT DISTINCT cd_municipio FROM tse_votacao WHERE ano=2024 AND UPPER(nm_municipio) LIKE '%APARECIDA%') LIMIT 3
-        UNION ALL
-        SELECT 'candidatos', sg_ue, nm_ue, NULL FROM tse_candidatos WHERE ano=2024 AND UPPER(nm_ue) LIKE '%APARECIDA%' LIMIT 3
-      `);
+      const r1 = await cl.queryArray(`SELECT DISTINCT cd_municipio, nm_municipio FROM tse_votacao WHERE ano=2024 AND UPPER(nm_municipio) LIKE '%APARECIDA%' LIMIT 3`);
+      const r2 = await cl.queryArray(`SELECT DISTINCT cd_municipio, nr_zona FROM tse_eleitorado WHERE ano=2024 AND cd_municipio IN ('92274','09274','9274') LIMIT 5`);
+      const r3 = await cl.queryArray(`SELECT DISTINCT sg_ue, nm_ue FROM tse_candidatos WHERE ano=2024 AND UPPER(nm_ue) LIKE '%APARECIDA%' LIMIT 3`);
+      const r4 = await cl.queryArray(`SELECT DISTINCT cd_municipio FROM tse_eleitorado WHERE ano=2024 ORDER BY cd_municipio LIMIT 20`);
       await cl.end();
-      return new Response(JSON.stringify({ debug: r.rows }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ votacao: r1.rows, eleitorado_92274: r2.rows, candidatos: r3.rows, all_eleitorado_codes: r4.rows }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     } else {
       return new Response(
         JSON.stringify({ error: "Consulta não suportada", consulta }),
