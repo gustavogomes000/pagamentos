@@ -120,10 +120,10 @@ async function buscarCandidatos(supabase: any, params: Record<string, string>): 
           GROUP BY nr_candidato, nm_municipio
         ),
         top_zona AS (
-          SELECT nr_candidato, nm_municipio, nr_zona,
+          SELECT nr_candidato, nm_municipio, cd_municipio, nr_zona,
                  ROW_NUMBER() OVER (PARTITION BY nr_candidato, nm_municipio ORDER BY SUM(qt_votos_nominais) DESC) as rn
           FROM public.tse_votacao WHERE ano = ${ano}
-          GROUP BY nr_candidato, nm_municipio, nr_zona
+          GROUP BY nr_candidato, nm_municipio, cd_municipio, nr_zona
         ),
         bairros_agg AS (
           SELECT e.nr_zona, e.cd_municipio,
@@ -136,12 +136,11 @@ async function buscarCandidatos(supabase: any, params: Record<string, string>): 
                c.ds_cargo, c.nm_ue, c.ds_sit_tot_turno, c.nr_turno::text,
                c.sq_candidato,
                COALESCE(v.total_votos, 0)::text as total_votos,
-               b.bairros_zona,
-               c.sg_ue as debug_sg_ue, tz.nm_municipio as debug_tz_mun, tz.nr_zona as debug_tz_zona, b.cd_municipio as debug_b_cd
+               b.bairros_zona
         FROM public.tse_candidatos c
         LEFT JOIN votos_agg v ON c.nr_candidato = v.nr_candidato AND UPPER(c.nm_ue) = UPPER(v.nm_municipio)
         LEFT JOIN top_zona tz ON c.nr_candidato = tz.nr_candidato AND UPPER(c.nm_ue) = UPPER(tz.nm_municipio) AND tz.rn = 1
-        LEFT JOIN bairros_agg b ON tz.nr_zona = b.nr_zona AND c.sg_ue = b.cd_municipio
+        LEFT JOIN bairros_agg b ON tz.nr_zona = b.nr_zona AND tz.cd_municipio = b.cd_municipio
         WHERE ${whereClause}
         ORDER BY COALESCE(v.total_votos, 0) DESC
         LIMIT ${limit}
