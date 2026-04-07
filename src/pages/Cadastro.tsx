@@ -39,6 +39,9 @@ interface FormData {
   assinatura: string;
 }
 
+// Meses restantes até setembro (MES_FIM = 9), mínimo 1
+const calcMesesRestantes = () => Math.max(1, 9 - new Date().getMonth()); // getMonth() jan=0..ago=8
+
 const defaultForm: FormData = {
   municipio_id: "",
   nome: "",
@@ -55,7 +58,7 @@ const defaultForm: FormData = {
   expectativa_votos: 0,
   base_politica: "",
   retirada_mensal_valor: 0,
-  retirada_mensal_meses: 6,
+  retirada_mensal_meses: calcMesesRestantes(),
   plotagem_qtd: 0,
   plotagem_valor_unit: 250,
   liderancas_qtd: 0,
