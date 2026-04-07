@@ -50,17 +50,6 @@ Deno.serve(async (req) => {
       rows = await candidatosPorAno(supabase, params, parseInt(params.ano || "2024"));
     } else if (consulta === "votacao_2024") {
       rows = await votacaoPorAno(supabase, params);
-    } else if (consulta === "_debug_codes") {
-      // Temporary diagnostic - compare cd_municipio across tables
-      const dbUrl = Deno.env.get("SUPABASE_DB_URL")!;
-      const { Client } = await import("https://deno.land/x/postgres@v0.19.3/mod.ts");
-      const cl = new Client(dbUrl); await cl.connect();
-      const r1 = await cl.queryArray(`SELECT DISTINCT cd_municipio, nm_municipio FROM tse_votacao WHERE ano=2024 AND UPPER(nm_municipio) LIKE '%APARECIDA%' LIMIT 3`);
-      const r2 = await cl.queryArray(`SELECT DISTINCT cd_municipio, nr_zona FROM tse_eleitorado WHERE ano=2024 AND cd_municipio IN ('92274','09274','9274') LIMIT 5`);
-      const r3 = await cl.queryArray(`SELECT DISTINCT sg_ue, nm_ue FROM tse_candidatos WHERE ano=2024 AND UPPER(nm_ue) LIKE '%APARECIDA%' LIMIT 3`);
-      const r4 = await cl.queryArray(`SELECT DISTINCT cd_municipio FROM tse_eleitorado WHERE ano=2024 ORDER BY cd_municipio LIMIT 20`);
-      await cl.end();
-      return new Response(JSON.stringify({ votacao: r1.rows, eleitorado_92274: r2.rows, candidatos: r3.rows, all_eleitorado_codes: r4.rows }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     } else {
       return new Response(
         JSON.stringify({ error: "Consulta não suportada", consulta }),
