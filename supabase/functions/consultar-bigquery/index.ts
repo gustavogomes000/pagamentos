@@ -136,7 +136,8 @@ async function buscarCandidatos(supabase: any, params: Record<string, string>): 
                c.ds_cargo, c.nm_ue, c.ds_sit_tot_turno, c.nr_turno::text,
                c.sq_candidato,
                COALESCE(v.total_votos, 0)::text as total_votos,
-               b.bairros_zona
+               b.bairros_zona,
+               c.sg_ue as debug_sg_ue, tz.nm_municipio as debug_tz_mun, tz.nr_zona as debug_tz_zona, b.cd_municipio as debug_b_cd
         FROM public.tse_candidatos c
         LEFT JOIN votos_agg v ON c.nr_candidato = v.nr_candidato AND UPPER(c.nm_ue) = UPPER(v.nm_municipio)
         LEFT JOIN top_zona tz ON c.nr_candidato = tz.nr_candidato AND UPPER(c.nm_ue) = UPPER(tz.nm_municipio) AND tz.rn = 1
