@@ -41,6 +41,7 @@ type Suplente = {
   fiscais_qtd: number; fiscais_valor_unit: number; total_campanha: number;
   numero_urna: string | null; base_politica: string | null;
   created_at: string;
+  municipio_id?: string | null;
 };
 
 type Lideranca = {
