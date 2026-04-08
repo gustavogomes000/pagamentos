@@ -749,11 +749,10 @@ export default function Pagamentos() {
 
   const pagsMes = (pagamentos || []).filter(p => p.mes === mes && p.ano === ano);
 
-  // Cálculos
-  // Filtra por mês inicial: suplentes a partir do mês 3, lideranças a partir do mês 2
-  const supComValor = (suplentes || []).filter(s => (s.retirada_mensal_valor || 0) > 0 && mes >= MES_INICIO_SUPLENTES);
-  const lidComValor = (liderancas || []).filter(l => (l.retirada_mensal_valor || 0) > 0 && mes >= MES_INICIO_LIDERANCAS);
-  const admComValor = (administrativo || []).filter(a => (a.valor_contrato || 0) > 0 && mes >= MES_INICIO_ADMIN);
+  // Filtra por mês inicial individual: considera created_at de cada pessoa
+  const supComValor = (suplentes || []).filter(s => (s.retirada_mensal_valor || 0) > 0 && mes >= getMesInicioPessoa(s.created_at, MES_INICIO_SUPLENTES));
+  const lidComValor = (liderancas || []).filter(l => (l.retirada_mensal_valor || 0) > 0 && mes >= getMesInicioPessoa(l.created_at, MES_INICIO_LIDERANCAS));
+  const admComValor = (administrativo || []).filter(a => (a.valor_contrato || 0) > 0 && mes >= getMesInicioPessoa(a.created_at, MES_INICIO_ADMIN));
 
   const supPlanejado = supComValor.reduce((a, s) => a + (s.retirada_mensal_valor || 0), 0);
   const lidPlanejado = lidComValor.reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0);
