@@ -11,7 +11,7 @@ import {
   ChevronDown, ChevronUp, Trash2, X, Loader2, Wallet,
   ChevronLeft, ChevronRight, Save, Search,
   CheckCircle2, AlertCircle, Users, Briefcase, List, Pencil,
-  DollarSign, Receipt, Bell,
+  DollarSign, Receipt, Bell, Package,
 } from "lucide-react";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 import {
