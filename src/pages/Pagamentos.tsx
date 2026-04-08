@@ -40,15 +40,18 @@ type Suplente = {
   liderancas_qtd: number; liderancas_valor_unit: number;
   fiscais_qtd: number; fiscais_valor_unit: number; total_campanha: number;
   numero_urna: string | null; base_politica: string | null;
+  created_at: string;
 };
 
 type Lideranca = {
   id: string; nome: string; regiao: string | null;
   retirada_mensal_valor: number | null; chave_pix: string | null;
+  created_at: string;
 };
 
 type AdminPessoa = {
   id: string; nome: string; whatsapp: string | null; valor_contrato: number | null;
+  created_at: string;
 };
 
 const CAT_LABEL: Record<string, string> = {
