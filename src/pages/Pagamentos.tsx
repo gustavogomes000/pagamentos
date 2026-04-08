@@ -679,7 +679,7 @@ export default function Pagamentos() {
     queryKey: ["suplentes", cidadeAtiva],
     queryFn: async () => {
       let query = (supabase as any).from("suplentes").select(
-        "id,nome,numero_urna,bairro,regiao_atuacao,partido,base_politica,retirada_mensal_valor,retirada_mensal_meses,plotagem_qtd,plotagem_valor_unit,liderancas_qtd,liderancas_valor_unit,fiscais_qtd,fiscais_valor_unit,total_campanha"
+        "id,nome,numero_urna,bairro,regiao_atuacao,partido,base_politica,retirada_mensal_valor,retirada_mensal_meses,plotagem_qtd,plotagem_valor_unit,liderancas_qtd,liderancas_valor_unit,fiscais_qtd,fiscais_valor_unit,total_campanha,created_at"
       ).order("nome");
       if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
       const { data, error } = await query;
@@ -693,7 +693,7 @@ export default function Pagamentos() {
   const { data: liderancas, isLoading: loadL } = useQuery({
     queryKey: ["liderancas", cidadeAtiva],
     queryFn: async () => {
-      let query = (supabase as any).from("liderancas").select("id,nome,regiao,retirada_mensal_valor,chave_pix").order("nome");
+      let query = (supabase as any).from("liderancas").select("id,nome,regiao,retirada_mensal_valor,chave_pix,created_at").order("nome");
       if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
       const { data, error } = await query;
       if (error) throw error;
@@ -706,7 +706,7 @@ export default function Pagamentos() {
   const { data: administrativo, isLoading: loadA } = useQuery({
     queryKey: ["administrativo", cidadeAtiva],
     queryFn: async () => {
-      let query = (supabase as any).from("administrativo").select("id,nome,whatsapp,valor_contrato").order("nome");
+      let query = (supabase as any).from("administrativo").select("id,nome,whatsapp,valor_contrato,created_at").order("nome");
       if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
       const { data, error } = await query;
       if (error) throw error;
