@@ -663,6 +663,19 @@ const MES_INICIO_SUPLENTES = 2; // Suplentes: pagamentos a partir de Fevereiro
 const MES_INICIO_LIDERANCAS = 2; // Lideranças: pagamentos a partir de Fevereiro
 const MES_INICIO_ADMIN = 3;      // Administrativo: pagamentos a partir de Março
 
+// Retorna o primeiro mês de pagamento para uma pessoa baseado no created_at
+// Regra: cadastrado no mês X → primeiro pagamento no mês X+1
+function getMesInicioPessoa(createdAt: string, mesInicioGlobal: number): number {
+  const dt = new Date(createdAt);
+  const mesCadastro = dt.getMonth() + 1; // 1-12
+  const anoCadastro = dt.getFullYear();
+  // Para cadastros de 2026+, o primeiro pagamento é no mês seguinte ao cadastro
+  if (anoCadastro >= 2026) {
+    return Math.max(mesInicioGlobal, mesCadastro + 1);
+  }
+  return mesInicioGlobal;
+}
+
 // ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
 export default function Pagamentos() {
   const now = new Date();
