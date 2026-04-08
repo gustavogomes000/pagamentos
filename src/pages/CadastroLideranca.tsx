@@ -94,6 +94,11 @@ export default function CadastroLideranca() {
     setSaving(true);
     const payload: any = { ...form, updated_at: new Date().toISOString() };
     payload.municipio_id = selectedMunicipio || cidadeAtiva || null;
+    // Regra: primeiro pagamento só no mês seguinte ao cadastro
+    if (!id) {
+      const mesAtual = new Date().getMonth() + 1; // 1-12
+      payload.retirada_mensal_meses = Math.max(1, 9 - mesAtual);
+    }
     let error;
     if (id) {
       ({ error } = await (supabase as any).from("liderancas").update(payload).eq("id", id));
