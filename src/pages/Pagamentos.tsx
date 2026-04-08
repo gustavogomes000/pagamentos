@@ -40,15 +40,18 @@ type Suplente = {
   liderancas_qtd: number; liderancas_valor_unit: number;
   fiscais_qtd: number; fiscais_valor_unit: number; total_campanha: number;
   numero_urna: string | null; base_politica: string | null;
+  created_at: string;
 };
 
 type Lideranca = {
   id: string; nome: string; regiao: string | null;
   retirada_mensal_valor: number | null; chave_pix: string | null;
+  created_at: string;
 };
 
 type AdminPessoa = {
   id: string; nome: string; whatsapp: string | null; valor_contrato: number | null;
+  created_at: string;
 };
 
 const CAT_LABEL: Record<string, string> = {
@@ -660,6 +663,19 @@ const MES_INICIO_SUPLENTES = 2; // Suplentes: pagamentos a partir de Fevereiro
 const MES_INICIO_LIDERANCAS = 2; // Lideranças: pagamentos a partir de Fevereiro
 const MES_INICIO_ADMIN = 3;      // Administrativo: pagamentos a partir de Março
 
+// Retorna o primeiro mês de pagamento para uma pessoa baseado no created_at
+// Regra: cadastrado no mês X → primeiro pagamento no mês X+1
+function getMesInicioPessoa(createdAt: string, mesInicioGlobal: number): number {
+  const dt = new Date(createdAt);
+  const mesCadastro = dt.getMonth() + 1; // 1-12
+  const anoCadastro = dt.getFullYear();
+  // Para cadastros de 2026+, o primeiro pagamento é no mês seguinte ao cadastro
+  if (anoCadastro >= 2026) {
+    return Math.max(mesInicioGlobal, mesCadastro + 1);
+  }
+  return mesInicioGlobal;
+}
+
 // ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
 export default function Pagamentos() {
   const now = new Date();
@@ -676,7 +692,7 @@ export default function Pagamentos() {
     queryKey: ["suplentes", cidadeAtiva],
     queryFn: async () => {
       let query = (supabase as any).from("suplentes").select(
-        "id,nome,numero_urna,bairro,regiao_atuacao,partido,base_politica,retirada_mensal_valor,retirada_mensal_meses,plotagem_qtd,plotagem_valor_unit,liderancas_qtd,liderancas_valor_unit,fiscais_qtd,fiscais_valor_unit,total_campanha"
+        "id,nome,numero_urna,bairro,regiao_atuacao,partido,base_politica,retirada_mensal_valor,retirada_mensal_meses,plotagem_qtd,plotagem_valor_unit,liderancas_qtd,liderancas_valor_unit,fiscais_qtd,fiscais_valor_unit,total_campanha,created_at"
       ).order("nome");
       if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
       const { data, error } = await query;
@@ -690,7 +706,7 @@ export default function Pagamentos() {
   const { data: liderancas, isLoading: loadL } = useQuery({
     queryKey: ["liderancas", cidadeAtiva],
     queryFn: async () => {
-      let query = (supabase as any).from("liderancas").select("id,nome,regiao,retirada_mensal_valor,chave_pix").order("nome");
+      let query = (supabase as any).from("liderancas").select("id,nome,regiao,retirada_mensal_valor,chave_pix,created_at").order("nome");
       if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
       const { data, error } = await query;
       if (error) throw error;
@@ -703,7 +719,7 @@ export default function Pagamentos() {
   const { data: administrativo, isLoading: loadA } = useQuery({
     queryKey: ["administrativo", cidadeAtiva],
     queryFn: async () => {
-      let query = (supabase as any).from("administrativo").select("id,nome,whatsapp,valor_contrato").order("nome");
+      let query = (supabase as any).from("administrativo").select("id,nome,whatsapp,valor_contrato,created_at").order("nome");
       if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
       const { data, error } = await query;
       if (error) throw error;
@@ -733,11 +749,10 @@ export default function Pagamentos() {
 
   const pagsMes = (pagamentos || []).filter(p => p.mes === mes && p.ano === ano);
 
-  // Cálculos
-  // Filtra por mês inicial: suplentes a partir do mês 3, lideranças a partir do mês 2
-  const supComValor = (suplentes || []).filter(s => (s.retirada_mensal_valor || 0) > 0 && mes >= MES_INICIO_SUPLENTES);
-  const lidComValor = (liderancas || []).filter(l => (l.retirada_mensal_valor || 0) > 0 && mes >= MES_INICIO_LIDERANCAS);
-  const admComValor = (administrativo || []).filter(a => (a.valor_contrato || 0) > 0 && mes >= MES_INICIO_ADMIN);
+  // Filtra por mês inicial individual: considera created_at de cada pessoa
+  const supComValor = (suplentes || []).filter(s => (s.retirada_mensal_valor || 0) > 0 && mes >= getMesInicioPessoa(s.created_at, MES_INICIO_SUPLENTES));
+  const lidComValor = (liderancas || []).filter(l => (l.retirada_mensal_valor || 0) > 0 && mes >= getMesInicioPessoa(l.created_at, MES_INICIO_LIDERANCAS));
+  const admComValor = (administrativo || []).filter(a => (a.valor_contrato || 0) > 0 && mes >= getMesInicioPessoa(a.created_at, MES_INICIO_ADMIN));
 
   const supPlanejado = supComValor.reduce((a, s) => a + (s.retirada_mensal_valor || 0), 0);
   const lidPlanejado = lidComValor.reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0);
