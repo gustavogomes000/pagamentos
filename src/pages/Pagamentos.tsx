@@ -1173,6 +1173,91 @@ export default function Pagamentos() {
           </div>
         )}
 
+        {/* Painel Outros Gastos: Plotagem + Lideranças + Fiscais (independente do mês) */}
+        {!isLoading && (() => {
+          const allSups = suplentes || [];
+          const allPags = pagamentos || [];
+
+          const totalPlotPlan = allSups.reduce((a, s) => a + (s.plotagem_qtd || 0) * (s.plotagem_valor_unit || 0), 0);
+          const totalLidPlan = allSups.reduce((a, s) => a + (s.liderancas_qtd || 0) * (s.liderancas_valor_unit || 0), 0);
+          const totalFisPlan = allSups.reduce((a, s) => a + (s.fiscais_qtd || 0) * (s.fiscais_valor_unit || 0), 0);
+          const outrosPlan = totalPlotPlan + totalLidPlan + totalFisPlan;
+
+          const totalPlotPago = allPags.filter(p => p.categoria === "plotagem").reduce((a, p) => a + p.valor, 0);
+          const totalLidPago = allPags.filter(p => p.categoria === "liderancas").reduce((a, p) => a + p.valor, 0);
+          const totalFisPago = allPags.filter(p => p.categoria === "fiscais").reduce((a, p) => a + p.valor, 0);
+          const outrosPago = totalPlotPago + totalLidPago + totalFisPago;
+
+          const outrosFalta = Math.max(0, outrosPlan - outrosPago);
+          const outrosPct = outrosPlan > 0 ? Math.min(100, (outrosPago / outrosPlan) * 100) : 0;
+
+          if (outrosPlan <= 0) return null;
+
+          const cats = [
+            { label: "Plotagem", plan: totalPlotPlan, pago: totalPlotPago },
+            { label: "Lideranças", plan: totalLidPlan, pago: totalLidPago },
+            { label: "Fiscais", plan: totalFisPlan, pago: totalFisPago },
+          ].filter(c => c.plan > 0);
+
+          return (
+            <div className="bg-card rounded-2xl border border-border p-4 shadow-sm space-y-3">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Package size={14} className="text-primary" />
+                <span className="font-bold text-foreground">Outros Gastos</span>
+                <span className="text-[9px] bg-muted px-1.5 py-0.5 rounded-md font-medium">Plotagem · Lideranças · Fiscais</span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-1.5">
+                <div className="bg-muted/50 rounded-xl p-2 text-center">
+                  <p className="text-[8px] uppercase tracking-wider text-muted-foreground font-medium">Total</p>
+                  <p className="text-xs sm:text-sm font-bold text-foreground truncate">{fmt(outrosPlan)}</p>
+                </div>
+                <div className="bg-green-500/10 rounded-xl p-2 text-center">
+                  <p className="text-[8px] uppercase tracking-wider text-green-600 dark:text-green-400 font-medium">Pago</p>
+                  <p className="text-xs sm:text-sm font-bold text-green-600 dark:text-green-400 truncate">{fmt(outrosPago)}</p>
+                </div>
+                <div className={`rounded-xl p-2 text-center ${outrosFalta > 0 ? "bg-amber-500/10" : "bg-green-500/10"}`}>
+                  <p className={`text-[8px] uppercase tracking-wider font-medium ${outrosFalta > 0 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"}`}>Falta</p>
+                  <p className={`text-xs sm:text-sm font-bold truncate ${outrosFalta > 0 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400"}`}>{fmt(outrosFalta)}</p>
+                </div>
+              </div>
+
+              {/* Barra de progresso geral */}
+              <div>
+                <div className="h-3 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${outrosFalta <= 0 ? "bg-green-500" : "bg-primary"}`}
+                    style={{ width: `${outrosPct}%` }}
+                  />
+                </div>
+                <div className="flex justify-between mt-0.5">
+                  <span className="text-[9px] text-muted-foreground">{outrosPct.toFixed(0)}% concluído</span>
+                  {outrosFalta <= 0
+                    ? <span className="text-[9px] text-green-600 font-bold">Quitado ✓</span>
+                    : <span className="text-[9px] text-amber-600 dark:text-amber-400 font-medium">Falta {fmt(outrosFalta)}</span>
+                  }
+                </div>
+              </div>
+
+              {/* Detalhamento por categoria */}
+              <div className="space-y-1.5">
+                {cats.map(c => {
+                  const falta = Math.max(0, c.plan - c.pago);
+                  const pct = c.plan > 0 ? Math.min(100, (c.pago / c.plan) * 100) : 0;
+                  return (
+                    <div key={c.label} className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold text-muted-foreground w-20 shrink-0">{c.label}</span>
+                      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all duration-500 ${falta <= 0 ? "bg-green-500" : "bg-primary/60"}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-[10px] font-bold text-foreground w-20 text-right shrink-0">{fmt(c.pago)}/{fmt(c.plan)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
         {/* Seletor de mês */}
         <div className="bg-card rounded-2xl border border-border p-3 shadow-sm">
           <div className="flex items-center justify-between gap-3">
