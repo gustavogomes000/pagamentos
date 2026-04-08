@@ -693,7 +693,7 @@ export default function Pagamentos() {
     queryKey: ["suplentes", cidadeAtiva],
     queryFn: async () => {
       let query = (supabase as any).from("suplentes").select(
-        "id,nome,numero_urna,bairro,regiao_atuacao,partido,base_politica,retirada_mensal_valor,retirada_mensal_meses,plotagem_qtd,plotagem_valor_unit,liderancas_qtd,liderancas_valor_unit,fiscais_qtd,fiscais_valor_unit,total_campanha,created_at"
+        "id,nome,numero_urna,bairro,regiao_atuacao,partido,base_politica,retirada_mensal_valor,retirada_mensal_meses,plotagem_qtd,plotagem_valor_unit,liderancas_qtd,liderancas_valor_unit,fiscais_qtd,fiscais_valor_unit,total_campanha,created_at,municipio_id"
       ).order("nome");
       if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
       const { data, error } = await query;
@@ -702,6 +702,29 @@ export default function Pagamentos() {
     },
     staleTime: 0,
     refetchOnMount: "always",
+  });
+
+  // Todos os suplentes (sem filtro de cidade) para painel Outros Gastos global
+  const { data: allSuplentes } = useQuery({
+    queryKey: ["suplentes-all-outros"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("suplentes").select(
+        "id,municipio_id,plotagem_qtd,plotagem_valor_unit,liderancas_qtd,liderancas_valor_unit,fiscais_qtd,fiscais_valor_unit"
+      );
+      if (error) throw error;
+      return data as { id: string; municipio_id: string | null; plotagem_qtd: number; plotagem_valor_unit: number; liderancas_qtd: number; liderancas_valor_unit: number; fiscais_qtd: number; fiscais_valor_unit: number }[];
+    },
+    staleTime: 60000,
+  });
+
+  const { data: municipios } = useQuery({
+    queryKey: ["municipios-outros"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("municipios").select("id,nome").eq("ativo", true);
+      if (error) throw error;
+      return data as { id: string; nome: string }[];
+    },
+    staleTime: 60000,
   });
 
   const { data: liderancas, isLoading: loadL } = useQuery({
