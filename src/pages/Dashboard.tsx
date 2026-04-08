@@ -179,30 +179,37 @@ export default function Dashboard() {
     };
   }, [supList, lidList, admList]);
 
+  // Helper: calcula o mês de início individual baseado no created_at
+  const getMesInicio = (createdAt: string | undefined, mesInicioGlobal: number) => {
+    if (!createdAt) return mesInicioGlobal;
+    const dt = new Date(createdAt);
+    if (dt.getFullYear() >= 2026) {
+      return Math.max(mesInicioGlobal, dt.getMonth() + 2); // mês seguinte ao cadastro
+    }
+    return mesInicioGlobal;
+  };
+
   // ─── FLUXO MENSAL ──────────────────────────────────────────────────
   const fluxoMensal = useMemo(() => {
     const meses = [];
     for (let m = 1; m <= MES_FIM; m++) {
       let supMes = 0, lidMes = 0, admMes = 0;
-      if (m >= MES_INICIO_SUP) {
-        supMes = supList.reduce((a: number, s: any) => {
-          const meses = s.retirada_mensal_meses || 0;
-          const mesFim = MES_INICIO_SUP + meses - 1;
-          return (m >= MES_INICIO_SUP && m <= mesFim) ? a + (s.retirada_mensal_valor || 0) : a;
-        }, 0);
-      }
-      if (m >= MES_INICIO_LID) {
-        lidMes = lidList.reduce((a: number, l: any) => {
-          const ateMes = l.retirada_ate_mes || MES_FIM;
-          return m <= ateMes ? a + (l.retirada_mensal_valor || 0) : a;
-        }, 0);
-      }
-      if (m >= MES_INICIO_ADM) {
-        admMes = admList.reduce((a: number, ad: any) => {
-          const ateMes = ad.contrato_ate_mes || MES_FIM;
-          return m <= ateMes ? a + (ad.valor_contrato || 0) : a;
-        }, 0);
-      }
+      supMes = supList.reduce((a: number, s: any) => {
+        const mesIni = getMesInicio(s.created_at, MES_INICIO_SUP);
+        const mesesDur = s.retirada_mensal_meses || 0;
+        const mesFim = mesIni + mesesDur - 1;
+        return (m >= mesIni && m <= mesFim) ? a + (s.retirada_mensal_valor || 0) : a;
+      }, 0);
+      lidMes = lidList.reduce((a: number, l: any) => {
+        const mesIni = getMesInicio(l.created_at, MES_INICIO_LID);
+        const ateMes = l.retirada_ate_mes || MES_FIM;
+        return (m >= mesIni && m <= ateMes) ? a + (l.retirada_mensal_valor || 0) : a;
+      }, 0);
+      admMes = admList.reduce((a: number, ad: any) => {
+        const mesIni = getMesInicio(ad.created_at, MES_INICIO_ADM);
+        const ateMes = ad.contrato_ate_mes || MES_FIM;
+        return (m >= mesIni && m <= ateMes) ? a + (ad.valor_contrato || 0) : a;
+      }, 0);
       const pagoMes = pagamentosFiltrados
         .filter(p => p.mes === m && p.ano === 2026)
         .reduce((a, p) => a + (p.valor || 0), 0);
