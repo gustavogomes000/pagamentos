@@ -14,7 +14,6 @@ function DashDetalhesInner({ dadosPorCidade }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Por cidade */}
       <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5">
         <Building2 size={14} /> 💰 Detalhamento por Cidade
       </h2>
@@ -37,6 +36,7 @@ function DashDetalhesInner({ dadosPorCidade }: Props) {
             </div>
           </div>
 
+          {/* Suplentes */}
           {c.orcSup > 0 && (
             <div className="mx-4 mb-2 bg-muted/30 rounded-xl p-3 space-y-2">
               <div className="flex items-center justify-between">
@@ -72,6 +72,7 @@ function DashDetalhesInner({ dadosPorCidade }: Props) {
             </div>
           )}
 
+          {/* Lideranças */}
           {c.lidMensal > 0 && (
             <div className="mx-4 mb-2 bg-muted/30 rounded-xl p-3 space-y-2">
               <div className="flex items-center justify-between">
@@ -79,20 +80,38 @@ function DashDetalhesInner({ dadosPorCidade }: Props) {
                   <p className="text-xs font-bold text-foreground">Lideranças (mensal)</p>
                   <p className="text-[10px] text-muted-foreground">Cabos eleitorais e líderes de bairro</p>
                 </div>
-                <p className="text-sm font-bold text-primary shrink-0">{fmt(c.lidMensal)}/mês</p>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-primary shrink-0">{fmt(c.lidMensal)}/mês</p>
+                  <p className="text-[10px] text-muted-foreground">Total período: <span className="font-bold text-foreground">{fmt(c.orcLid)}</span></p>
+                </div>
               </div>
               <MiniBar pago={c.orcLid} total={c.orcamento} cor="bg-primary" />
               <div className="space-y-0.5 pl-2 border-l-2 border-primary/20">
-                {c.lidCidade.map(l => (
-                  <div key={l.id} className="flex justify-between text-[11px]">
-                    <span className="text-muted-foreground truncate mr-2">{l.nome} {l.regiao ? `(${l.regiao})` : ""}</span>
-                    <span className="font-medium text-foreground shrink-0">{fmt(l.retirada_mensal_valor || 0)}</span>
-                  </div>
-                ))}
+                {c.lidCidade.map(l => {
+                  const t = c.lidTotais[l.id];
+                  return (
+                    <div key={l.id} className="flex justify-between text-[11px] items-center">
+                      <span className="text-muted-foreground truncate mr-2">{l.nome} {l.regiao ? `(${l.regiao})` : ""}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="font-medium text-foreground">{fmt(l.retirada_mensal_valor || 0)}/mês</span>
+                        <span className="text-[9px] text-muted-foreground">× {t?.meses || 0}m</span>
+                        <span className="font-bold text-foreground">{fmt(t?.total || 0)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex justify-between text-[10px] pt-1 border-t border-border/30">
+                <span className="font-bold text-foreground">Total Lideranças</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-muted-foreground">{fmt(c.lidMensal)}/mês</span>
+                  <span className="font-bold text-primary">{fmt(c.orcLid)}</span>
+                </div>
               </div>
             </div>
           )}
 
+          {/* Admin */}
           {c.admMensal > 0 && (
             <div className="mx-4 mb-4 bg-muted/30 rounded-xl p-3 space-y-2">
               <div className="flex items-center justify-between">
@@ -100,16 +119,33 @@ function DashDetalhesInner({ dadosPorCidade }: Props) {
                   <p className="text-xs font-bold text-foreground">Administrativo (mensal)</p>
                   <p className="text-[10px] text-muted-foreground">Funcionários e prestadores</p>
                 </div>
-                <p className="text-sm font-bold text-primary shrink-0">{fmt(c.admMensal)}/mês</p>
+                <div className="text-right">
+                  <p className="text-sm font-bold text-primary shrink-0">{fmt(c.admMensal)}/mês</p>
+                  <p className="text-[10px] text-muted-foreground">Total período: <span className="font-bold text-foreground">{fmt(c.orcAdm)}</span></p>
+                </div>
               </div>
               <MiniBar pago={c.orcAdm} total={c.orcamento} cor="bg-primary" />
               <div className="space-y-0.5 pl-2 border-l-2 border-primary/20">
-                {c.admCidade.map(a => (
-                  <div key={a.id} className="flex justify-between text-[11px]">
-                    <span className="text-muted-foreground truncate mr-2">{a.nome}</span>
-                    <span className="font-medium text-foreground shrink-0">{fmt(a.valor_contrato || 0)}</span>
-                  </div>
-                ))}
+                {c.admCidade.map(a => {
+                  const t = c.admTotais[a.id];
+                  return (
+                    <div key={a.id} className="flex justify-between text-[11px] items-center">
+                      <span className="text-muted-foreground truncate mr-2">{a.nome}</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="font-medium text-foreground">{fmt(a.valor_contrato || 0)}/mês</span>
+                        <span className="text-[9px] text-muted-foreground">× {t?.meses || 0}m</span>
+                        <span className="font-bold text-foreground">{fmt(t?.total || 0)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex justify-between text-[10px] pt-1 border-t border-border/30">
+                <span className="font-bold text-foreground">Total Admin</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-muted-foreground">{fmt(c.admMensal)}/mês</span>
+                  <span className="font-bold text-primary">{fmt(c.orcAdm)}</span>
+                </div>
               </div>
             </div>
           )}
@@ -135,7 +171,7 @@ function DashDetalhesInner({ dadosPorCidade }: Props) {
         </div>
       ))}
 
-      {/* Conferência — Soma das Cidades */}
+      {/* Conferência */}
       <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl border border-primary/20 p-4 space-y-2">
         <p className="text-xs font-semibold text-primary uppercase tracking-wider">✅ Conferência — Soma das Cidades</p>
         <div className="space-y-1">
@@ -145,11 +181,17 @@ function DashDetalhesInner({ dadosPorCidade }: Props) {
           </div>
           <div className="flex justify-between text-[11px]">
             <span className="text-muted-foreground">Lideranças</span>
-            <span className="font-bold text-foreground">{fmt(dadosPorCidade.reduce((a, c) => a + c.orcLid, 0))}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] text-muted-foreground">{fmt(dadosPorCidade.reduce((a, c) => a + c.lidMensal, 0))}/mês</span>
+              <span className="font-bold text-foreground">{fmt(dadosPorCidade.reduce((a, c) => a + c.orcLid, 0))}</span>
+            </div>
           </div>
           <div className="flex justify-between text-[11px]">
             <span className="text-muted-foreground">Administrativo</span>
-            <span className="font-bold text-foreground">{fmt(dadosPorCidade.reduce((a, c) => a + c.orcAdm, 0))}</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] text-muted-foreground">{fmt(dadosPorCidade.reduce((a, c) => a + c.admMensal, 0))}/mês</span>
+              <span className="font-bold text-foreground">{fmt(dadosPorCidade.reduce((a, c) => a + c.orcAdm, 0))}</span>
+            </div>
           </div>
         </div>
         <div className="flex justify-between items-center pt-2 border-t border-primary/20">
