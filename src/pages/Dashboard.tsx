@@ -180,27 +180,41 @@ export default function Dashboard() {
   }, [supList, lidList, admList]);
 
   // ─── FLUXO MENSAL ──────────────────────────────────────────────────
+  // Retorna o primeiro mês de pagamento baseado no created_at
+  const getMesInicio = (createdAt: string, mesInicioGlobal: number): number => {
+    const dt = new Date(createdAt);
+    const mesCadastro = dt.getMonth() + 1;
+    const anoCadastro = dt.getFullYear();
+    if (anoCadastro < 2026 || (anoCadastro === 2026 && mesCadastro <= 3)) {
+      return mesInicioGlobal;
+    }
+    return Math.max(mesInicioGlobal, mesCadastro + 1);
+  };
+
   const fluxoMensal = useMemo(() => {
     const meses = [];
     for (let m = 1; m <= MES_FIM; m++) {
       let supMes = 0, lidMes = 0, admMes = 0;
       if (m >= MES_INICIO_SUP) {
         supMes = supList.reduce((a: number, s: any) => {
-          const meses = s.retirada_mensal_meses || 0;
-          const mesFim = MES_INICIO_SUP + meses - 1;
-          return (m >= MES_INICIO_SUP && m <= mesFim) ? a + (s.retirada_mensal_valor || 0) : a;
+          const inicio = getMesInicio(s.created_at, MES_INICIO_SUP);
+          const numMeses = s.retirada_mensal_meses || 0;
+          const mesFim = inicio + numMeses - 1;
+          return (m >= inicio && m <= mesFim) ? a + (s.retirada_mensal_valor || 0) : a;
         }, 0);
       }
       if (m >= MES_INICIO_LID) {
         lidMes = lidList.reduce((a: number, l: any) => {
+          const inicio = getMesInicio(l.created_at, MES_INICIO_LID);
           const ateMes = l.retirada_ate_mes || MES_FIM;
-          return m <= ateMes ? a + (l.retirada_mensal_valor || 0) : a;
+          return (m >= inicio && m <= ateMes) ? a + (l.retirada_mensal_valor || 0) : a;
         }, 0);
       }
       if (m >= MES_INICIO_ADM) {
         admMes = admList.reduce((a: number, ad: any) => {
+          const inicio = getMesInicio(ad.created_at, MES_INICIO_ADM);
           const ateMes = ad.contrato_ate_mes || MES_FIM;
-          return m <= ateMes ? a + (ad.valor_contrato || 0) : a;
+          return (m >= inicio && m <= ateMes) ? a + (ad.valor_contrato || 0) : a;
         }, 0);
       }
       const pagoMes = pagamentosFiltrados
