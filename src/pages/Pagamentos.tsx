@@ -688,10 +688,6 @@ function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes,
 const MES_INICIO_SUPLENTES = 3; // Suplentes: pagamentos a partir de Março
 const MES_INICIO_LIDERANCAS = 3; // Lideranças: março é exceção (sistema não existia), a partir de abril segue X+1
 const MES_INICIO_ADMIN = 3;      // Administrativo: pagamentos a partir de Março
-const ADMIN_MES_INICIO_FORCADO: Record<string, number> = {
-  "gustavo gomes": 4,
-  "sindy": 4,
-};
 
 // Retorna o primeiro mês de referência de pagamento para uma pessoa baseado no created_at
 // mesCutoffExcecao: cadastros até esse mês (inclusive) em 2026 recebem mesInicioGlobal
@@ -703,12 +699,6 @@ function getMesInicioPessoa(createdAt: string, mesInicioGlobal: number, mesCutof
     return mesInicioGlobal;
   }
   return Math.max(mesInicioGlobal, mesCadastro + 1);
-}
-
-function getMesInicioAdmin(admin: AdminPessoa): number {
-  const mesForcado = ADMIN_MES_INICIO_FORCADO[norm(admin.nome)];
-  if (mesForcado) return mesForcado;
-  return getMesInicioPessoa(admin.created_at, MES_INICIO_ADMIN);
 }
 
 // ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
