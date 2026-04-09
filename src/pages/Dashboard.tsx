@@ -303,6 +303,9 @@ export default function Dashboard() {
             <Button variant="outline" size="sm" className="text-xs gap-1.5 active:scale-95 transition-transform" onClick={() => { const mMap = Object.fromEntries(municipios.map(m => [m.id, m.nome])); exportExcel(supList, { regiao: filtroRegiao, partido: filtroPartido, situacao: filtroSituacao, busca: search }, mMap); }} disabled={supList.length === 0}>
               <FileSpreadsheet size={14} /> Excel
             </Button>
+            <Button variant="default" size="sm" className="text-xs gap-1.5 active:scale-95 transition-transform" onClick={() => { const mMap = Object.fromEntries(municipios.map(m => [m.id, m.nome])); exportAuditPDF({ suplentes: globalSup, liderancas: globalLid, administrativo: globalAdm, pagamentos: globalPag, municipiosMap: mMap }); }} disabled={isLoading}>
+              <ClipboardCheck size={14} /> Auditoria
+            </Button>
           </div>
         </div>
 
