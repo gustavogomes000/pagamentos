@@ -45,7 +45,7 @@ export const MESES_FULL = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio"
 export const MES_INICIO_LID = 3;
 export const MES_INICIO_SUP = 3;
 export const MES_INICIO_ADM = 3;
-export const MES_FIM = 10;
+export const MES_FIM = 9;
 
 export const COLORS_CAT = {
   suplentes: "hsl(var(--primary))",
