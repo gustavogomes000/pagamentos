@@ -42,8 +42,8 @@ export type CidadeData = {
 export const MESES_LABEL = ["", "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 export const MESES_FULL = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro"];
 
-export const MES_INICIO_LID = 2;
-export const MES_INICIO_SUP = 2;
+export const MES_INICIO_LID = 3;
+export const MES_INICIO_SUP = 3;
 export const MES_INICIO_ADM = 3;
 export const MES_FIM = 9;
 
