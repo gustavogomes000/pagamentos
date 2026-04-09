@@ -14,6 +14,7 @@ import {
   DollarSign, Receipt, Bell, Package,
 } from "lucide-react";
 import { calcTotaisFinanceiros } from "@/lib/finance";
+import { getMesInicioComHistorico } from "@/lib/paymentEligibility";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
@@ -689,18 +690,6 @@ const MES_INICIO_SUPLENTES = 3; // Suplentes: pagamentos a partir de Março
 const MES_INICIO_LIDERANCAS = 3; // Lideranças: março é exceção (sistema não existia), a partir de abril segue X+1
 const MES_INICIO_ADMIN = 3;      // Administrativo: pagamentos a partir de Março
 
-// Retorna o primeiro mês de referência de pagamento para uma pessoa baseado no created_at
-// mesCutoffExcecao: cadastros até esse mês (inclusive) em 2026 recebem mesInicioGlobal
-function getMesInicioPessoa(createdAt: string, mesInicioGlobal: number, mesCutoffExcecao: number = 3): number {
-  const dt = new Date(createdAt);
-  const mesCadastro = dt.getMonth() + 1;
-  const anoCadastro = dt.getFullYear();
-  if (anoCadastro < 2026 || (anoCadastro === 2026 && mesCadastro <= mesCutoffExcecao)) {
-    return mesInicioGlobal;
-  }
-  return Math.max(mesInicioGlobal, mesCadastro + 1);
-}
-
 // ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
 export default function Pagamentos() {
   const now = new Date();
@@ -783,9 +772,30 @@ export default function Pagamentos() {
 
   // Filtra por mês inicial individual: considera created_at de cada pessoa
   // Todos os suplentes elegíveis aparecem (mesmo sem retirada configurada — mostram como pago R$0)
-  const supComValor = (suplentes || []).filter(s => mes >= getMesInicioPessoa(s.created_at, MES_INICIO_SUPLENTES));
-  const lidComValor = (liderancas || []).filter(l => mes >= getMesInicioPessoa(l.created_at, MES_INICIO_LIDERANCAS));
-  const admComValor = (administrativo || []).filter(a => mes >= getMesInicioPessoa(a.created_at, MES_INICIO_ADMIN));
+  const supComValor = (suplentes || []).filter(s => mes >= getMesInicioComHistorico({
+    tipo: "suplente",
+    pessoaId: s.id,
+    createdAt: s.created_at,
+    mesInicioGlobal: MES_INICIO_SUPLENTES,
+    pagamentos: pagamentos || [],
+    categoria: "retirada",
+  }));
+  const lidComValor = (liderancas || []).filter(l => mes >= getMesInicioComHistorico({
+    tipo: "lideranca",
+    pessoaId: l.id,
+    createdAt: l.created_at,
+    mesInicioGlobal: MES_INICIO_LIDERANCAS,
+    pagamentos: pagamentos || [],
+    categoria: "retirada",
+  }));
+  const admComValor = (administrativo || []).filter(a => mes >= getMesInicioComHistorico({
+    tipo: "admin",
+    pessoaId: a.id,
+    createdAt: a.created_at,
+    mesInicioGlobal: MES_INICIO_ADMIN,
+    pagamentos: pagamentos || [],
+    categoria: "salario",
+  }));
 
   const supPlanejado = supComValor.reduce((a, s) => a + (s.retirada_mensal_valor || 0), 0);
   const lidPlanejado = lidComValor.reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0);
@@ -1224,7 +1234,14 @@ export default function Pagamentos() {
           // Só mostra suplentes que recebem retirada E estão elegíveis neste mês
           const sups = (suplentes || []).filter(s => 
             (s.retirada_mensal_valor || 0) > 0 && 
-            mes >= getMesInicioPessoa(s.created_at, MES_INICIO_SUPLENTES)
+            mes >= getMesInicioComHistorico({
+              tipo: "suplente",
+              pessoaId: s.id,
+              createdAt: s.created_at,
+              mesInicioGlobal: MES_INICIO_SUPLENTES,
+              pagamentos: pagamentos || [],
+              categoria: "retirada",
+            })
           );
           const allPags = pagamentos || [];
           const supIds = new Set(sups.map(s => s.id));

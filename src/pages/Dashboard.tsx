@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { exportAllPDF, exportExcel } from "@/lib/exports";
 import { calcTotaisFinanceiros } from "@/lib/finance";
+import { getMesInicioComHistorico } from "@/lib/paymentEligibility";
 import { PageTransition } from "@/components/PageTransition";
 import { SectionSkeleton } from "@/components/dashboard/DashShared";
 import { DashResumo } from "@/components/dashboard/DashResumo";
@@ -37,7 +38,7 @@ export default function Dashboard() {
   const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes", cidadeAtiva],
     queryFn: async () => {
-      let query = (supabase as any).from("suplentes").select("id, nome, numero_urna, bairro, regiao_atuacao, partido, situacao, telefone, cargo_disputado, ano_eleicao, total_votos, expectativa_votos, base_politica, retirada_mensal_valor, retirada_mensal_meses, plotagem_qtd, plotagem_valor_unit, liderancas_qtd, liderancas_valor_unit, fiscais_qtd, fiscais_valor_unit, total_campanha, municipio_id").order("nome");
+      let query = (supabase as any).from("suplentes").select("id, nome, numero_urna, bairro, regiao_atuacao, partido, situacao, telefone, cargo_disputado, ano_eleicao, total_votos, expectativa_votos, base_politica, retirada_mensal_valor, retirada_mensal_meses, plotagem_qtd, plotagem_valor_unit, liderancas_qtd, liderancas_valor_unit, fiscais_qtd, fiscais_valor_unit, total_campanha, municipio_id, created_at").order("nome");
       if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
       const { data, error } = await query;
       if (error) throw error;
@@ -49,7 +50,7 @@ export default function Dashboard() {
   const { data: liderancas, isLoading: loadL } = useQuery({
     queryKey: ["liderancas", cidadeAtiva],
     queryFn: async () => {
-      let query = (supabase as any).from("liderancas").select("id, nome, regiao, retirada_mensal_valor, retirada_ate_mes, municipio_id, chave_pix, whatsapp, ligacao_politica, retirada_mensal_meses").order("nome");
+      let query = (supabase as any).from("liderancas").select("id, nome, regiao, retirada_mensal_valor, retirada_ate_mes, municipio_id, chave_pix, whatsapp, ligacao_politica, retirada_mensal_meses, created_at").order("nome");
       if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
       const { data, error } = await query;
       if (error) throw error;
@@ -61,7 +62,7 @@ export default function Dashboard() {
   const { data: administrativo, isLoading: loadA } = useQuery({
     queryKey: ["administrativo", cidadeAtiva],
     queryFn: async () => {
-      let query = (supabase as any).from("administrativo").select("id, nome, valor_contrato, contrato_ate_mes, municipio_id, whatsapp").order("nome");
+      let query = (supabase as any).from("administrativo").select("id, nome, valor_contrato, contrato_ate_mes, municipio_id, whatsapp, created_at").order("nome");
       if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
       const { data, error } = await query;
       if (error) throw error;
@@ -179,25 +180,20 @@ export default function Dashboard() {
     };
   }, [supList, lidList, admList]);
 
-  // ─── FLUXO MENSAL ──────────────────────────────────────────────────
-  // Retorna o primeiro mês de pagamento baseado no created_at
-  const getMesInicio = (createdAt: string, mesInicioGlobal: number): number => {
-    const dt = new Date(createdAt);
-    const mesCadastro = dt.getMonth() + 1;
-    const anoCadastro = dt.getFullYear();
-    if (anoCadastro < 2026 || (anoCadastro === 2026 && mesCadastro <= 3)) {
-      return mesInicioGlobal;
-    }
-    return Math.max(mesInicioGlobal, mesCadastro + 1);
-  };
-
   const fluxoMensal = useMemo(() => {
     const meses = [];
     for (let m = 1; m <= MES_FIM; m++) {
       let supMes = 0, lidMes = 0, admMes = 0;
       if (m >= MES_INICIO_SUP) {
         supMes = supList.reduce((a: number, s: any) => {
-          const inicio = getMesInicio(s.created_at, MES_INICIO_SUP);
+          const inicio = getMesInicioComHistorico({
+            tipo: "suplente",
+            pessoaId: s.id,
+            createdAt: s.created_at,
+            mesInicioGlobal: MES_INICIO_SUP,
+            pagamentos: pagamentosFiltrados,
+            categoria: "retirada",
+          });
           const numMeses = s.retirada_mensal_meses || 0;
           const mesFim = inicio + numMeses - 1;
           return (m >= inicio && m <= mesFim) ? a + (s.retirada_mensal_valor || 0) : a;
@@ -205,14 +201,28 @@ export default function Dashboard() {
       }
       if (m >= MES_INICIO_LID) {
         lidMes = lidList.reduce((a: number, l: any) => {
-          const inicio = getMesInicio(l.created_at, MES_INICIO_LID);
+          const inicio = getMesInicioComHistorico({
+            tipo: "lideranca",
+            pessoaId: l.id,
+            createdAt: l.created_at,
+            mesInicioGlobal: MES_INICIO_LID,
+            pagamentos: pagamentosFiltrados,
+            categoria: "retirada",
+          });
           const ateMes = l.retirada_ate_mes || MES_FIM;
           return (m >= inicio && m <= ateMes) ? a + (l.retirada_mensal_valor || 0) : a;
         }, 0);
       }
       if (m >= MES_INICIO_ADM) {
         admMes = admList.reduce((a: number, ad: any) => {
-          const inicio = getMesInicio(ad.created_at, MES_INICIO_ADM);
+          const inicio = getMesInicioComHistorico({
+            tipo: "admin",
+            pessoaId: ad.id,
+            createdAt: ad.created_at,
+            mesInicioGlobal: MES_INICIO_ADM,
+            pagamentos: pagamentosFiltrados,
+            categoria: "salario",
+          });
           const ateMes = ad.contrato_ate_mes || MES_FIM;
           return (m >= inicio && m <= ateMes) ? a + (ad.valor_contrato || 0) : a;
         }, 0);
