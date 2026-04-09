@@ -34,7 +34,6 @@ function CidadeCard({ c }: { c: CidadeData }) {
         </div>
       </button>
 
-      {/* Summary bar always visible */}
       <div className="space-y-1">
         <div className="flex items-center justify-between text-[10px]">
           <span className="text-muted-foreground">Pago: <span className="font-bold text-status-success">{fmt(c.pago)}</span></span>
@@ -45,10 +44,8 @@ function CidadeCard({ c }: { c: CidadeData }) {
         </div>
       </div>
 
-      {/* Expanded details */}
       {open && (
         <div className="space-y-3 pt-2 animate-fade-in">
-          {/* Suplentes */}
           {c.orcSup > 0 && (
             <div className="bg-muted/30 rounded-xl p-2.5 space-y-1">
               <p className="text-[10px] font-bold text-foreground uppercase tracking-wider">Suplentes ({c.suplentes})</p>
@@ -87,17 +84,24 @@ function CidadeCard({ c }: { c: CidadeData }) {
             </div>
           )}
 
-          {/* Lideranças */}
           {c.orcLid > 0 && (
             <div className="bg-muted/30 rounded-xl p-2.5 space-y-1">
-              <p className="text-[10px] font-bold text-foreground uppercase tracking-wider">Lideranças ({c.liderancasCount})</p>
+              <div className="flex justify-between items-center">
+                <p className="text-[10px] font-bold text-foreground uppercase tracking-wider">Lideranças ({c.liderancasCount})</p>
+                <p className="text-[10px] text-muted-foreground">{fmt(c.lidMensal)}/mês · Total: <span className="font-bold text-foreground">{fmt(c.orcLid)}</span></p>
+              </div>
               <div className="space-y-0.5 pl-2 border-l-2 border-primary/20">
-                {c.lidCidade.map(l => (
-                  <div key={l.id} className="flex justify-between text-[10px]">
-                    <span className="text-muted-foreground truncate mr-2">{l.nome} {l.regiao ? `(${l.regiao})` : ""}</span>
-                    <span className="font-medium text-foreground shrink-0">{fmt(l.retirada_mensal_valor || 0)}/mês</span>
-                  </div>
-                ))}
+                {c.lidCidade.map(l => {
+                  const t = c.lidTotais[l.id];
+                  return (
+                    <div key={l.id} className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground truncate mr-2">{l.nome} {l.regiao ? `(${l.regiao})` : ""}</span>
+                      <span className="font-medium text-foreground shrink-0">
+                        {fmt(l.retirada_mensal_valor || 0)}/mês × {t?.meses || 0}m = {fmt(t?.total || 0)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
               <div className="flex justify-between text-[10px] pt-1 border-t border-border/30">
                 <span className="font-bold text-foreground">Total Lideranças</span>
@@ -106,17 +110,24 @@ function CidadeCard({ c }: { c: CidadeData }) {
             </div>
           )}
 
-          {/* Admin */}
           {c.orcAdm > 0 && (
             <div className="bg-muted/30 rounded-xl p-2.5 space-y-1">
-              <p className="text-[10px] font-bold text-foreground uppercase tracking-wider">Administrativo ({c.admin})</p>
+              <div className="flex justify-between items-center">
+                <p className="text-[10px] font-bold text-foreground uppercase tracking-wider">Administrativo ({c.admin})</p>
+                <p className="text-[10px] text-muted-foreground">{fmt(c.admMensal)}/mês · Total: <span className="font-bold text-foreground">{fmt(c.orcAdm)}</span></p>
+              </div>
               <div className="space-y-0.5 pl-2 border-l-2 border-primary/20">
-                {c.admCidade.map(a => (
-                  <div key={a.id} className="flex justify-between text-[10px]">
-                    <span className="text-muted-foreground truncate mr-2">{a.nome}</span>
-                    <span className="font-medium text-foreground shrink-0">{fmt(a.valor_contrato || 0)}/mês</span>
-                  </div>
-                ))}
+                {c.admCidade.map(a => {
+                  const t = c.admTotais[a.id];
+                  return (
+                    <div key={a.id} className="flex justify-between text-[10px]">
+                      <span className="text-muted-foreground truncate mr-2">{a.nome}</span>
+                      <span className="font-medium text-foreground shrink-0">
+                        {fmt(a.valor_contrato || 0)}/mês × {t?.meses || 0}m = {fmt(t?.total || 0)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
               <div className="flex justify-between text-[10px] pt-1 border-t border-border/30">
                 <span className="font-bold text-foreground">Total Admin</span>
@@ -125,7 +136,6 @@ function CidadeCard({ c }: { c: CidadeData }) {
             </div>
           )}
 
-          {/* Votos */}
           {(c.votos2024 > 0 || c.expectativa2026 > 0) && (
             <div className="grid grid-cols-2 gap-2">
               <div className="bg-muted/50 rounded-lg p-2 text-center">
@@ -159,7 +169,6 @@ function DashCidadesInner({ dadosPorCidade }: Props) {
 
   return (
     <div className="space-y-4">
-      {/* Totais consolidados */}
       <div className="bg-gradient-to-br from-primary via-primary/90 to-primary/80 rounded-2xl p-4 shadow-lg text-primary-foreground">
         <p className="text-[10px] uppercase tracking-wider opacity-80 mb-1">💰 Total Todas as Cidades</p>
         <p className="text-2xl font-bold">{fmt(totalOrc)}</p>
@@ -193,7 +202,6 @@ function DashCidadesInner({ dadosPorCidade }: Props) {
         </div>
       </div>
 
-      {/* Gráfico comparativo */}
       {dadosPorCidade.length > 1 && (
         <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
           <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5 mb-3">
@@ -215,7 +223,6 @@ function DashCidadesInner({ dadosPorCidade }: Props) {
         </div>
       )}
 
-      {/* Cards por cidade com detalhamento */}
       <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
         <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5 mb-3">
           <Building2 size={14} /> Detalhamento por Cidade

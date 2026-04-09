@@ -233,6 +233,7 @@ export default function Dashboard() {
       const fiscaisQtd = supCidade.reduce((a: number, s: any) => a + (s.fiscais_qtd || 0), 0);
       const plotagemQtd = supCidade.reduce((a: number, s: any) => a + (s.plotagem_qtd || 0), 0);
       const lidMensal = lidCidade.reduce((a: number, l: any) => a + (l.retirada_mensal_valor || 0), 0);
+      const lidTotais: Record<string, { meses: number; total: number }> = {};
       const orcLid = lidCidade.reduce((a: number, l: any) => {
         const inicio = getMesInicioComHistorico({
           tipo: "lideranca", pessoaId: l.id, createdAt: l.created_at,
@@ -240,9 +241,12 @@ export default function Dashboard() {
         });
         const ateMes = l.retirada_ate_mes || MES_FIM;
         const mesesAtivos = Math.max(0, ateMes - inicio + 1);
-        return a + (l.retirada_mensal_valor || 0) * mesesAtivos;
+        const total = (l.retirada_mensal_valor || 0) * mesesAtivos;
+        lidTotais[l.id] = { meses: mesesAtivos, total };
+        return a + total;
       }, 0);
       const admMensal = admCidade.reduce((a: number, ad: any) => a + (ad.valor_contrato || 0), 0);
+      const admTotais: Record<string, { meses: number; total: number }> = {};
       const orcAdm = admCidade.reduce((a: number, ad: any) => {
         const inicio = getMesInicioComHistorico({
           tipo: "admin", pessoaId: ad.id, createdAt: ad.created_at,
@@ -250,7 +254,9 @@ export default function Dashboard() {
         });
         const ateMes = ad.contrato_ate_mes || MES_FIM;
         const mesesAtivos = Math.max(0, ateMes - inicio + 1);
-        return a + (ad.valor_contrato || 0) * mesesAtivos;
+        const total = (ad.valor_contrato || 0) * mesesAtivos;
+        admTotais[ad.id] = { meses: mesesAtivos, total };
+        return a + total;
       }, 0);
       const orcTotal = orcSup + orcLid + orcAdm;
 
@@ -277,6 +283,7 @@ export default function Dashboard() {
         expectativa2026: supCidade.reduce((a: number, s: any) => a + (s.expectativa_votos || 0), 0),
         lidCidade: lidCidade as Lideranca[],
         admCidade: admCidade as AdminPessoa[],
+        lidTotais, admTotais,
       };
     }).filter(c => c.orcamento > 0 || c.suplentes > 0 || c.liderancasCount > 0 || c.admin > 0);
   }, [municipios, globalSup, globalLid, globalAdm, globalPag]);

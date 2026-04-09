@@ -2,14 +2,14 @@ export type Lideranca = {
   id: string; nome: string; regiao: string | null;
   retirada_mensal_valor: number | null; retirada_mensal_meses: number | null;
   retirada_ate_mes: number | null; chave_pix: string | null;
-  municipio_id?: string | null;
+  municipio_id?: string | null; created_at?: string;
 };
 
 export type AdminPessoa = {
   id: string; nome: string; whatsapp: string | null;
   valor_contrato: number | null; valor_contrato_meses: number | null;
   contrato_ate_mes: number | null;
-  municipio_id?: string | null;
+  municipio_id?: string | null; created_at?: string;
 };
 
 export type Pagamento = {
@@ -37,6 +37,8 @@ export type CidadeData = {
   votos2024: number; expectativa2026: number;
   lidCidade: Lideranca[];
   admCidade: AdminPessoa[];
+  lidTotais: Record<string, { meses: number; total: number }>;
+  admTotais: Record<string, { meses: number; total: number }>;
 };
 
 export const MESES_LABEL = ["", "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
