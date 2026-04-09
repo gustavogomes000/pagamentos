@@ -72,17 +72,22 @@ export default function GerenciarCidades() {
       return;
     }
     setSaving(true);
-    const { data: resp, error: fnError } = await supabase.functions.invoke("manage-municipios", {
-      body: { action: "insert", nome: nome.trim(), uf: uf.trim().toUpperCase() || "GO" },
-    });
-    setSaving(false);
-    if (fnError || resp?.error) {
-      toast({ title: "Erro ao adicionar", description: resp?.error || fnError?.message, variant: "destructive" });
-    } else {
-      toast({ title: `${nome} adicionada!` });
-      setNome("");
-      qc.invalidateQueries({ queryKey: ["municipios-admin"] });
-      refetchMunicipios();
+    try {
+      const { data: resp, error: fnError } = await supabase.functions.invoke("manage-municipios", {
+        body: { action: "insert", nome: nome.trim(), uf: uf.trim().toUpperCase() || "GO" },
+      });
+      if (fnError || resp?.error) {
+        toast({ title: "Erro ao adicionar", description: resp?.error || fnError?.message || "Erro desconhecido", variant: "destructive" });
+      } else {
+        toast({ title: `${nome} adicionada!` });
+        setNome("");
+        qc.invalidateQueries({ queryKey: ["municipios-admin"] });
+        refetchMunicipios();
+      }
+    } catch (e: any) {
+      toast({ title: "Erro ao adicionar", description: e?.message || "Erro de conexão", variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
 
