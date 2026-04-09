@@ -39,7 +39,7 @@ export function getMesInicioPorCadastro(
     return mesInicioGlobal;
   }
 
-  return Math.max(mesInicioGlobal, mesCadastro);
+  return Math.max(mesInicioGlobal, mesCadastro + 1);
 }
 
 function getPessoaPagamentoId(tipo: PessoaPagamentoTipo, pagamento: PagamentoElegibilidade): string | null | undefined {
