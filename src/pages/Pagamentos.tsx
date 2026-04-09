@@ -700,7 +700,9 @@ export default function Pagamentos() {
   const [showPagos, setShowPagos] = useState(true);
   const [showAlertaAtraso, setShowAlertaAtraso] = useState(false);
   const [alertaDismissed, setAlertaDismissed] = useState(false);
-  const { cidadeAtiva } = useCidade();
+  const { cidadeAtiva: cidadeGlobal, municipios, isAdmin } = useCidade();
+  const [cidadeLocal, setCidadeLocal] = useState<string | null | undefined>(undefined); // undefined = usar global
+  const cidadeAtiva = cidadeLocal === undefined ? cidadeGlobal : cidadeLocal;
 
   const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes", cidadeAtiva],
@@ -1197,7 +1199,20 @@ export default function Pagamentos() {
           </DialogContent>
         </Dialog>
 
-        <h1 className="text-xl font-bold text-foreground">Pagamentos</h1>
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="text-xl font-bold text-foreground">Pagamentos</h1>
+          <Select value={cidadeLocal === undefined ? (cidadeGlobal || "todas") : (cidadeLocal || "todas")} onValueChange={(v) => setCidadeLocal(v === "todas" ? null : v)}>
+            <SelectTrigger className="h-7 w-auto min-w-[120px] max-w-[200px] gap-1 border-primary/20 bg-primary/5 text-xs font-semibold text-primary rounded-lg px-2">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas" className="text-xs font-semibold">🌐 Todas as Cidades</SelectItem>
+              {municipios.map(m => (
+                <SelectItem key={m.id} value={m.id} className="text-xs">📍 {m.nome} — {m.uf}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* Painel financeiro geral */}
         {!isLoading && (
@@ -1278,7 +1293,7 @@ export default function Pagamentos() {
               </div>
 
               {/* Categorias */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className={`grid gap-2 ${cats.length === 1 ? "grid-cols-1" : cats.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
                 {cats.map(c => {
                   const falta = Math.max(0, c.plan - c.pago);
                   const pct = c.plan > 0 ? Math.min(100, (c.pago / c.plan) * 100) : 0;
