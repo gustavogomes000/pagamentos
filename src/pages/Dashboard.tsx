@@ -373,7 +373,7 @@ export default function Dashboard() {
     ["resumo", "Resumo", BarChart3],
     ["mensal", "Mensal", Calendar],
     ["detalhes", "Detalhes", List],
-    ...(isAdmin && municipios.length > 1 ? [["cidades", "Cidades", Building2] as [string, string, any]] : []),
+    ["cidades", "Cidades", Building2],
   ];
 
   return (
