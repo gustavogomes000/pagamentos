@@ -2,12 +2,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import {
   Users, FileDown, FileSpreadsheet, Search, Filter, X,
-  Calendar, BarChart3, List, Building2,
+  Calendar, BarChart3, List, Building2, ClipboardCheck,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { exportAllPDF, exportExcel } from "@/lib/exports";
+import { exportAllPDF, exportExcel, exportAuditPDF } from "@/lib/exports";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 import { getMesInicioComHistorico } from "@/lib/paymentEligibility";
 import { PageTransition } from "@/components/PageTransition";
@@ -302,6 +302,9 @@ export default function Dashboard() {
             </Button>
             <Button variant="outline" size="sm" className="text-xs gap-1.5 active:scale-95 transition-transform" onClick={() => { const mMap = Object.fromEntries(municipios.map(m => [m.id, m.nome])); exportExcel(supList, { regiao: filtroRegiao, partido: filtroPartido, situacao: filtroSituacao, busca: search }, mMap); }} disabled={supList.length === 0}>
               <FileSpreadsheet size={14} /> Excel
+            </Button>
+            <Button variant="default" size="sm" className="text-xs gap-1.5 active:scale-95 transition-transform" onClick={() => { const mMap = Object.fromEntries(municipios.map(m => [m.id, m.nome])); exportAuditPDF({ suplentes: globalSup, liderancas: globalLid, administrativo: globalAdm, pagamentos: globalPag, municipiosMap: mMap }); }} disabled={isLoading}>
+              <ClipboardCheck size={14} /> Auditoria
             </Button>
           </div>
         </div>
