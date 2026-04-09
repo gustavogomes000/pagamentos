@@ -38,7 +38,7 @@ function DashResumoInner({
   totalLiderancasQtd, totalFiscais, totalPlotagem, totalPlotagemVal,
   totalCampanhaSup, totalRetiradaSup, totalLiderancasVal, totalFiscaisVal,
   totalRetiradaMensalSup, totalLidMensal, totalAdmMensal,
-  totalLidFluxo, totalAdmFluxo,
+  totalLidFluxo, totalAdmFluxo, pieData,
 }: Props) {
   const tooltipFmt = (value: number) => fmt(value);
 

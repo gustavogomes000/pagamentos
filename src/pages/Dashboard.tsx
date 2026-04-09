@@ -476,6 +476,8 @@ export default function Dashboard() {
                 totalRetiradaMensalSup={financials.totalRetiradaMensalSup}
                 totalLidMensal={financials.totalLidMensal}
                 totalAdmMensal={financials.totalAdmMensal}
+                totalLidFluxo={totalLidFluxo}
+                totalAdmFluxo={totalAdmFluxo}
                 pieData={pieData}
               />
             )}
@@ -483,7 +485,6 @@ export default function Dashboard() {
             {activeView === "mensal" && (
               <DashMensal
                 fluxoMensal={fluxoMensal}
-                cumulativeData={cumulativeData}
                 mesAtual={mesAtual}
               />
             )}
