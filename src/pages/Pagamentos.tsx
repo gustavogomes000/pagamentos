@@ -1183,9 +1183,11 @@ export default function Pagamentos() {
           </div>
         )}
 
-        {/* Painel Outros Gastos: Plotagem + Lideranças + Fiscais (por cidade, independente do mês) */}
+        {/* Painel Outros Gastos: Plotagem + Lideranças + Fiscais (filtrado por mês de cadastro) */}
         {!isLoading && (() => {
-          const sups = suplentes || [];
+          // Filtra suplentes cujo cadastro permite lançar custos pontuais neste mês
+          // Regra: cadastrado no mês X → custos só podem ser lançados a partir do mês X+1
+          const sups = (suplentes || []).filter(s => mes >= getMesInicioPessoa(s.created_at, MES_INICIO_SUPLENTES));
           const allPags = pagamentos || [];
           const supIds = new Set(sups.map(s => s.id));
 
