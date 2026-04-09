@@ -459,6 +459,7 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
             <span>{fmt(pagoMes)} / {fmt(retiradaMes)}</span>
           </div>
           {retiradaMes > 0 && <Bar pago={pagoMes} total={retiradaMes} cor={pago ? "bg-green-500" : "bg-amber-500"} />}
+          <p className="text-[10px] text-muted-foreground mt-1">Cadastro: {new Date(s.created_at).toLocaleDateString("pt-BR")}</p>
         </div>
       </div>
 
@@ -559,9 +560,9 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
 }
 
 // ─── Card simples: Liderança / Admin ──────────────────────────────────────────
-function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes, ano }: {
+function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes, ano, createdAt }: {
   tipo: "lideranca" | "admin"; id: string; nome: string; subtitulo?: string;
-  valorEsperado: number; pagsMes: Pagamento[]; mes: number; ano: number;
+  valorEsperado: number; pagsMes: Pagamento[]; mes: number; ano: number; createdAt?: string;
 }) {
   const qc = useQueryClient();
   const [paying, setPaying] = useState(false);
@@ -622,6 +623,7 @@ function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes,
             </div>
           </div>
         )}
+        {createdAt && <p className="text-[10px] text-muted-foreground mt-1">Cadastro: {new Date(createdAt).toLocaleDateString("pt-BR")}</p>}
       </div>
 
       <div className="flex border-t border-border/30 divide-x divide-border/30">
@@ -975,7 +977,7 @@ export default function Pagamentos() {
                   subtitulo={[l.regiao, l.chave_pix ? `PIX: ${l.chave_pix}` : undefined].filter(Boolean).join(" · ")}
                   valorEsperado={l.retirada_mensal_valor || 0}
                   pagsMes={pagsMes.filter(p => p.lideranca_id === l.id)}
-                  mes={mes} ano={ano} />
+                  mes={mes} ano={ano} createdAt={l.created_at} />
               ))}
             </div>
           )}
@@ -1001,7 +1003,7 @@ export default function Pagamentos() {
                   subtitulo={l.regiao || undefined}
                   valorEsperado={l.retirada_mensal_valor || 0}
                   pagsMes={pagsMes.filter(p => p.lideranca_id === l.id)}
-                  mes={mes} ano={ano} />
+                  mes={mes} ano={ano} createdAt={l.created_at} />
               ))}
             </div>
           )}
@@ -1046,7 +1048,7 @@ export default function Pagamentos() {
                 subtitulo={a.whatsapp || undefined}
                 valorEsperado={a.valor_contrato || 0}
                 pagsMes={pagsMes.filter(p => p.admin_id === a.id)}
-                mes={mes} ano={ano} />
+                mes={mes} ano={ano} createdAt={a.created_at} />
             ))}
           </div>
         )}
@@ -1072,7 +1074,7 @@ export default function Pagamentos() {
                 subtitulo={a.whatsapp || undefined}
                 valorEsperado={a.valor_contrato || 0}
                 pagsMes={pagsMes.filter(p => p.admin_id === a.id)}
-                mes={mes} ano={ano} />
+                mes={mes} ano={ano} createdAt={a.created_at} />
             ))}
           </div>
         )}
