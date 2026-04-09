@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Calendar } from "lucide-react";
+import { Calendar, Info } from "lucide-react";
 import { StatusBadge, EmptyState } from "./DashShared";
 import { fmt, MESES_FULL, type FluxoMes } from "./types";
 
@@ -15,8 +15,41 @@ function DashMensalInner({ fluxoMensal, mesAtual }: Props) {
     return <EmptyState message="Nenhum fluxo mensal disponível." />;
   }
 
+  const totalPrevisto = filtered.reduce((a, m) => a + m.total, 0);
+  const totalPago = filtered.reduce((a, m) => a + m.pago, 0);
+
   return (
     <div className="space-y-4">
+      {/* Info banner */}
+      <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 flex items-start gap-2">
+        <Info size={14} className="text-primary mt-0.5 shrink-0" />
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          <span className="font-semibold text-foreground">Visão consolidada de todas as cidades.</span>{" "}
+          Os valores abaixo incluem suplentes, lideranças e administrativo de todos os municípios, respeitando a data de início de cada pessoa. Para ver o detalhamento por cidade, use a aba <span className="font-semibold">Cidades</span>.
+        </p>
+      </div>
+
+      {/* Totais do período */}
+      <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
+        <div className="flex justify-between items-center mb-2">
+          <p className="text-xs font-semibold text-primary uppercase tracking-wider">📊 Total do Período</p>
+        </div>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-muted/50 rounded-xl p-2.5 text-center">
+            <p className="text-[8px] text-muted-foreground uppercase">Previsto</p>
+            <p className="text-sm font-bold text-foreground">{fmt(totalPrevisto)}</p>
+          </div>
+          <div className="bg-muted/50 rounded-xl p-2.5 text-center">
+            <p className="text-[8px] text-muted-foreground uppercase">Pago</p>
+            <p className="text-sm font-bold text-status-success">{fmt(totalPago)}</p>
+          </div>
+          <div className="bg-muted/50 rounded-xl p-2.5 text-center">
+            <p className="text-[8px] text-muted-foreground uppercase">Falta</p>
+            <p className="text-sm font-bold text-foreground">{fmt(Math.max(0, totalPrevisto - totalPago))}</p>
+          </div>
+        </div>
+      </div>
+
       {/* Tabela mensal */}
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="p-3 border-b border-border">
