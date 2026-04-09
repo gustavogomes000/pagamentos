@@ -700,7 +700,9 @@ export default function Pagamentos() {
   const [showPagos, setShowPagos] = useState(true);
   const [showAlertaAtraso, setShowAlertaAtraso] = useState(false);
   const [alertaDismissed, setAlertaDismissed] = useState(false);
-  const { cidadeAtiva } = useCidade();
+  const { cidadeAtiva: cidadeGlobal, municipios, isAdmin } = useCidade();
+  const [cidadeLocal, setCidadeLocal] = useState<string | null | undefined>(undefined); // undefined = usar global
+  const cidadeAtiva = cidadeLocal === undefined ? cidadeGlobal : cidadeLocal;
 
   const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes", cidadeAtiva],
@@ -1278,7 +1280,7 @@ export default function Pagamentos() {
               </div>
 
               {/* Categorias */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className={`grid gap-2 ${cats.length === 1 ? "grid-cols-1" : cats.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
                 {cats.map(c => {
                   const falta = Math.max(0, c.plan - c.pago);
                   const pct = c.plan > 0 ? Math.min(100, (c.pago / c.plan) * 100) : 0;
