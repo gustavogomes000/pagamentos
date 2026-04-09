@@ -526,7 +526,7 @@ export default function Dashboard() {
               />
             )}
 
-            {activeView === "cidades" && isAdmin && (
+            {activeView === "cidades" && (
               <DashCidades dadosPorCidade={dadosPorCidade} />
             )}
           </>
