@@ -660,8 +660,8 @@ function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes,
 }
 
 // ─── Meses iniciais por tipo ──────────────────────────────────────────────────
-const MES_INICIO_SUPLENTES = 2; // Suplentes: pagamentos a partir de Fevereiro
-const MES_INICIO_LIDERANCAS = 2; // Lideranças: pagamentos a partir de Fevereiro
+const MES_INICIO_SUPLENTES = 3; // Suplentes: pagamentos a partir de Março
+const MES_INICIO_LIDERANCAS = 3; // Lideranças: pagamentos a partir de Março
 const MES_INICIO_ADMIN = 3;      // Administrativo: pagamentos a partir de Março
 
 // Retorna o primeiro mês de pagamento para uma pessoa baseado no created_at
