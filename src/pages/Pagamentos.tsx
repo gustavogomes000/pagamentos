@@ -749,9 +749,11 @@ export default function Pagamentos() {
   });
 
   const isLoading = loadS || loadL || loadA || loadP;
+  const MES_MIN_GLOBAL = 3; // Março é o primeiro mês de pagamentos
   const navMes = (dir: -1 | 1) => {
     let m = mes + dir, a = ano;
     if (m < 1) { m = 12; a--; } if (m > 12) { m = 1; a++; }
+    if (a === 2026 && m < MES_MIN_GLOBAL) { m = MES_MIN_GLOBAL; }
     setMes(m); setAno(a);
   };
 
