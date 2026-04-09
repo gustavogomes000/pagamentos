@@ -37,6 +37,8 @@ export type CidadeData = {
   votos2024: number; expectativa2026: number;
   lidCidade: Lideranca[];
   admCidade: AdminPessoa[];
+  lidTotais: Record<string, { meses: number; total: number }>;
+  admTotais: Record<string, { meses: number; total: number }>;
 };
 
 export const MESES_LABEL = ["", "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
