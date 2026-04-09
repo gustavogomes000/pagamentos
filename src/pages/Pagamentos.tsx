@@ -688,10 +688,6 @@ function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes,
 const MES_INICIO_SUPLENTES = 3; // Suplentes: pagamentos a partir de Março
 const MES_INICIO_LIDERANCAS = 3; // Lideranças: março é exceção (sistema não existia), a partir de abril segue X+1
 const MES_INICIO_ADMIN = 3;      // Administrativo: pagamentos a partir de Março
-const ADMIN_MES_INICIO_FORCADO: Record<string, number> = {
-  "gustavo gomes": 4,
-  "sindy": 4,
-};
 
 // Retorna o primeiro mês de referência de pagamento para uma pessoa baseado no created_at
 // mesCutoffExcecao: cadastros até esse mês (inclusive) em 2026 recebem mesInicioGlobal
@@ -703,12 +699,6 @@ function getMesInicioPessoa(createdAt: string, mesInicioGlobal: number, mesCutof
     return mesInicioGlobal;
   }
   return Math.max(mesInicioGlobal, mesCadastro + 1);
-}
-
-function getMesInicioAdmin(admin: AdminPessoa): number {
-  const mesForcado = ADMIN_MES_INICIO_FORCADO[norm(admin.nome)];
-  if (mesForcado) return mesForcado;
-  return getMesInicioPessoa(admin.created_at, MES_INICIO_ADMIN);
 }
 
 // ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
@@ -795,7 +785,7 @@ export default function Pagamentos() {
   // Todos os suplentes elegíveis aparecem (mesmo sem retirada configurada — mostram como pago R$0)
   const supComValor = (suplentes || []).filter(s => mes >= getMesInicioPessoa(s.created_at, MES_INICIO_SUPLENTES));
   const lidComValor = (liderancas || []).filter(l => mes >= getMesInicioPessoa(l.created_at, MES_INICIO_LIDERANCAS));
-  const admComValor = (administrativo || []).filter(a => mes >= getMesInicioAdmin(a));
+  const admComValor = (administrativo || []).filter(a => mes >= getMesInicioPessoa(a.created_at, MES_INICIO_ADMIN));
 
   const supPlanejado = supComValor.reduce((a, s) => a + (s.retirada_mensal_valor || 0), 0);
   const lidPlanejado = lidComValor.reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0);
