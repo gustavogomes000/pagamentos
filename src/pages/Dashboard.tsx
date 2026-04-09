@@ -71,12 +71,43 @@ export default function Dashboard() {
     staleTime: STALE_TIME,
   });
 
-  const { data: pagamentos, isLoading: loadP } = useQuery({
-    queryKey: ["pagamentos-dash", cidadeAtiva],
+   const { data: pagamentos, isLoading: loadP } = useQuery({
+    queryKey: ["pagamentos-dash"],
     queryFn: async () => {
       const { data, error } = await supabase.from("pagamentos").select("id, suplente_id, lideranca_id, admin_id, tipo_pessoa, mes, ano, categoria, valor, observacao, created_at");
       if (error) throw error;
       return data as Pagamento[];
+    },
+    staleTime: STALE_TIME,
+  });
+
+  // ─── ALL DATA QUERIES (for city view, ignoring city filter) ──────
+  const { data: allSuplentes } = useQuery({
+    queryKey: ["suplentes-all"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("suplentes").select("id, nome, numero_urna, bairro, regiao_atuacao, partido, situacao, telefone, cargo_disputado, ano_eleicao, total_votos, expectativa_votos, base_politica, retirada_mensal_valor, retirada_mensal_meses, plotagem_qtd, plotagem_valor_unit, liderancas_qtd, liderancas_valor_unit, fiscais_qtd, fiscais_valor_unit, total_campanha, municipio_id, created_at").order("nome");
+      if (error) throw error;
+      return data;
+    },
+    staleTime: STALE_TIME,
+  });
+
+  const { data: allLiderancas } = useQuery({
+    queryKey: ["liderancas-all"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("liderancas").select("id, nome, regiao, retirada_mensal_valor, retirada_ate_mes, municipio_id, chave_pix, whatsapp, ligacao_politica, retirada_mensal_meses, created_at").order("nome");
+      if (error) throw error;
+      return data as Lideranca[];
+    },
+    staleTime: STALE_TIME,
+  });
+
+  const { data: allAdministrativo } = useQuery({
+    queryKey: ["administrativo-all"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("administrativo").select("id, nome, valor_contrato, contrato_ate_mes, municipio_id, whatsapp, created_at").order("nome");
+      if (error) throw error;
+      return data as AdminPessoa[];
     },
     staleTime: STALE_TIME,
   });
