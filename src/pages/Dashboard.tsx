@@ -71,12 +71,43 @@ export default function Dashboard() {
     staleTime: STALE_TIME,
   });
 
-  const { data: pagamentos, isLoading: loadP } = useQuery({
-    queryKey: ["pagamentos-dash", cidadeAtiva],
+   const { data: pagamentos, isLoading: loadP } = useQuery({
+    queryKey: ["pagamentos-dash"],
     queryFn: async () => {
       const { data, error } = await supabase.from("pagamentos").select("id, suplente_id, lideranca_id, admin_id, tipo_pessoa, mes, ano, categoria, valor, observacao, created_at");
       if (error) throw error;
       return data as Pagamento[];
+    },
+    staleTime: STALE_TIME,
+  });
+
+  // ─── ALL DATA QUERIES (for city view, ignoring city filter) ──────
+  const { data: allSuplentes } = useQuery({
+    queryKey: ["suplentes-all"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("suplentes").select("id, nome, numero_urna, bairro, regiao_atuacao, partido, situacao, telefone, cargo_disputado, ano_eleicao, total_votos, expectativa_votos, base_politica, retirada_mensal_valor, retirada_mensal_meses, plotagem_qtd, plotagem_valor_unit, liderancas_qtd, liderancas_valor_unit, fiscais_qtd, fiscais_valor_unit, total_campanha, municipio_id, created_at").order("nome");
+      if (error) throw error;
+      return data;
+    },
+    staleTime: STALE_TIME,
+  });
+
+  const { data: allLiderancas } = useQuery({
+    queryKey: ["liderancas-all"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("liderancas").select("id, nome, regiao, retirada_mensal_valor, retirada_ate_mes, municipio_id, chave_pix, whatsapp, ligacao_politica, retirada_mensal_meses, created_at").order("nome");
+      if (error) throw error;
+      return data as Lideranca[];
+    },
+    staleTime: STALE_TIME,
+  });
+
+  const { data: allAdministrativo } = useQuery({
+    queryKey: ["administrativo-all"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("administrativo").select("id, nome, valor_contrato, contrato_ate_mes, municipio_id, whatsapp, created_at").order("nome");
+      if (error) throw error;
+      return data as AdminPessoa[];
     },
     staleTime: STALE_TIME,
   });
@@ -246,14 +277,7 @@ export default function Dashboard() {
   const totalPagoAno = pagamentosFiltrados.filter(p => p.ano === 2026).reduce((a, p) => a + (p.valor || 0), 0);
   const saldoRestante = orcamentoTotal - totalPagoAno;
 
-  const cumulativeData = useMemo(() => {
-    let acumPrevisto = 0, acumPago = 0;
-    return fluxoMensal.filter(m => m.mes >= MES_INICIO_SUP).map(m => {
-      acumPrevisto += m.total;
-      acumPago += m.pago;
-      return { label: MESES_LABEL[m.mes], previsto: acumPrevisto, pago: acumPago };
-    });
-  }, [fluxoMensal]);
+
 
   const totalSupFluxo = fluxoMensal.reduce((a, m) => a + m.suplentes, 0);
   const totalLidFluxo = fluxoMensal.reduce((a, m) => a + m.liderancas, 0);
@@ -265,23 +289,18 @@ export default function Dashboard() {
     { name: "Administrativo", value: totalAdmFluxo, fill: COLORS_CAT.admin },
   ].filter(d => d.value > 0), [totalSupFluxo, totalLidFluxo, totalAdmFluxo, custosPontuais]);
 
-  // ─── DADOS POR CIDADE ─────────────────────────────────────────────
+  // ─── DADOS POR CIDADE (sempre usa ALL data, ignora filtro de cidade) ──
   const dadosPorCidade = useMemo<CidadeData[]>(() => {
     if (municipios.length === 0) return [];
-    const allSup = suplentes ?? [];
-    const allLid = liderancas ?? [];
-    const allAdm = administrativo ?? [];
+    const aSup = allSuplentes ?? [];
+    const aLid = allLiderancas ?? [];
+    const aAdm = allAdministrativo ?? [];
+    const aPag = pagamentos ?? [];
 
     return municipios.map((mun, idx) => {
-      const supCidade = cidadeAtiva
-        ? (cidadeAtiva === mun.id ? allSup : [])
-        : allSup.filter((s: any) => s.municipio_id === mun.id);
-      const lidCidade = cidadeAtiva
-        ? (cidadeAtiva === mun.id ? allLid : [])
-        : allLid.filter((l: any) => l.municipio_id === mun.id);
-      const admCidade = cidadeAtiva
-        ? (cidadeAtiva === mun.id ? allAdm : [])
-        : allAdm.filter((a: any) => a.municipio_id === mun.id);
+      const supCidade = aSup.filter((s: any) => s.municipio_id === mun.id);
+      const lidCidade = aLid.filter((l: any) => l.municipio_id === mun.id);
+      const admCidade = aAdm.filter((a: any) => a.municipio_id === mun.id);
 
       const retiradaSup = supCidade.reduce((a: number, s: any) => a + ((s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0)), 0);
       const liderancasVal = supCidade.reduce((a: number, s: any) => a + ((s.liderancas_qtd || 0) * (s.liderancas_valor_unit || 0)), 0);
@@ -293,11 +312,10 @@ export default function Dashboard() {
       const fiscaisQtd = supCidade.reduce((a: number, s: any) => a + (s.fiscais_qtd || 0), 0);
       const plotagemQtd = supCidade.reduce((a: number, s: any) => a + (s.plotagem_qtd || 0), 0);
       const lidMensal = lidCidade.reduce((a: number, l: any) => a + (l.retirada_mensal_valor || 0), 0);
-      // Orçamento lid/adm com elegibilidade individual
       const orcLid = lidCidade.reduce((a: number, l: any) => {
         const inicio = getMesInicioComHistorico({
           tipo: "lideranca", pessoaId: l.id, createdAt: l.created_at,
-          mesInicioGlobal: MES_INICIO_LID, pagamentos: pagamentos ?? [], categoria: "retirada",
+          mesInicioGlobal: MES_INICIO_LID, pagamentos: aPag, categoria: "retirada",
         });
         const ateMes = l.retirada_ate_mes || MES_FIM;
         const mesesAtivos = Math.max(0, ateMes - inicio + 1);
@@ -307,7 +325,7 @@ export default function Dashboard() {
       const orcAdm = admCidade.reduce((a: number, ad: any) => {
         const inicio = getMesInicioComHistorico({
           tipo: "admin", pessoaId: ad.id, createdAt: ad.created_at,
-          mesInicioGlobal: MES_INICIO_ADM, pagamentos: pagamentos ?? [], categoria: "salario",
+          mesInicioGlobal: MES_INICIO_ADM, pagamentos: aPag, categoria: "salario",
         });
         const ateMes = ad.contrato_ate_mes || MES_FIM;
         const mesesAtivos = Math.max(0, ateMes - inicio + 1);
@@ -318,7 +336,7 @@ export default function Dashboard() {
       const supIdsCity = new Set(supCidade.map((s: any) => s.id));
       const lidIdsCity = new Set(lidCidade.map((l: any) => l.id));
       const admIdsCity = new Set(admCidade.map((a: any) => a.id));
-      const pagoCity = (pagamentos ?? []).filter(p =>
+      const pagoCity = aPag.filter(p =>
         p.ano === 2026 && (
           (p.suplente_id && supIdsCity.has(p.suplente_id)) ||
           (p.lideranca_id && lidIdsCity.has(p.lideranca_id)) ||
@@ -340,7 +358,7 @@ export default function Dashboard() {
         admCidade: admCidade as AdminPessoa[],
       };
     }).filter(c => c.orcamento > 0 || c.suplentes > 0 || c.liderancasCount > 0 || c.admin > 0);
-  }, [municipios, suplentes, liderancas, administrativo, pagamentos, cidadeAtiva]);
+  }, [municipios, allSuplentes, allLiderancas, allAdministrativo, pagamentos]);
 
   const mesAtual = new Date().getMonth() + 1;
 
@@ -348,7 +366,7 @@ export default function Dashboard() {
     ["resumo", "Resumo", BarChart3],
     ["mensal", "Mensal", Calendar],
     ["detalhes", "Detalhes", List],
-    ...(isAdmin && municipios.length > 1 ? [["cidades", "Cidades", Building2] as [string, string, any]] : []),
+    ["cidades", "Cidades", Building2],
   ];
 
   return (
@@ -476,6 +494,8 @@ export default function Dashboard() {
                 totalRetiradaMensalSup={financials.totalRetiradaMensalSup}
                 totalLidMensal={financials.totalLidMensal}
                 totalAdmMensal={financials.totalAdmMensal}
+                totalLidFluxo={totalLidFluxo}
+                totalAdmFluxo={totalAdmFluxo}
                 pieData={pieData}
               />
             )}
@@ -483,7 +503,6 @@ export default function Dashboard() {
             {activeView === "mensal" && (
               <DashMensal
                 fluxoMensal={fluxoMensal}
-                cumulativeData={cumulativeData}
                 mesAtual={mesAtual}
               />
             )}
@@ -494,13 +513,13 @@ export default function Dashboard() {
                 totalPagoAno={totalPagoAno}
                 saldoRestante={saldoRestante}
                 totalCampanhaSup={financials.totalCampanhaSup}
-                totalLidMensal={financials.totalLidMensal}
-                totalAdmMensal={financials.totalAdmMensal}
+                totalLidFluxo={totalLidFluxo}
+                totalAdmFluxo={totalAdmFluxo}
                 dadosPorCidade={dadosPorCidade}
               />
             )}
 
-            {activeView === "cidades" && isAdmin && (
+            {activeView === "cidades" && (
               <DashCidades dadosPorCidade={dadosPorCidade} />
             )}
           </>
