@@ -277,14 +277,7 @@ export default function Dashboard() {
   const totalPagoAno = pagamentosFiltrados.filter(p => p.ano === 2026).reduce((a, p) => a + (p.valor || 0), 0);
   const saldoRestante = orcamentoTotal - totalPagoAno;
 
-  const cumulativeData = useMemo(() => {
-    let acumPrevisto = 0, acumPago = 0;
-    return fluxoMensal.filter(m => m.mes >= MES_INICIO_SUP).map(m => {
-      acumPrevisto += m.total;
-      acumPago += m.pago;
-      return { label: MESES_LABEL[m.mes], previsto: acumPrevisto, pago: acumPago };
-    });
-  }, [fluxoMensal]);
+
 
   const totalSupFluxo = fluxoMensal.reduce((a, m) => a + m.suplentes, 0);
   const totalLidFluxo = fluxoMensal.reduce((a, m) => a + m.liderancas, 0);
