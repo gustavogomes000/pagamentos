@@ -660,7 +660,7 @@ function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes,
 // ─── Meses iniciais por tipo ──────────────────────────────────────────────────
 const MES_INICIO_SUPLENTES = 3; // Suplentes: pagamentos a partir de Março
 const MES_INICIO_LIDERANCAS = 3; // Lideranças: março é exceção (sistema não existia), a partir de abril segue X+1
-const MES_INICIO_ADMIN = 3;      // Administrativo: pagamentos a partir de Março
+const MES_INICIO_ADMIN = 4;      // Administrativo: primeiro pagamento em Abril (março foi mês de cadastro, não de pagamento)
 
 // Retorna o primeiro mês de referência de pagamento para uma pessoa baseado no created_at
 // Regra folha: cadastrado no mês X → primeiro pagamento no mês X+1
