@@ -701,8 +701,7 @@ export default function Pagamentos() {
   const [showAlertaAtraso, setShowAlertaAtraso] = useState(false);
   const [alertaDismissed, setAlertaDismissed] = useState(false);
   const { cidadeAtiva: cidadeGlobal, municipios, isAdmin } = useCidade();
-  const [cidadeLocal, setCidadeLocal] = useState<string | null | undefined>(undefined); // undefined = usar global
-  const cidadeAtiva = cidadeLocal === undefined ? cidadeGlobal : cidadeLocal;
+  const cidadeAtiva = cidadeGlobal;
 
   const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes", cidadeAtiva],
