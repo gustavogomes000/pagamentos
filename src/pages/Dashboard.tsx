@@ -2,12 +2,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import {
   Users, FileDown, FileSpreadsheet, Search, Filter, X,
-  Calendar, BarChart3, List, Building2,
+  Calendar, BarChart3, List, Building2, ClipboardCheck,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { exportAllPDF, exportExcel } from "@/lib/exports";
+import { exportAllPDF, exportExcel, exportAuditPDF } from "@/lib/exports";
 import { calcTotaisFinanceiros } from "@/lib/finance";
 import { getMesInicioComHistorico } from "@/lib/paymentEligibility";
 import { PageTransition } from "@/components/PageTransition";
