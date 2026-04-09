@@ -664,19 +664,16 @@ const MES_INICIO_SUPLENTES = 3; // Suplentes: pagamentos a partir de Março
 const MES_INICIO_LIDERANCAS = 3; // Lideranças: pagamentos a partir de Março
 const MES_INICIO_ADMIN = 3;      // Administrativo: pagamentos a partir de Março
 
-// Retorna o primeiro mês de pagamento para uma pessoa baseado no created_at
-// Regra: cadastrado no mês ATUAL ou futuro → primeiro pagamento no mês seguinte
-// Cadastros de meses passados mantêm o comportamento normal (já eram exibidos)
+// Retorna o primeiro mês de referência de pagamento para uma pessoa baseado no created_at
+// Regra folha de pagamento: cadastrado no mês X → primeiro pagamento referente ao mês X
+// (pago no dia 10 do mês X+1). Exemplo: cadastrado em março → pagamento ref. março, pago dia 10/abril.
+// Cadastros anteriores a março mantêm março como início.
 function getMesInicioPessoa(createdAt: string, mesInicioGlobal: number): number {
   const dt = new Date(createdAt);
   const mesCadastro = dt.getMonth() + 1; // 1-12
   const anoCadastro = dt.getFullYear();
-  const agora = new Date();
-  const mesAtual = agora.getMonth() + 1;
-  const anoAtual = agora.getFullYear();
-  // Só aplica +1 para cadastros do mês atual ou futuro (não retroativo)
-  if (anoCadastro >= 2026 && (anoCadastro > anoAtual || (anoCadastro === anoAtual && mesCadastro >= mesAtual))) {
-    return Math.max(mesInicioGlobal, mesCadastro + 1);
+  if (anoCadastro >= 2026) {
+    return Math.max(mesInicioGlobal, mesCadastro);
   }
   return mesInicioGlobal;
 }
