@@ -701,8 +701,7 @@ export default function Pagamentos() {
   const [showAlertaAtraso, setShowAlertaAtraso] = useState(false);
   const [alertaDismissed, setAlertaDismissed] = useState(false);
   const { cidadeAtiva: cidadeGlobal, municipios, isAdmin } = useCidade();
-  const [cidadeLocal, setCidadeLocal] = useState<string | null | undefined>(undefined); // undefined = usar global
-  const cidadeAtiva = cidadeLocal === undefined ? cidadeGlobal : cidadeLocal;
+  const cidadeAtiva = cidadeGlobal;
 
   const { data: suplentes, isLoading: loadS } = useQuery({
     queryKey: ["suplentes", cidadeAtiva],
@@ -1201,17 +1200,6 @@ export default function Pagamentos() {
 
         <div className="flex items-center justify-between gap-2">
           <h1 className="text-xl font-bold text-foreground">Pagamentos</h1>
-          <Select value={cidadeLocal === undefined ? (cidadeGlobal || "todas") : (cidadeLocal || "todas")} onValueChange={(v) => setCidadeLocal(v === "todas" ? null : v)}>
-            <SelectTrigger className="h-7 w-auto min-w-[120px] max-w-[200px] gap-1 border-primary/20 bg-primary/5 text-xs font-semibold text-primary rounded-lg px-2">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas" className="text-xs font-semibold">🌐 Todas as Cidades</SelectItem>
-              {municipios.map(m => (
-                <SelectItem key={m.id} value={m.id} className="text-xs">📍 {m.nome} — {m.uf}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Painel financeiro geral */}
