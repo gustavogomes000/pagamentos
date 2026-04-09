@@ -785,7 +785,7 @@ export default function Pagamentos() {
   // Todos os suplentes elegíveis aparecem (mesmo sem retirada configurada — mostram como pago R$0)
   const supComValor = (suplentes || []).filter(s => mes >= getMesInicioPessoa(s.created_at, MES_INICIO_SUPLENTES));
   const lidComValor = (liderancas || []).filter(l => mes >= getMesInicioPessoa(l.created_at, MES_INICIO_LIDERANCAS));
-  const admComValor = (administrativo || []).filter(a => mes >= getMesInicioAdmin(a));
+  const admComValor = (administrativo || []).filter(a => mes >= getMesInicioPessoa(a.created_at, MES_INICIO_ADMIN));
 
   const supPlanejado = supComValor.reduce((a, s) => a + (s.retirada_mensal_valor || 0), 0);
   const lidPlanejado = lidComValor.reduce((a, l) => a + (l.retirada_mensal_valor || 0), 0);
