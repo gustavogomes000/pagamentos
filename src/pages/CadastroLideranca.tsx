@@ -97,7 +97,7 @@ export default function CadastroLideranca() {
     // Regra: primeiro pagamento só no mês seguinte ao cadastro
     if (!id) {
       const mesAtual = new Date().getMonth() + 1; // 1-12
-      payload.retirada_mensal_meses = Math.max(1, 9 - mesAtual);
+      payload.retirada_mensal_meses = Math.max(1, 10 - mesAtual);
     }
     let error;
     if (id) {
