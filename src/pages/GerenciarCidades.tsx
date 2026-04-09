@@ -72,10 +72,12 @@ export default function GerenciarCidades() {
       return;
     }
     setSaving(true);
-    const { error } = await (supabase as any).from("municipios").insert({ nome: nome.trim(), uf: uf.trim().toUpperCase() || "GO" });
+    const { data: resp, error: fnError } = await supabase.functions.invoke("manage-municipios", {
+      body: { action: "insert", nome: nome.trim(), uf: uf.trim().toUpperCase() || "GO" },
+    });
     setSaving(false);
-    if (error) {
-      toast({ title: "Erro ao adicionar", description: error.message, variant: "destructive" });
+    if (fnError || resp?.error) {
+      toast({ title: "Erro ao adicionar", description: resp?.error || fnError?.message, variant: "destructive" });
     } else {
       toast({ title: `${nome} adicionada!` });
       setNome("");
@@ -85,9 +87,11 @@ export default function GerenciarCidades() {
   };
 
   const toggleAtivo = async (id: string, ativo: boolean) => {
-    const { error } = await (supabase as any).from("municipios").update({ ativo: !ativo }).eq("id", id);
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+    const { data: resp, error: fnError } = await supabase.functions.invoke("manage-municipios", {
+      body: { action: "toggle", id, ativo },
+    });
+    if (fnError || resp?.error) {
+      toast({ title: "Erro", description: resp?.error || fnError?.message, variant: "destructive" });
     } else {
       qc.invalidateQueries({ queryKey: ["municipios-admin"] });
       refetchMunicipios();
