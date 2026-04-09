@@ -392,7 +392,7 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
   const retiradaMes = s.retirada_mensal_valor || 0;
   const pagoMes = pagsMes.reduce((a, p) => a + p.valor, 0);
   const faltaMes = Math.max(0, retiradaMes - pagoMes);
-  const pago = pagoMes >= retiradaMes && retiradaMes > 0;
+  const pago = pagoMes >= retiradaMes;
 
   const totais = calcTotaisFinanceiros(s);
   const totalPagoGeral = pagsTodos.reduce((a, p) => a + p.valor, 0);
@@ -442,7 +442,7 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
             {pago ? (
               <div className="flex items-center gap-1">
                 <CheckCircle2 size={14} className="text-green-500" />
-                <span className="text-sm font-bold text-green-600 dark:text-green-400">{fmt(pagoMes)}</span>
+                <span className="text-sm font-bold text-green-600 dark:text-green-400">{fmt(pagoMes || retiradaMes)}</span>
               </div>
             ) : (
               <>
@@ -453,15 +453,13 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
           </div>
         </div>
 
-        {retiradaMes > 0 && (
-          <div className="mt-2">
-            <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
-              <span>Retirada {MESES[mes - 1]}</span>
-              <span>{fmt(pagoMes)} / {fmt(retiradaMes)}</span>
-            </div>
-            <Bar pago={pagoMes} total={retiradaMes} cor={pago ? "bg-green-500" : "bg-amber-500"} />
+        <div className="mt-2">
+          <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
+            <span>Retirada {MESES[mes - 1]}</span>
+            <span>{fmt(pagoMes)} / {fmt(retiradaMes)}</span>
           </div>
-        )}
+          {retiradaMes > 0 && <Bar pago={pagoMes} total={retiradaMes} cor={pago ? "bg-green-500" : "bg-amber-500"} />}
+        </div>
       </div>
 
       {/* Ações */}
