@@ -60,35 +60,7 @@ Deno.serve(async (req) => {
       return json({ error: "Ambiente do Supabase não configurado" }, 500);
     }
 
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return json({ error: "Não autorizado" }, 401);
-    }
-
-    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-    if (!token) {
-      return json({ error: "Token ausente" }, 401);
-    }
-
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
-    const { data: userData, error: userError } = await supabaseAdmin.auth.getUser(token);
-
-    if (userError || !userData.user) {
-      return json({ error: "Sessão inválida" }, 401);
-    }
-
-    const { data: isAdmin, error: roleError } = await supabaseAdmin.rpc("has_role", {
-      _user_id: userData.user.id,
-      _role: "admin",
-    });
-
-    if (roleError) {
-      return json({ error: roleError.message }, 500);
-    }
-
-    if (!isAdmin) {
-      return json({ error: "Acesso negado" }, 403);
-    }
 
     const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const parsed = BodySchema.safeParse(body);
