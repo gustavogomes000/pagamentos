@@ -1185,9 +1185,11 @@ export default function Pagamentos() {
 
         {/* Painel Outros Gastos: Plotagem + Lideranças + Fiscais (filtrado por mês de cadastro) */}
         {!isLoading && (() => {
-          // Filtra suplentes cujo cadastro permite lançar custos pontuais neste mês
-          // Regra: cadastrado no mês X → custos só podem ser lançados a partir do mês X+1
-          const sups = (suplentes || []).filter(s => mes >= getMesInicioPessoa(s.created_at, MES_INICIO_SUPLENTES));
+          // Só mostra suplentes que recebem retirada E estão elegíveis neste mês
+          const sups = (suplentes || []).filter(s => 
+            (s.retirada_mensal_valor || 0) > 0 && 
+            mes >= getMesInicioPessoa(s.created_at, MES_INICIO_SUPLENTES)
+          );
           const allPags = pagamentos || [];
           const supIds = new Set(sups.map(s => s.id));
 
@@ -1196,17 +1198,13 @@ export default function Pagamentos() {
           const totalFisPlan = sups.reduce((a, s) => a + (s.fiscais_qtd || 0) * (s.fiscais_valor_unit || 0), 0);
           const outrosPlan = totalPlotPlan + totalLidPlan + totalFisPlan;
 
+          if (outrosPlan <= 0) return null;
+
           // Filtrar pagamentos apenas dos suplentes da cidade ativa
           const pagsCidade = allPags.filter(p => p.suplente_id && supIds.has(p.suplente_id));
           const totalPlotPago = pagsCidade.filter(p => p.categoria === "plotagem").reduce((a, p) => a + p.valor, 0);
           const totalLidPago = pagsCidade.filter(p => p.categoria === "liderancas").reduce((a, p) => a + p.valor, 0);
           const totalFisPago = pagsCidade.filter(p => p.categoria === "fiscais").reduce((a, p) => a + p.valor, 0);
-          const outrosPago = totalPlotPago + totalLidPago + totalFisPago;
-
-          const outrosFalta = Math.max(0, outrosPlan - outrosPago);
-          const outrosPct = outrosPlan > 0 ? Math.min(100, (outrosPago / outrosPlan) * 100) : 0;
-
-          if (outrosPlan <= 0) return null;
 
           const cats = [
             { label: "Plotagem", plan: totalPlotPlan, pago: totalPlotPago, icon: "🖼️" },
@@ -1216,37 +1214,13 @@ export default function Pagamentos() {
 
           return (
             <div className="bg-gradient-to-br from-card to-muted/30 rounded-2xl border border-primary/20 p-4 shadow-sm space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <Package size={14} className="text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-foreground">Outros Gastos</p>
-                    <p className="text-[9px] text-muted-foreground">Plotagem · Lideranças · Fiscais</p>
-                  </div>
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Package size={14} className="text-primary" />
                 </div>
-                <div className="text-right">
-                  <p className="text-[8px] text-muted-foreground uppercase">Total</p>
-                  <p className="text-sm font-bold text-foreground">{fmt(outrosPlan)}</p>
-                </div>
-              </div>
-
-              {/* Barra de progresso principal */}
-              <div>
-                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-700 ${outrosFalta <= 0 ? "bg-green-500" : "bg-gradient-to-r from-primary to-pink-400"}`}
-                    style={{ width: `${outrosPct}%` }}
-                  />
-                </div>
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-[10px] font-semibold text-green-600 dark:text-green-400">Pago: {fmt(outrosPago)}</span>
-                  {outrosFalta > 0
-                    ? <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">Falta: {fmt(outrosFalta)}</span>
-                    : <span className="text-[10px] font-bold text-green-600">Quitado ✓</span>
-                  }
-                  <span className="text-[10px] font-bold text-primary">{outrosPct.toFixed(0)}%</span>
+                <div>
+                  <p className="text-xs font-bold text-foreground">Outros Gastos</p>
+                  <p className="text-[9px] text-muted-foreground">Plotagem · Lideranças · Fiscais</p>
                 </div>
               </div>
 
