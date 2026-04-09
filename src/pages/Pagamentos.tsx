@@ -569,7 +569,7 @@ function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes,
   const [showHist, setShowHist] = useState(false);
   const totalPago = pagsMes.reduce((a, p) => a + p.valor, 0);
   const faltando = Math.max(0, valorEsperado - totalPago);
-  const isPago = totalPago >= valorEsperado && valorEsperado > 0;
+  const isPago = totalPago >= valorEsperado;
   const catPadrao = tipo === "lideranca" ? "retirada" : "salario";
 
   const handleSave = async (valor: number, obs: string) => {
