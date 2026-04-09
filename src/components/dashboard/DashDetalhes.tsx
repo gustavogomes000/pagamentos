@@ -29,8 +29,8 @@ function DashDetalhesInner({
         </div>
         <div className="space-y-1 pt-1 border-t border-primary/20">
           <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Suplentes (campanha total)</span><span className="font-bold text-foreground">{fmt(totalCampanhaSup)}</span></div>
-          <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Lideranças (mensal × {MES_FIM - MES_INICIO_LID + 1} meses)</span><span className="font-bold text-foreground">{fmt(totalLidMensal * (MES_FIM - MES_INICIO_LID + 1))}</span></div>
-          <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Administrativo (mensal × {MES_FIM - MES_INICIO_ADM + 1} meses)</span><span className="font-bold text-foreground">{fmt(totalAdmMensal * (MES_FIM - MES_INICIO_ADM + 1))}</span></div>
+          <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Lideranças (total período)</span><span className="font-bold text-foreground">{fmt(totalLidFluxo)}</span></div>
+          <div className="flex justify-between text-[11px]"><span className="text-muted-foreground">Administrativo (total período)</span><span className="font-bold text-foreground">{fmt(totalAdmFluxo)}</span></div>
         </div>
         <MiniBar pago={totalPagoAno} total={orcamentoTotal} cor="bg-primary" />
         <div className="flex justify-between text-[10px] text-muted-foreground">
