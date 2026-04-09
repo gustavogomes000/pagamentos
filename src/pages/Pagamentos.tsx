@@ -560,9 +560,9 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
 }
 
 // ─── Card simples: Liderança / Admin ──────────────────────────────────────────
-function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes, ano }: {
+function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes, ano, createdAt }: {
   tipo: "lideranca" | "admin"; id: string; nome: string; subtitulo?: string;
-  valorEsperado: number; pagsMes: Pagamento[]; mes: number; ano: number;
+  valorEsperado: number; pagsMes: Pagamento[]; mes: number; ano: number; createdAt?: string;
 }) {
   const qc = useQueryClient();
   const [paying, setPaying] = useState(false);
