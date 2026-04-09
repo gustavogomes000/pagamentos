@@ -26,6 +26,8 @@ interface Props {
   totalRetiradaMensalSup: number;
   totalLidMensal: number;
   totalAdmMensal: number;
+  totalLidFluxo: number;
+  totalAdmFluxo: number;
   pieData: { name: string; value: number; fill: string }[];
 }
 

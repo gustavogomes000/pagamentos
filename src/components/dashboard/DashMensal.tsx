@@ -1,69 +1,22 @@
 import { memo } from "react";
-import { TrendingUp, Calendar } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { StatusBadge, EmptyState } from "./DashShared";
-import { fmt, fmtK, MESES_LABEL, MESES_FULL, type FluxoMes } from "./types";
-import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  ReferenceLine,
-} from "recharts";
+import { fmt, MESES_FULL, type FluxoMes } from "./types";
 
 interface Props {
   fluxoMensal: FluxoMes[];
-  cumulativeData: { label: string; previsto: number; pago: number }[];
   mesAtual: number;
 }
 
-function DashMensalInner({ fluxoMensal, cumulativeData, mesAtual }: Props) {
-  const tooltipFmt = (value: number) => fmt(value);
+function DashMensalInner({ fluxoMensal, mesAtual }: Props) {
   const filtered = fluxoMensal.filter(m => m.mes >= 2);
 
   if (filtered.length === 0) {
     return <EmptyState message="Nenhum fluxo mensal disponível." />;
   }
 
-  const mesAtualLabel = MESES_LABEL[mesAtual] || "";
-
   return (
     <div className="space-y-4">
-      {/* Gráfico acumulado */}
-      <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-primary uppercase tracking-wider flex items-center gap-1.5 mb-3">
-          <TrendingUp size={14} /> Previsto vs Pago (Acumulado)
-        </h2>
-        <ResponsiveContainer width="100%" height={180}>
-          <AreaChart data={cumulativeData}>
-            <defs>
-              <linearGradient id="gradPrevisto" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="gradPago" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="hsl(var(--status-success))" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="hsl(var(--status-success))" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-            <YAxis tickFormatter={fmtK} tick={{ fontSize: 10 }} width={40} />
-            <Tooltip formatter={tooltipFmt} />
-            {mesAtualLabel && (
-              <ReferenceLine
-                x={mesAtualLabel}
-                stroke="hsl(var(--primary))"
-                strokeDasharray="4 4"
-                strokeWidth={2}
-                label={{ value: "Hoje", position: "top", fontSize: 9, fill: "hsl(var(--primary))" }}
-              />
-            )}
-            <Area type="monotone" dataKey="previsto" name="Previsto" stroke="hsl(var(--primary))" fill="url(#gradPrevisto)" strokeWidth={2} />
-            <Area type="monotone" dataKey="pago" name="Pago" stroke="hsl(var(--status-success))" fill="url(#gradPago)" strokeWidth={2} />
-          </AreaChart>
-        </ResponsiveContainer>
-        <div className="flex justify-center gap-6 mt-1">
-          <span className="flex items-center gap-1.5 text-[10px]"><span className="w-3 h-0.5 rounded bg-primary" /> Previsto</span>
-          <span className="flex items-center gap-1.5 text-[10px]"><span className="w-3 h-0.5 rounded bg-status-success" /> Pago</span>
-        </div>
-      </div>
-
       {/* Tabela mensal */}
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="p-3 border-b border-border">
