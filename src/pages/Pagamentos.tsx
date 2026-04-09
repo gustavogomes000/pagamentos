@@ -586,7 +586,8 @@ function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes,
   const [paying, setPaying] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showHist, setShowHist] = useState(false);
-  const totalPago = pagsMes.reduce((a, p) => a + p.valor, 0);
+  const totalPagoRaw = pagsMes.reduce((a, p) => a + p.valor, 0);
+  const totalPago = Math.min(totalPagoRaw, valorEsperado); // Cap no valor esperado
   const faltando = Math.max(0, valorEsperado - totalPago);
   const isPago = totalPago >= valorEsperado;
   const catPadrao = tipo === "lideranca" ? "retirada" : "salario";
