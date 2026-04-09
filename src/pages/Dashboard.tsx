@@ -238,7 +238,7 @@ export default function Dashboard() {
           tipo: "lideranca", pessoaId: l.id, createdAt: l.created_at,
           mesInicioGlobal: MES_INICIO_LID, pagamentos: aPag, categoria: "retirada",
         });
-        const ateMes = l.retirada_ate_mes || MES_FIM;
+        const ateMes = Math.min(l.retirada_ate_mes || MES_FIM, MES_FIM);
         const mesesAtivos = Math.max(0, ateMes - inicio + 1);
         return a + (l.retirada_mensal_valor || 0) * mesesAtivos;
       }, 0);
@@ -248,7 +248,7 @@ export default function Dashboard() {
           tipo: "admin", pessoaId: ad.id, createdAt: ad.created_at,
           mesInicioGlobal: MES_INICIO_ADM, pagamentos: aPag, categoria: "salario",
         });
-        const ateMes = ad.contrato_ate_mes || MES_FIM;
+        const ateMes = Math.min(ad.contrato_ate_mes || MES_FIM, MES_FIM);
         const mesesAtivos = Math.max(0, ateMes - inicio + 1);
         return a + (ad.valor_contrato || 0) * mesesAtivos;
       }, 0);
