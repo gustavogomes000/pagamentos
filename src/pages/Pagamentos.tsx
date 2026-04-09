@@ -684,7 +684,7 @@ function getMesInicioPessoa(createdAt: string, mesInicioGlobal: number): number 
 // ─── PÁGINA PRINCIPAL ─────────────────────────────────────────────────────────
 export default function Pagamentos() {
   const now = new Date();
-  const [mes, setMes] = useState(now.getMonth() + 1);
+  const [mes, setMes] = useState(Math.max(now.getMonth() + 1, 3));
   const [ano, setAno] = useState(now.getFullYear());
   const [abaAtiva, setAbaAtiva] = useState<"suplentes" | "liderancas" | "admin">("suplentes");
   const [busca, setBusca] = useState("");
