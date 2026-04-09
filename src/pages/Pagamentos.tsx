@@ -977,7 +977,7 @@ export default function Pagamentos() {
                   subtitulo={[l.regiao, l.chave_pix ? `PIX: ${l.chave_pix}` : undefined].filter(Boolean).join(" · ")}
                   valorEsperado={l.retirada_mensal_valor || 0}
                   pagsMes={pagsMes.filter(p => p.lideranca_id === l.id)}
-                  mes={mes} ano={ano} />
+                  mes={mes} ano={ano} createdAt={l.created_at} />
               ))}
             </div>
           )}
@@ -1003,7 +1003,7 @@ export default function Pagamentos() {
                   subtitulo={l.regiao || undefined}
                   valorEsperado={l.retirada_mensal_valor || 0}
                   pagsMes={pagsMes.filter(p => p.lideranca_id === l.id)}
-                  mes={mes} ano={ano} />
+                  mes={mes} ano={ano} createdAt={l.created_at} />
               ))}
             </div>
           )}
@@ -1048,7 +1048,7 @@ export default function Pagamentos() {
                 subtitulo={a.whatsapp || undefined}
                 valorEsperado={a.valor_contrato || 0}
                 pagsMes={pagsMes.filter(p => p.admin_id === a.id)}
-                mes={mes} ano={ano} />
+                mes={mes} ano={ano} createdAt={a.created_at} />
             ))}
           </div>
         )}
@@ -1074,7 +1074,7 @@ export default function Pagamentos() {
                 subtitulo={a.whatsapp || undefined}
                 valorEsperado={a.valor_contrato || 0}
                 pagsMes={pagsMes.filter(p => p.admin_id === a.id)}
-                mes={mes} ano={ano} />
+                mes={mes} ano={ano} createdAt={a.created_at} />
             ))}
           </div>
         )}
