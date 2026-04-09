@@ -209,7 +209,7 @@ export function exportSuplentePDF(s: any) {
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...PINK);
-    doc.text("ASSINATURA DO CANDIDATO", 14, sigY);
+    doc.text("ASSINATURA DO SUPLENTE", 14, sigY);
     sigY += 4;
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.3);
@@ -325,7 +325,7 @@ export function exportFichasLotePDF(list: any[]) {
   doc.save("Fichas_Suplentes_Lote.pdf");
 }
 
-export function exportAllPDF(list: any[], filters?: ExportFilters) {
+export function exportAllPDF(list: any[], filters?: ExportFilters, municipiosMap?: Record<string, string>) {
   const doc = new jsPDF("l", "mm", "a4");
   const w = doc.internal.pageSize.getWidth();
 
@@ -333,25 +333,19 @@ export function exportAllPDF(list: any[], filters?: ExportFilters) {
 
   const totalVotos = list.reduce((a, s) => a + (s.total_votos || 0), 0);
   const totalExpect = list.reduce((a, s) => a + (s.expectativa_votos || 0), 0);
-  const totalPessoas = list.reduce((a, s) => a + (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0), 0);
   const totalCampanha = list.reduce((a, s) => a + calcTotaisFinanceiros(s).totalFinal, 0);
 
   let y = getStartY(filters);
 
-  // Summary cards
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...DARK);
-
+  // Summary cards (sem "Pessoas de Campo")
   const cards = [
-    [`${list.length}`, "Candidatos"],
+    [`${list.length}`, "Suplentes"],
     [fmtN(totalVotos), "Votos"],
     [fmtN(totalExpect), "Expectativa"],
-    [fmtN(totalPessoas), "Pessoas de Campo"],
     [fmt(totalCampanha), "Total Campanhas"],
   ];
 
-  const cardW = (w - 28 - 4 * 4) / 5;
+  const cardW = (w - 28 - 3 * 4) / 4;
   cards.forEach(([val, label], i) => {
     const x = 14 + i * (cardW + 4);
     doc.setFillColor(252, 231, 243);
@@ -371,42 +365,78 @@ export function exportAllPDF(list: any[], filters?: ExportFilters) {
 
   y += 24;
 
-  autoTable(doc, {
-    startY: y,
-    head: [["#", "Nome", "Região", "Partido", "Situação", "Votos", "Expect.", "Lideranças", "Fiscais", "Pessoas", "Total (R$)"]],
-    body: list.map((s, i) => [
-      String(i + 1),
-      s.nome || "",
-      s.regiao_atuacao || "",
-      s.partido || "",
-      s.situacao || "",
-      fmtN(s.total_votos || 0),
-      fmtN(s.expectativa_votos || 0),
-      fmtN(s.liderancas_qtd || 0),
-      fmtN(s.fiscais_qtd || 0),
-      fmtN((s.liderancas_qtd || 0) + (s.fiscais_qtd || 0)),
-      fmt(calcTotaisFinanceiros(s).totalFinal),
-    ]),
-    foot: [["", "TOTAL", "", "", "", fmtN(totalVotos), fmtN(totalExpect), "", "", fmtN(totalPessoas), fmt(totalCampanha)]],
-    margin: { left: 14, right: 14 },
-    headStyles: { fillColor: [...PINK], textColor: [...WHITE], fontStyle: "bold", fontSize: 7, halign: "center" },
-    bodyStyles: { fontSize: 7, textColor: [...DARK] },
-    footStyles: { fillColor: [252, 231, 243], textColor: [...PINK], fontStyle: "bold", fontSize: 7 },
-    alternateRowStyles: { fillColor: [250, 250, 250] },
-    columnStyles: {
-      0: { halign: "center", cellWidth: 8 },
-      1: { cellWidth: 38 },
-      4: { cellWidth: 20 },
-      5: { halign: "right" },
-      6: { halign: "right" },
-      7: { halign: "right" },
-      8: { halign: "right" },
-      9: { halign: "right" },
-      10: { halign: "right" },
-    },
-    theme: "grid",
-    styles: { cellPadding: 2 },
+  // Group by city if municipiosMap provided
+  const groups = groupByCity(list, municipiosMap);
+
+  groups.forEach((group, gIdx) => {
+    if (gIdx > 0) {
+      y += 6;
+      // Check if we need a new page
+      if (y > doc.internal.pageSize.getHeight() - 40) {
+        doc.addPage();
+        y = 20;
+      }
+    }
+
+    if (groups.length > 1) {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...PINK);
+      doc.text(`📍 ${group.cidade}`, 14, y);
+      y += 5;
+    }
+
+    autoTable(doc, {
+      startY: y,
+      head: [["#", "Nome", "Região", "Partido", "Situação", "Votos", "Expect.", "Total (R$)"]],
+      body: group.items.map((s: any, i: number) => [
+        String(i + 1),
+        s.nome || "",
+        s.regiao_atuacao || "",
+        s.partido || "",
+        s.situacao || "",
+        fmtN(s.total_votos || 0),
+        fmtN(s.expectativa_votos || 0),
+        fmt(calcTotaisFinanceiros(s).totalFinal),
+      ]),
+      foot: groups.length > 1 ? [[
+        "", `Subtotal ${group.cidade}`, "", "", "",
+        fmtN(group.items.reduce((a: number, s: any) => a + (s.total_votos || 0), 0)),
+        fmtN(group.items.reduce((a: number, s: any) => a + (s.expectativa_votos || 0), 0)),
+        fmt(group.items.reduce((a: number, s: any) => a + calcTotaisFinanceiros(s).totalFinal, 0)),
+      ]] : [[
+        "", "TOTAL", "", "", "",
+        fmtN(totalVotos), fmtN(totalExpect), fmt(totalCampanha),
+      ]],
+      margin: { left: 14, right: 14 },
+      headStyles: { fillColor: [...PINK], textColor: [...WHITE], fontStyle: "bold", fontSize: 7, halign: "center" },
+      bodyStyles: { fontSize: 7, textColor: [...DARK] },
+      footStyles: { fillColor: [252, 231, 243], textColor: [...PINK], fontStyle: "bold", fontSize: 7 },
+      alternateRowStyles: { fillColor: [250, 250, 250] },
+      columnStyles: {
+        0: { halign: "center", cellWidth: 8 },
+        1: { cellWidth: 42 },
+        4: { cellWidth: 20 },
+        5: { halign: "right" },
+        6: { halign: "right" },
+        7: { halign: "right" },
+      },
+      theme: "grid",
+      styles: { cellPadding: 2 },
+    });
+
+    y = (doc as any).lastAutoTable?.finalY || y + 20;
   });
+
+  // Grand total if multiple cities
+  if (groups.length > 1) {
+    y += 4;
+    if (y > doc.internal.pageSize.getHeight() - 20) { doc.addPage(); y = 20; }
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...PINK);
+    doc.text(`TOTAL GERAL: ${list.length} suplentes — ${fmtN(totalVotos)} votos — ${fmt(totalCampanha)}`, 14, y);
+  }
 
   addFooter(doc);
 
@@ -417,7 +447,22 @@ export function exportAllPDF(list: any[], filters?: ExportFilters) {
   doc.save(`Relatorio_Suplentes${suffix}.pdf`);
 }
 
-export function exportExcel(list: any[], filters?: ExportFilters) {
+// ─── Helper: agrupar por cidade ──────────────────────────────────────────────
+
+function groupByCity(list: any[], municipiosMap?: Record<string, string>) {
+  if (!municipiosMap || Object.keys(municipiosMap).length === 0) {
+    return [{ cidade: "Todos", items: list }];
+  }
+  const map = new Map<string, any[]>();
+  list.forEach(s => {
+    const nome = (s.municipio_id && municipiosMap[s.municipio_id]) || "Sem cidade";
+    if (!map.has(nome)) map.set(nome, []);
+    map.get(nome)!.push(s);
+  });
+  return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([cidade, items]) => ({ cidade, items }));
+}
+
+export function exportExcel(list: any[], filters?: ExportFilters, municipiosMap?: Record<string, string>) {
   const wb = XLSX.utils.book_new();
   const now = `${new Date().toLocaleDateString("pt-BR")} às ${new Date().toLocaleTimeString("pt-BR")}`;
   const filterLabel = getFilterLabel(filters);
@@ -425,7 +470,6 @@ export function exportExcel(list: any[], filters?: ExportFilters) {
   // ── Totalizadores ──
   const totalVotos = list.reduce((a, s) => a + (s.total_votos || 0), 0);
   const totalExpect = list.reduce((a, s) => a + (s.expectativa_votos || 0), 0);
-  const totalPessoas = list.reduce((a, s) => a + (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0), 0);
   const totalCampanha = list.reduce((a, s) => a + calcTotaisFinanceiros(s).totalFinal, 0);
   const totalRetirada = list.reduce((a, s) => a + (s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0), 0);
   const totalPlotagem = list.reduce((a, s) => a + (s.plotagem_qtd || 0) * (s.plotagem_valor_unit || 0), 0);
@@ -440,75 +484,90 @@ export function exportExcel(list: any[], filters?: ExportFilters) {
     filterLabel ? [`Filtros: ${filterLabel}`] : [],
     [],
     ["RESUMO EXECUTIVO"],
-    ["Total de Candidatos", list.length, "", "Total Votos", totalVotos, "", "Total Expect.", totalExpect],
-    ["Total Pessoas de Campo", totalPessoas, "", "Total Retiradas", totalRetirada, "", "Total Campanhas", totalCampanha],
-    ["Total Plotagem", totalPlotagem, "", "Total Lideranças", totalLiderancas, "", "Total Fiscais", totalFiscais],
+    ["Total de Suplentes", list.length, "", "Total Votos", totalVotos, "", "Total Expect.", totalExpect],
+    ["Total Retiradas", totalRetirada, "", "Total Plotagem", totalPlotagem, "", "Total Campanhas", totalCampanha],
+    ["Total Lideranças", totalLiderancas, "", "Total Fiscais", totalFiscais],
     [],
-    ["DADOS DETALHADOS"],
-    [
-      "#", "Nome", "Nome de Urna", "Base Política", "Região", "Telefone", "Cargo", "Partido", "Situação",
-      "Votos", "Expectativa", "Retirada (R$)", "Meses", "Retirada Total",
-      "Plotagem Qtd", "Plotagem Unit.", "Plotagem Total",
-      "Lideranças Qtd", "Lideranças Unit.", "Lideranças Total",
-      "Fiscais Qtd", "Fiscais Unit.", "Fiscais Total",
-      "Total Pessoas", "TOTAL CAMPANHA (R$)"
-    ],
   ];
 
-  // ── Dados ──
-  list.forEach((s, i) => {
-    const t = calcTotaisFinanceiros(s);
-    rows.push([
-      i + 1,
-      s.nome || "",
-      s.numero_urna || "",
-      s.base_politica || "",
-      s.regiao_atuacao || "",
-      s.telefone || "",
-      s.cargo_disputado || "",
-      s.partido || "",
-      s.situacao || "",
-      s.total_votos || 0,
-      s.expectativa_votos || 0,
-      s.retirada_mensal_valor || 0,
-      s.retirada_mensal_meses || 0,
-      t.retirada,
-      s.plotagem_qtd || 0,
-      s.plotagem_valor_unit || 0,
-      t.plotagem,
-      s.liderancas_qtd || 0,
-      s.liderancas_valor_unit || 0,
-      t.liderancas,
-      s.fiscais_qtd || 0,
-      s.fiscais_valor_unit || 0,
-      t.fiscais,
-      (s.liderancas_qtd || 0) + (s.fiscais_qtd || 0),
-      t.totalFinal,
-    ]);
+  const groups = groupByCity(list, municipiosMap);
+  const headers = [
+    "#", "Nome", "Cidade", "Nome de Urna", "Base Política", "Região", "Telefone", "Cargo", "Partido", "Situação",
+    "Votos", "Expectativa", "Retirada (R$)", "Meses", "Retirada Total",
+    "Plotagem Qtd", "Plotagem Unit.", "Plotagem Total",
+    "Lideranças Qtd", "Lideranças Unit.", "Lideranças Total",
+    "Fiscais Qtd", "Fiscais Unit.", "Fiscais Total",
+    "TOTAL CAMPANHA (R$)"
+  ];
+
+  rows.push(["DADOS DETALHADOS"]);
+  rows.push(headers);
+
+  let globalIdx = 0;
+  groups.forEach(group => {
+    if (groups.length > 1) {
+      rows.push([`── ${group.cidade} (${group.items.length} suplentes) ──`]);
+    }
+    group.items.forEach((s: any) => {
+      globalIdx++;
+      const t = calcTotaisFinanceiros(s);
+      rows.push([
+        globalIdx,
+        s.nome || "",
+        group.cidade,
+        s.numero_urna || "",
+        s.base_politica || "",
+        s.regiao_atuacao || "",
+        s.telefone || "",
+        s.cargo_disputado || "",
+        s.partido || "",
+        s.situacao || "",
+        s.total_votos || 0,
+        s.expectativa_votos || 0,
+        s.retirada_mensal_valor || 0,
+        s.retirada_mensal_meses || 0,
+        t.retirada,
+        s.plotagem_qtd || 0,
+        s.plotagem_valor_unit || 0,
+        t.plotagem,
+        s.liderancas_qtd || 0,
+        s.liderancas_valor_unit || 0,
+        t.liderancas,
+        s.fiscais_qtd || 0,
+        s.fiscais_valor_unit || 0,
+        t.fiscais,
+        t.totalFinal,
+      ]);
+    });
+    if (groups.length > 1) {
+      const subVotos = group.items.reduce((a: number, s: any) => a + (s.total_votos || 0), 0);
+      const subCamp = group.items.reduce((a: number, s: any) => a + calcTotaisFinanceiros(s).totalFinal, 0);
+      rows.push(["", `Subtotal ${group.cidade}`, "", "", "", "", "", "", "", "", subVotos, "", "", "", "", "", "", "", "", "", "", "", "", "", subCamp]);
+    }
   });
 
   // ── Linha TOTAL ──
   rows.push([
-    "", "TOTAL GERAL", "", "", "", "", "", "", "",
+    "", "TOTAL GERAL", "", "", "", "", "", "", "", "",
     totalVotos, totalExpect,
     "", "", totalRetirada,
     "", "", totalPlotagem,
     "", "", totalLiderancas,
     "", "", totalFiscais,
-    totalPessoas, totalCampanha,
+    totalCampanha,
   ]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
 
   // Larguras
   ws["!cols"] = [
-    { wch: 4 }, { wch: 30 }, { wch: 20 }, { wch: 28 }, { wch: 22 }, { wch: 16 }, { wch: 12 },
+    { wch: 4 }, { wch: 30 }, { wch: 18 }, { wch: 20 }, { wch: 28 }, { wch: 22 }, { wch: 16 }, { wch: 12 },
     { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 10 },
     { wch: 14 }, { wch: 6 }, { wch: 14 },
     { wch: 8 }, { wch: 12 }, { wch: 14 },
     { wch: 8 }, { wch: 12 }, { wch: 14 },
     { wch: 8 }, { wch: 12 }, { wch: 14 },
-    { wch: 8 }, { wch: 16 },
+    { wch: 16 },
   ];
 
   const lastCol = 24;
@@ -520,9 +579,9 @@ export function exportExcel(list: any[], filters?: ExportFilters) {
     { s: { r: 10, c: 0 }, e: { r: 10, c: lastCol } },
   ];
 
-  const dataStartRow = 12;
-  const brlCols = [11, 13, 15, 16, 18, 19, 21, 22, 24];
-  for (let r = dataStartRow; r < rows.length; r++) {
+  // Formatos BRL
+  const brlCols = [12, 14, 16, 17, 19, 20, 22, 23, 24];
+  for (let r = 12; r < rows.length; r++) {
     brlCols.forEach(c => {
       const addr = XLSX.utils.encode_cell({ r, c });
       if (ws[addr] && typeof ws[addr].v === "number") {
