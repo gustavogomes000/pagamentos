@@ -769,9 +769,12 @@ export default function Pagamentos() {
   const admPlanejado = admComValor.reduce((a, p) => a + (p.valor_contrato || 0), 0);
   const totalPlanejado = supPlanejado + lidPlanejado + admPlanejado;
 
-  const supPago = pagsMes.filter(p => p.tipo_pessoa === "suplente").reduce((a, p) => a + p.valor, 0);
-  const lidPago = pagsMes.filter(p => p.tipo_pessoa === "lideranca").reduce((a, p) => a + p.valor, 0);
-  const admPago = pagsMes.filter(p => p.tipo_pessoa === "admin").reduce((a, p) => a + p.valor, 0);
+  const supIds = new Set(supComValor.map(s => s.id));
+  const lidIds = new Set(lidComValor.map(l => l.id));
+  const admIds = new Set(admComValor.map(a => a.id));
+  const supPago = pagsMes.filter(p => p.tipo_pessoa === "suplente" && supIds.has(p.suplente_id || "")).reduce((a, p) => a + p.valor, 0);
+  const lidPago = pagsMes.filter(p => p.tipo_pessoa === "lideranca" && lidIds.has(p.lideranca_id || "")).reduce((a, p) => a + p.valor, 0);
+  const admPago = pagsMes.filter(p => p.tipo_pessoa === "admin" && admIds.has(p.admin_id || "")).reduce((a, p) => a + p.valor, 0);
   const totalPago = supPago + lidPago + admPago;
 
   // Calcular "falta" por pessoa (não permite que excesso de um compense falta de outro)
