@@ -255,11 +255,15 @@ export default function Dashboard() {
     });
   }, [fluxoMensal]);
 
+  const totalSupFluxo = fluxoMensal.reduce((a, m) => a + m.suplentes, 0);
+  const totalLidFluxo = fluxoMensal.reduce((a, m) => a + m.liderancas, 0);
+  const totalAdmFluxo = fluxoMensal.reduce((a, m) => a + m.admin, 0);
+
   const pieData = useMemo(() => [
-    { name: "Suplentes", value: financials.totalCampanhaSup, fill: COLORS_CAT.suplentes },
-    { name: "Lideranças", value: financials.totalLidMensal * (MES_FIM - MES_INICIO_LID + 1), fill: COLORS_CAT.liderancas },
-    { name: "Administrativo", value: financials.totalAdmMensal * (MES_FIM - MES_INICIO_ADM + 1), fill: COLORS_CAT.admin },
-  ].filter(d => d.value > 0), [financials]);
+    { name: "Suplentes", value: totalSupFluxo + custosPontuais, fill: COLORS_CAT.suplentes },
+    { name: "Lideranças", value: totalLidFluxo, fill: COLORS_CAT.liderancas },
+    { name: "Administrativo", value: totalAdmFluxo, fill: COLORS_CAT.admin },
+  ].filter(d => d.value > 0), [totalSupFluxo, totalLidFluxo, totalAdmFluxo, custosPontuais]);
 
   // ─── DADOS POR CIDADE ─────────────────────────────────────────────
   const dadosPorCidade = useMemo<CidadeData[]>(() => {
