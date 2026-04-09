@@ -759,7 +759,7 @@ export default function Pagamentos() {
 
   const isLoading = loadS || loadL || loadA || loadP;
   const MES_MIN_GLOBAL = 3; // Março é o primeiro mês de referência
-  const MES_MAX_GLOBAL = 9; // Setembro é o último mês de referência (pago até 10/outubro)
+  const MES_MAX_GLOBAL = 10; // Outubro é o último mês de referência
   const navMes = (dir: -1 | 1) => {
     let m = mes + dir, a = ano;
     if (m < 1) { m = 12; a--; } if (m > 12) { m = 1; a++; }
