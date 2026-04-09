@@ -224,7 +224,7 @@ export default function Dashboard() {
 
   const cumulativeData = useMemo(() => {
     let acumPrevisto = 0, acumPago = 0;
-    return fluxoMensal.filter(m => m.mes >= 2).map(m => {
+    return fluxoMensal.filter(m => m.mes >= MES_INICIO_SUP).map(m => {
       acumPrevisto += m.total;
       acumPago += m.pago;
       return { label: MESES_LABEL[m.mes], previsto: acumPrevisto, pago: acumPago };
