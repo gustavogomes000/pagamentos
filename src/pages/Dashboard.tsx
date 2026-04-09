@@ -520,8 +520,8 @@ export default function Dashboard() {
                 totalPagoAno={totalPagoAno}
                 saldoRestante={saldoRestante}
                 totalCampanhaSup={financials.totalCampanhaSup}
-                totalLidMensal={financials.totalLidMensal}
-                totalAdmMensal={financials.totalAdmMensal}
+                totalLidFluxo={totalLidFluxo}
+                totalAdmFluxo={totalAdmFluxo}
                 dadosPorCidade={dadosPorCidade}
               />
             )}
