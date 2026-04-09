@@ -390,7 +390,8 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
   const [showFicha, setShowFicha] = useState(false);
 
   const retiradaMes = s.retirada_mensal_valor || 0;
-  const pagoMes = pagsMes.reduce((a, p) => a + p.valor, 0);
+  const pagoMesRaw = pagsMes.reduce((a, p) => a + p.valor, 0);
+  const pagoMes = Math.min(pagoMesRaw, retiradaMes); // Cap no valor mensal
   const faltaMes = Math.max(0, retiradaMes - pagoMes);
   const pago = pagoMes >= retiradaMes;
 
@@ -398,11 +399,20 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
   const totalPagoGeral = pagsTodos.reduce((a, p) => a + p.valor, 0);
 
   const pagoRetiradaMes = pagsMes.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0);
+  // Cap: para retirada, pago no mês não pode exceder o valor mensal
+  const pagoRetiradaMesCap = Math.min(pagoRetiradaMes, retiradaMes);
+
+  const rawPagoRetirada = pagsTodos.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0);
+  const rawPagoPlotagem = pagsTodos.filter(p => p.categoria === "plotagem").reduce((a, p) => a + p.valor, 0);
+  const rawPagoLiderancas = pagsTodos.filter(p => p.categoria === "liderancas").reduce((a, p) => a + p.valor, 0);
+  const rawPagoFiscais = pagsTodos.filter(p => p.categoria === "fiscais").reduce((a, p) => a + p.valor, 0);
+
+  // Para retirada: cap pago no planejado (não pode pagar mais que o contratado)
   const categorias = [
-    { key: "retirada", label: "Retirada", planejado: totais.retirada, pago: pagsTodos.filter(p => p.categoria === "retirada").reduce((a, p) => a + p.valor, 0), detalhe: `${fmt(retiradaMes)} × ${s.retirada_mensal_meses || 0}m`, qtd: retiradaMes, valorUnit: s.retirada_mensal_meses || 0, faltaMes: Math.max(0, retiradaMes - pagoRetiradaMes) },
-    { key: "plotagem", label: "Plotagem", planejado: totais.plotagem, pago: pagsTodos.filter(p => p.categoria === "plotagem").reduce((a, p) => a + p.valor, 0), detalhe: `${s.plotagem_qtd || 0} × ${fmt(s.plotagem_valor_unit || 0)}`, qtd: s.plotagem_qtd || 0, valorUnit: s.plotagem_valor_unit || 0 },
-    { key: "liderancas", label: "Lideranças", planejado: totais.liderancas, pago: pagsTodos.filter(p => p.categoria === "liderancas").reduce((a, p) => a + p.valor, 0), detalhe: `${s.liderancas_qtd || 0} × ${fmt(s.liderancas_valor_unit || 0)}`, qtd: s.liderancas_qtd || 0, valorUnit: s.liderancas_valor_unit || 0 },
-    { key: "fiscais", label: "Fiscais", planejado: totais.fiscais, pago: pagsTodos.filter(p => p.categoria === "fiscais").reduce((a, p) => a + p.valor, 0), detalhe: `${s.fiscais_qtd || 0} × ${fmt(s.fiscais_valor_unit || 0)}`, qtd: s.fiscais_qtd || 0, valorUnit: s.fiscais_valor_unit || 0 },
+    { key: "retirada", label: "Retirada", planejado: totais.retirada, pago: Math.min(rawPagoRetirada, totais.retirada), detalhe: `${fmt(retiradaMes)} × ${s.retirada_mensal_meses || 0}m`, qtd: retiradaMes, valorUnit: s.retirada_mensal_meses || 0, faltaMes: Math.max(0, retiradaMes - pagoRetiradaMesCap) },
+    { key: "plotagem", label: "Plotagem", planejado: totais.plotagem, pago: rawPagoPlotagem, detalhe: `${s.plotagem_qtd || 0} × ${fmt(s.plotagem_valor_unit || 0)}`, qtd: s.plotagem_qtd || 0, valorUnit: s.plotagem_valor_unit || 0 },
+    { key: "liderancas", label: "Lideranças", planejado: totais.liderancas, pago: rawPagoLiderancas, detalhe: `${s.liderancas_qtd || 0} × ${fmt(s.liderancas_valor_unit || 0)}`, qtd: s.liderancas_qtd || 0, valorUnit: s.liderancas_valor_unit || 0 },
+    { key: "fiscais", label: "Fiscais", planejado: totais.fiscais, pago: rawPagoFiscais, detalhe: `${s.fiscais_qtd || 0} × ${fmt(s.fiscais_valor_unit || 0)}`, qtd: s.fiscais_qtd || 0, valorUnit: s.fiscais_valor_unit || 0 },
   ].filter(c => c.planejado > 0 || c.qtd > 0);
 
   const handleSave = async (valor: number, obs: string, cat: string) => {
@@ -576,7 +586,8 @@ function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes,
   const [paying, setPaying] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showHist, setShowHist] = useState(false);
-  const totalPago = pagsMes.reduce((a, p) => a + p.valor, 0);
+  const totalPagoRaw = pagsMes.reduce((a, p) => a + p.valor, 0);
+  const totalPago = Math.min(totalPagoRaw, valorEsperado); // Cap no valor esperado
   const faltando = Math.max(0, valorEsperado - totalPago);
   const isPago = totalPago >= valorEsperado;
   const catPadrao = tipo === "lideranca" ? "retirada" : "salario";
