@@ -38,7 +38,7 @@ function DashResumoInner({
   totalLiderancasQtd, totalFiscais, totalPlotagem, totalPlotagemVal,
   totalCampanhaSup, totalRetiradaSup, totalLiderancasVal, totalFiscaisVal,
   totalRetiradaMensalSup, totalLidMensal, totalAdmMensal,
-  pieData,
+  totalLidFluxo, totalAdmFluxo,
 }: Props) {
   const tooltipFmt = (value: number) => fmt(value);
 
@@ -193,7 +193,7 @@ function DashResumoInner({
             </div>
             <p className="text-sm font-bold text-primary shrink-0">{fmt(totalLidMensal)}/mês</p>
           </div>
-          <MiniBar pago={totalLidMensal * 8} total={orcamentoTotal} cor="bg-primary" />
+          <MiniBar pago={totalLidFluxo} total={orcamentoTotal} cor="bg-primary" />
           <div className="space-y-0.5 pl-2 border-l-2 border-primary/20">
             {lidList.map(l => (
               <div key={l.id} className="flex justify-between text-[11px]">
@@ -213,7 +213,7 @@ function DashResumoInner({
             </div>
             <p className="text-sm font-bold text-primary shrink-0">{fmt(totalAdmMensal)}/mês</p>
           </div>
-          <MiniBar pago={totalAdmMensal * 7} total={orcamentoTotal} cor="bg-primary" />
+          <MiniBar pago={totalAdmFluxo} total={orcamentoTotal} cor="bg-primary" />
           <div className="space-y-0.5 pl-2 border-l-2 border-primary/20">
             {admList.map(a => (
               <div key={a.id} className="flex justify-between text-[11px]">
