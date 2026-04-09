@@ -390,7 +390,8 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
   const [showFicha, setShowFicha] = useState(false);
 
   const retiradaMes = s.retirada_mensal_valor || 0;
-  const pagoMes = pagsMes.reduce((a, p) => a + p.valor, 0);
+  const pagoMesRaw = pagsMes.reduce((a, p) => a + p.valor, 0);
+  const pagoMes = Math.min(pagoMesRaw, retiradaMes); // Cap no valor mensal
   const faltaMes = Math.max(0, retiradaMes - pagoMes);
   const pago = pagoMes >= retiradaMes;
 
