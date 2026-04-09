@@ -885,293 +885,381 @@ export function exportAuditPDF(data: AuditExportData) {
   const { suplentes, liderancas, administrativo, pagamentos, municipiosMap } = data;
   const doc = new jsPDF("l", "mm", "a4");
   const w = doc.internal.pageSize.getWidth();
-  const MESES_RANGE = Array.from({ length: MES_FIM - 2 }, (_, i) => i + 3); // Mar–Set
+  const h = doc.internal.pageSize.getHeight();
+  const MESES_RANGE = Array.from({ length: MES_FIM - 2 }, (_, i) => i + 3); // Mar-Set
+  const mesHeaders = MESES_RANGE.map(m => MESES_LABEL[m]);
+  const pag2026 = pagamentos.filter(p => p.ano === 2026);
 
-  addHeader(doc, "RELATÓRIO DE AUDITORIA");
+  // Helper: check page break
+  const checkPage = (needed = 30) => { if (y > h - needed) { doc.addPage(); y = 20; } };
 
-  let y = 44;
+  // Helper: section title
+  const sectionTitle = (num: string, text: string) => {
+    checkPage(35);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...PINK);
+    doc.text(`${num}. ${text}`, 14, y);
+    y += 6;
+  };
 
-  // ── RESUMO GERAL ──
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...PINK);
-  doc.text("1. RESUMO GERAL", 14, y);
-  y += 5;
-
-  const totalSupRetirada = suplentes.reduce((a: number, s: any) => a + ((s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0)), 0);
-  const totalSupCampanha = suplentes.reduce((a: number, s: any) => a + calcTotaisFinanceiros(s).totalFinal, 0);
-  const totalLidContrato = liderancas.reduce((a: number, l: any) => {
-    const inicio = getMesInicioComHistorico({ tipo: "lideranca", pessoaId: l.id, createdAt: l.created_at, mesInicioGlobal: MES_INICIO_LID, pagamentos, categoria: "retirada" });
-    const ateMes = Math.min(l.retirada_ate_mes || MES_FIM, MES_FIM);
-    return a + (l.retirada_mensal_valor || 0) * Math.max(0, ateMes - inicio + 1);
-  }, 0);
-  const totalAdmContrato = administrativo.reduce((a: number, ad: any) => {
-    const inicio = getMesInicioComHistorico({ tipo: "admin", pessoaId: ad.id, createdAt: ad.created_at, mesInicioGlobal: MES_INICIO_ADM, pagamentos, categoria: "salario" });
-    const ateMes = Math.min(ad.contrato_ate_mes || MES_FIM, MES_FIM);
-    return a + (ad.valor_contrato || 0) * Math.max(0, ateMes - inicio + 1);
-  }, 0);
-  const orcamentoTotal = totalSupCampanha + totalLidContrato + totalAdmContrato;
-  const totalPago = pagamentos.filter(p => p.ano === 2026).reduce((a: number, p: any) => a + (p.valor || 0), 0);
-
-  autoTable(doc, {
-    startY: y,
-    head: [["Categoria", "Qtd", "Orçamento Período", "Pago", "Saldo"]],
-    body: [
-      ["Suplentes", String(suplentes.length), fmt(totalSupCampanha), fmt(pagamentos.filter(p => p.ano === 2026 && p.suplente_id).reduce((a: number, p: any) => a + (p.valor || 0), 0)), fmt(totalSupCampanha - pagamentos.filter(p => p.ano === 2026 && p.suplente_id).reduce((a: number, p: any) => a + (p.valor || 0), 0))],
-      ["Lideranças", String(liderancas.length), fmt(totalLidContrato), fmt(pagamentos.filter(p => p.ano === 2026 && p.lideranca_id).reduce((a: number, p: any) => a + (p.valor || 0), 0)), fmt(totalLidContrato - pagamentos.filter(p => p.ano === 2026 && p.lideranca_id).reduce((a: number, p: any) => a + (p.valor || 0), 0))],
-      ["Administrativo", String(administrativo.length), fmt(totalAdmContrato), fmt(pagamentos.filter(p => p.ano === 2026 && p.admin_id).reduce((a: number, p: any) => a + (p.valor || 0), 0)), fmt(totalAdmContrato - pagamentos.filter(p => p.ano === 2026 && p.admin_id).reduce((a: number, p: any) => a + (p.valor || 0), 0))],
-    ],
-    foot: [["TOTAL", String(suplentes.length + liderancas.length + administrativo.length), fmt(orcamentoTotal), fmt(totalPago), fmt(orcamentoTotal - totalPago)]],
-    margin: { left: 14, right: 14 },
-    headStyles: { fillColor: [...PINK], textColor: [...WHITE], fontStyle: "bold", fontSize: 7 },
-    bodyStyles: { fontSize: 7, textColor: [...DARK] },
-    footStyles: { fillColor: [252, 231, 243], textColor: [...PINK], fontStyle: "bold", fontSize: 7 },
-    theme: "grid",
-    styles: { cellPadding: 2 },
-    columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } },
-  });
-
-  y = (doc as any).lastAutoTable?.finalY + 8 || y + 30;
-
-  // ── 2. SUPLENTES — FLUXO MENSAL POR CIDADE ──
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...PINK);
-  doc.text("2. SUPLENTES — RETIRADA MENSAL POR CIDADE E PESSOA", 14, y);
-  y += 5;
-
-  const cidadesIds = [...new Set(suplentes.map((s: any) => s.municipio_id).filter(Boolean))];
-  cidadesIds.sort((a, b) => (municipiosMap[a] || "").localeCompare(municipiosMap[b] || ""));
-
-  cidadesIds.forEach(cidadeId => {
-    const nomeCidade = municipiosMap[cidadeId] || "Sem cidade";
-    const supsCidade = suplentes.filter((s: any) => s.municipio_id === cidadeId);
-    if (!supsCidade.length) return;
-
-    if (y > doc.internal.pageSize.getHeight() - 30) { doc.addPage(); y = 20; }
-
+  // Helper: city subtitle
+  const cityTitle = (nome: string, extra: string) => {
+    checkPage(25);
+    doc.setFillColor(252, 231, 243);
+    doc.roundedRect(14, y - 3, w - 28, 8, 2, 2, "F");
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(...DARK);
-    doc.text(`>> ${nomeCidade} (${supsCidade.length} suplentes)`, 14, y);
-    y += 4;
+    doc.setTextColor(...PINK);
+    doc.text(`${nome} ${extra}`, 18, y + 2);
+    y += 8;
+  };
 
-    const mesHeaders = MESES_RANGE.map(m => MESES_LABEL[m]);
-    const head = [["#", "Nome", "Mensal (R$)", "Meses", ...mesHeaders, "Total Retirada", "Total Campanha"]];
+  // Collect all city IDs
+  const allCidadeIds = [...new Set([
+    ...suplentes.map((s: any) => s.municipio_id),
+    ...liderancas.map((l: any) => l.municipio_id),
+    ...administrativo.map((a: any) => a.municipio_id),
+  ].filter(Boolean))].sort((a, b) => (municipiosMap[a] || "").localeCompare(municipiosMap[b] || ""));
 
-    const body = supsCidade.map((s: any, i: number) => {
-      const inicio = getMesInicioComHistorico({ tipo: "suplente", pessoaId: s.id, createdAt: s.created_at, mesInicioGlobal: MES_INICIO_SUP, pagamentos, categoria: "retirada" });
-      const numMeses = s.retirada_mensal_meses || 0;
-      const mesFim = inicio + numMeses - 1;
-      const valorMensal = s.retirada_mensal_valor || 0;
+  addHeader(doc, "RELATORIO DE AUDITORIA");
+  let y = 44;
 
-      const mesesCols = MESES_RANGE.map(m => {
-        if (m >= inicio && m <= mesFim) {
-          const pago = pagamentos.filter(p => p.ano === 2026 && p.suplente_id === s.id && p.mes === m && p.categoria === "retirada").reduce((a: number, p: any) => a + (p.valor || 0), 0);
-          return pago > 0 ? `${fmt(valorMensal)}\n✓ ${fmt(pago)}` : fmt(valorMensal);
-        }
-        return "—";
-      });
+  // ════════════════════════════════════════════════════════════
+  // POR CIDADE: Fluxo mensal consolidado (como a aba Mensal)
+  // ════════════════════════════════════════════════════════════
 
-      const t = calcTotaisFinanceiros(s);
-      return [String(i + 1), s.nome || "", fmt(valorMensal), String(numMeses), ...mesesCols, fmt(t.retirada), fmt(t.totalFinal)];
-    });
+  let cidadeIdx = 0;
+  const cidadeTotals: { nome: string; orcSup: number; orcLid: number; orcAdm: number; orcTotal: number; pago: number }[] = [];
 
-    // Subtotais da cidade
-    const subMeses = MESES_RANGE.map(m => {
-      const previsto = supsCidade.reduce((a: number, s: any) => {
+  allCidadeIds.forEach(cidadeId => {
+    cidadeIdx++;
+    const nomeCidade = municipiosMap[cidadeId] || "Sem cidade";
+    const supCid = suplentes.filter((s: any) => s.municipio_id === cidadeId);
+    const lidCid = liderancas.filter((l: any) => l.municipio_id === cidadeId);
+    const admCid = administrativo.filter((a: any) => a.municipio_id === cidadeId);
+    if (!supCid.length && !lidCid.length && !admCid.length) return;
+
+    if (cidadeIdx > 1) { doc.addPage(); y = 20; }
+
+    // ── City header ──
+    sectionTitle(String(cidadeIdx), `${nomeCidade.toUpperCase()} -- FLUXO MENSAL`);
+
+    // ── Monthly flow table (like Mensal tab) ──
+    const flowBody = MESES_RANGE.map(m => {
+      let supMes = 0;
+      supCid.forEach((s: any) => {
         const inicio = getMesInicioComHistorico({ tipo: "suplente", pessoaId: s.id, createdAt: s.created_at, mesInicioGlobal: MES_INICIO_SUP, pagamentos, categoria: "retirada" });
         const numMeses = s.retirada_mensal_meses || 0;
         const mesFim = inicio + numMeses - 1;
-        return (m >= inicio && m <= mesFim) ? a + (s.retirada_mensal_valor || 0) : a;
-      }, 0);
-      return fmt(previsto);
-    });
-    const subRetirada = fmt(supsCidade.reduce((a: number, s: any) => a + ((s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0)), 0));
-    const subCampanha = fmt(supsCidade.reduce((a: number, s: any) => a + calcTotaisFinanceiros(s).totalFinal, 0));
-
-    autoTable(doc, {
-      startY: y,
-      head,
-      body,
-      foot: [["", `SUBTOTAL ${nomeCidade.toUpperCase()}`, "", "", ...subMeses, subRetirada, subCampanha]],
-      margin: { left: 14, right: 14 },
-      headStyles: { fillColor: [...PINK], textColor: [...WHITE], fontStyle: "bold", fontSize: 5.5, halign: "center" },
-      bodyStyles: { fontSize: 5.5, textColor: [...DARK] },
-      footStyles: { fillColor: [252, 231, 243], textColor: [...PINK], fontStyle: "bold", fontSize: 5.5 },
-      alternateRowStyles: { fillColor: [250, 250, 250] },
-      columnStyles: {
-        0: { halign: "center", cellWidth: 6 },
-        1: { cellWidth: 30 },
-        2: { halign: "right", cellWidth: 16 },
-        3: { halign: "center", cellWidth: 8 },
-      },
-      theme: "grid",
-      styles: { cellPadding: 1.5, overflow: "linebreak" },
-    });
-
-    y = (doc as any).lastAutoTable?.finalY + 6 || y + 20;
-  });
-
-  // ── 3. LIDERANÇAS — FLUXO MENSAL POR CIDADE ──
-  if (y > doc.internal.pageSize.getHeight() - 30) { doc.addPage(); y = 20; }
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...PINK);
-  doc.text("3. LIDERANÇAS — RETIRADA MENSAL POR CIDADE E PESSOA", 14, y);
-  y += 5;
-
-  const cidadesLid = [...new Set(liderancas.map((l: any) => l.municipio_id).filter(Boolean))];
-  cidadesLid.sort((a, b) => (municipiosMap[a] || "").localeCompare(municipiosMap[b] || ""));
-
-  cidadesLid.forEach(cidadeId => {
-    const nomeCidade = municipiosMap[cidadeId] || "Sem cidade";
-    const lidCidade = liderancas.filter((l: any) => l.municipio_id === cidadeId);
-    if (!lidCidade.length) return;
-
-    if (y > doc.internal.pageSize.getHeight() - 30) { doc.addPage(); y = 20; }
-
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...DARK);
-    doc.text(`>> ${nomeCidade} (${lidCidade.length} lideranças)`, 14, y);
-    y += 4;
-
-    const mesHeaders = MESES_RANGE.map(m => MESES_LABEL[m]);
-
-    autoTable(doc, {
-      startY: y,
-      head: [["#", "Nome", "Setor", "Mensal (R$)", ...mesHeaders, "Total Contrato"]],
-      body: lidCidade.map((l: any, i: number) => {
+        if (m >= inicio && m <= mesFim) supMes += (s.retirada_mensal_valor || 0);
+      });
+      let lidMes = 0;
+      lidCid.forEach((l: any) => {
         const inicio = getMesInicioComHistorico({ tipo: "lideranca", pessoaId: l.id, createdAt: l.created_at, mesInicioGlobal: MES_INICIO_LID, pagamentos, categoria: "retirada" });
         const ateMes = Math.min(l.retirada_ate_mes || MES_FIM, MES_FIM);
-        const valorMensal = l.retirada_mensal_valor || 0;
-        const mesesCols = MESES_RANGE.map(m => {
-          if (m >= inicio && m <= ateMes) {
-            const pago = pagamentos.filter(p => p.ano === 2026 && p.lideranca_id === l.id && p.mes === m && p.categoria === "retirada").reduce((a: number, p: any) => a + (p.valor || 0), 0);
-            return pago > 0 ? `${fmt(valorMensal)}\n✓ ${fmt(pago)}` : fmt(valorMensal);
-          }
-          return "—";
-        });
-        const totalContrato = valorMensal * Math.max(0, ateMes - inicio + 1);
-        return [String(i + 1), l.nome || "", l.regiao || "", fmt(valorMensal), ...mesesCols, fmt(totalContrato)];
-      }),
-      margin: { left: 14, right: 14 },
-      headStyles: { fillColor: [147, 51, 234], textColor: [...WHITE], fontStyle: "bold", fontSize: 5.5, halign: "center" },
-      bodyStyles: { fontSize: 5.5, textColor: [...DARK] },
-      alternateRowStyles: { fillColor: [250, 250, 250] },
-      theme: "grid",
-      styles: { cellPadding: 1.5, overflow: "linebreak" },
-      columnStyles: { 0: { halign: "center", cellWidth: 6 }, 1: { cellWidth: 28 }, 2: { cellWidth: 20 } },
-    });
-
-    y = (doc as any).lastAutoTable?.finalY + 6 || y + 20;
-  });
-
-  // ── 4. ADMINISTRATIVO — FLUXO MENSAL POR CIDADE ──
-  if (y > doc.internal.pageSize.getHeight() - 30) { doc.addPage(); y = 20; }
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...PINK);
-  doc.text("4. ADMINISTRATIVO — SALÁRIO MENSAL POR CIDADE E PESSOA", 14, y);
-  y += 5;
-
-  const cidadesAdm = [...new Set(administrativo.map((a: any) => a.municipio_id).filter(Boolean))];
-  cidadesAdm.sort((a, b) => (municipiosMap[a] || "").localeCompare(municipiosMap[b] || ""));
-
-  cidadesAdm.forEach(cidadeId => {
-    const nomeCidade = municipiosMap[cidadeId] || "Sem cidade";
-    const admCidade = administrativo.filter((a: any) => a.municipio_id === cidadeId);
-    if (!admCidade.length) return;
-
-    if (y > doc.internal.pageSize.getHeight() - 30) { doc.addPage(); y = 20; }
-
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...DARK);
-    doc.text(`>> ${nomeCidade} (${admCidade.length} administrativos)`, 14, y);
-    y += 4;
-
-    const mesHeaders = MESES_RANGE.map(m => MESES_LABEL[m]);
-
-    autoTable(doc, {
-      startY: y,
-      head: [["#", "Nome", "Mensal (R$)", ...mesHeaders, "Total Contrato"]],
-      body: admCidade.map((ad: any, i: number) => {
+        if (m >= inicio && m <= ateMes) lidMes += (l.retirada_mensal_valor || 0);
+      });
+      let admMes = 0;
+      admCid.forEach((ad: any) => {
         const inicio = getMesInicioComHistorico({ tipo: "admin", pessoaId: ad.id, createdAt: ad.created_at, mesInicioGlobal: MES_INICIO_ADM, pagamentos, categoria: "salario" });
         const ateMes = Math.min(ad.contrato_ate_mes || MES_FIM, MES_FIM);
-        const valorMensal = ad.valor_contrato || 0;
-        const mesesCols = MESES_RANGE.map(m => {
-          if (m >= inicio && m <= ateMes) {
-            const pago = pagamentos.filter(p => p.ano === 2026 && p.admin_id === ad.id && p.mes === m && p.categoria === "salario").reduce((a: number, p: any) => a + (p.valor || 0), 0);
-            return pago > 0 ? `${fmt(valorMensal)}\n✓ ${fmt(pago)}` : fmt(valorMensal);
-          }
-          return "—";
-        });
-        const totalContrato = valorMensal * Math.max(0, ateMes - inicio + 1);
-        return [String(i + 1), ad.nome || "", fmt(valorMensal), ...mesesCols, fmt(totalContrato)];
-      }),
-      margin: { left: 14, right: 14 },
-      headStyles: { fillColor: [59, 130, 246], textColor: [...WHITE], fontStyle: "bold", fontSize: 5.5, halign: "center" },
-      bodyStyles: { fontSize: 5.5, textColor: [...DARK] },
-      alternateRowStyles: { fillColor: [250, 250, 250] },
-      theme: "grid",
-      styles: { cellPadding: 1.5, overflow: "linebreak" },
-      columnStyles: { 0: { halign: "center", cellWidth: 6 }, 1: { cellWidth: 30 } },
+        if (m >= inicio && m <= ateMes) admMes += (ad.valor_contrato || 0);
+      });
+      const total = supMes + lidMes + admMes;
+      const supIds = new Set(supCid.map((s: any) => s.id));
+      const lidIds = new Set(lidCid.map((l: any) => l.id));
+      const admIds = new Set(admCid.map((a: any) => a.id));
+      const pagoMes = pag2026.filter(p => p.mes === m && (
+        (p.suplente_id && supIds.has(p.suplente_id)) ||
+        (p.lideranca_id && lidIds.has(p.lideranca_id)) ||
+        (p.admin_id && admIds.has(p.admin_id))
+      )).reduce((a, p) => a + (p.valor || 0), 0);
+      return [MESES_LABEL[m], fmt(supMes), fmt(lidMes), fmt(admMes), fmt(total), fmt(pagoMes), fmt(Math.max(0, total - pagoMes))];
     });
 
-    y = (doc as any).lastAutoTable?.finalY + 6 || y + 20;
-  });
+    // Totals row
+    const cols = [1, 2, 3, 4, 5, 6];
+    const totals = cols.map(c => {
+      let sum = 0;
+      flowBody.forEach(row => { sum += parseFloat(String(row[c]).replace(/[^\d,-]/g, "").replace(",", ".")) || 0; });
+      return sum;
+    });
 
-  // ── 5. TODOS OS PAGAMENTOS REALIZADOS ──
-  if (y > doc.internal.pageSize.getHeight() - 30) { doc.addPage(); y = 20; }
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(...PINK);
-  doc.text("5. REGISTRO DE PAGAMENTOS REALIZADOS", 14, y);
-  y += 5;
+    // Recalculate totals properly
+    let cidOrcSup = 0, cidOrcLid = 0, cidOrcAdm = 0, cidPago = 0;
+    MESES_RANGE.forEach(m => {
+      supCid.forEach((s: any) => {
+        const inicio = getMesInicioComHistorico({ tipo: "suplente", pessoaId: s.id, createdAt: s.created_at, mesInicioGlobal: MES_INICIO_SUP, pagamentos, categoria: "retirada" });
+        const numMeses = s.retirada_mensal_meses || 0;
+        const mesFim = inicio + numMeses - 1;
+        if (m >= inicio && m <= mesFim) cidOrcSup += (s.retirada_mensal_valor || 0);
+      });
+      lidCid.forEach((l: any) => {
+        const inicio = getMesInicioComHistorico({ tipo: "lideranca", pessoaId: l.id, createdAt: l.created_at, mesInicioGlobal: MES_INICIO_LID, pagamentos, categoria: "retirada" });
+        const ateMes = Math.min(l.retirada_ate_mes || MES_FIM, MES_FIM);
+        if (m >= inicio && m <= ateMes) cidOrcLid += (l.retirada_mensal_valor || 0);
+      });
+      admCid.forEach((ad: any) => {
+        const inicio = getMesInicioComHistorico({ tipo: "admin", pessoaId: ad.id, createdAt: ad.created_at, mesInicioGlobal: MES_INICIO_ADM, pagamentos, categoria: "salario" });
+        const ateMes = Math.min(ad.contrato_ate_mes || MES_FIM, MES_FIM);
+        if (m >= inicio && m <= ateMes) cidOrcAdm += (ad.valor_contrato || 0);
+      });
+    });
+    const supIds = new Set(supCid.map((s: any) => s.id));
+    const lidIds = new Set(lidCid.map((l: any) => l.id));
+    const admIds = new Set(admCid.map((a: any) => a.id));
+    cidPago = pag2026.filter(p =>
+      (p.suplente_id && supIds.has(p.suplente_id)) ||
+      (p.lideranca_id && lidIds.has(p.lideranca_id)) ||
+      (p.admin_id && admIds.has(p.admin_id))
+    ).reduce((a, p) => a + (p.valor || 0), 0);
+    const cidOrcTotal = cidOrcSup + cidOrcLid + cidOrcAdm;
 
-  const pag2026 = pagamentos.filter(p => p.ano === 2026).sort((a, b) => a.mes - b.mes || a.categoria.localeCompare(b.categoria));
+    // Add custos pontuais para suplentes (plotagem, lideranças campanha, fiscais)
+    const custoPontualCid = supCid.reduce((a: number, s: any) => {
+      const t = calcTotaisFinanceiros(s);
+      return a + t.plotagem + t.liderancas + t.fiscais;
+    }, 0);
 
-  // Build name lookup
-  const nomeMap = new Map<string, string>();
-  suplentes.forEach((s: any) => nomeMap.set(s.id, s.nome));
-  liderancas.forEach((l: any) => nomeMap.set(l.id, l.nome));
-  administrativo.forEach((a: any) => nomeMap.set(a.id, a.nome));
-
-  if (pag2026.length) {
     autoTable(doc, {
       startY: y,
-      head: [["#", "Mês", "Categoria", "Tipo", "Pessoa", "Cidade", "Valor (R$)", "Observação"]],
-      body: pag2026.map((p: any, i: number) => {
-        const pessoaId = p.suplente_id || p.lideranca_id || p.admin_id || "";
-        const nome = nomeMap.get(pessoaId) || "—";
-        const tipo = p.tipo_pessoa === "suplente" ? "Suplente" : p.tipo_pessoa === "lideranca" ? "Liderança" : p.tipo_pessoa === "admin" ? "Admin" : p.tipo_pessoa || "—";
-        // Find city
-        let cidade = "—";
-        if (p.suplente_id) {
-          const s = suplentes.find((s: any) => s.id === p.suplente_id);
-          if (s?.municipio_id) cidade = municipiosMap[s.municipio_id] || "—";
-        } else if (p.lideranca_id) {
-          const l = liderancas.find((l: any) => l.id === p.lideranca_id);
-          if (l?.municipio_id) cidade = municipiosMap[l.municipio_id] || "—";
-        } else if (p.admin_id) {
-          const a = administrativo.find((a: any) => a.id === p.admin_id);
-          if (a?.municipio_id) cidade = municipiosMap[a.municipio_id] || "—";
-        }
-        return [String(i + 1), MESES_LABEL[p.mes] || String(p.mes), p.categoria || "", tipo, nome, cidade, fmt(p.valor || 0), p.observacao || ""];
-      }),
-      foot: [["", "", "", "", "", "TOTAL PAGO", fmt(totalPago), ""]],
+      head: [["Mes", "Suplentes", "Liderancas", "Admin", "Total Previsto", "Pago", "Saldo"]],
+      body: flowBody,
+      foot: [["TOTAL PERIODO", fmt(cidOrcSup), fmt(cidOrcLid), fmt(cidOrcAdm), fmt(cidOrcTotal), fmt(cidPago), fmt(Math.max(0, cidOrcTotal - cidPago))]],
       margin: { left: 14, right: 14 },
-      headStyles: { fillColor: [30, 30, 30], textColor: [...WHITE], fontStyle: "bold", fontSize: 6 },
-      bodyStyles: { fontSize: 6, textColor: [...DARK] },
-      footStyles: { fillColor: [252, 231, 243], textColor: [...PINK], fontStyle: "bold", fontSize: 6 },
+      headStyles: { fillColor: [...PINK], textColor: [...WHITE], fontStyle: "bold", fontSize: 7, halign: "center" },
+      bodyStyles: { fontSize: 7, textColor: [...DARK] },
+      footStyles: { fillColor: [252, 231, 243], textColor: [...PINK], fontStyle: "bold", fontSize: 7 },
       alternateRowStyles: { fillColor: [250, 250, 250] },
       theme: "grid",
-      styles: { cellPadding: 1.5 },
-      columnStyles: { 0: { halign: "center", cellWidth: 7 }, 6: { halign: "right" } },
+      styles: { cellPadding: 2 },
+      columnStyles: { 0: { fontStyle: "bold" }, 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" } },
     });
-  }
+    y = (doc as any).lastAutoTable?.finalY + 6 || y + 20;
+
+    // Custos pontuais
+    if (custoPontualCid > 0) {
+      checkPage(20);
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...DARK);
+      doc.text(`Custos pontuais (Plotagem + Liderancas Campanha + Fiscais): ${fmt(custoPontualCid)}`, 14, y);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...GRAY);
+      doc.text(`Orcamento total ${nomeCidade}: ${fmt(cidOrcTotal + custoPontualCid)}`, 14, y + 5);
+      y += 12;
+    }
+
+    cidadeTotals.push({ nome: nomeCidade, orcSup: cidOrcSup + custoPontualCid, orcLid: cidOrcLid, orcAdm: cidOrcAdm, orcTotal: cidOrcTotal + custoPontualCid, pago: cidPago });
+
+    // ── Detalhamento: Suplentes desta cidade ──
+    if (supCid.length) {
+      checkPage(25);
+      cityTitle(nomeCidade, `-- Suplentes (${supCid.length})`);
+
+      autoTable(doc, {
+        startY: y,
+        head: [["#", "Nome", "Mensal", "Meses", ...mesHeaders, "Total Retirada", "Total Campanha"]],
+        body: supCid.map((s: any, i: number) => {
+          const inicio = getMesInicioComHistorico({ tipo: "suplente", pessoaId: s.id, createdAt: s.created_at, mesInicioGlobal: MES_INICIO_SUP, pagamentos, categoria: "retirada" });
+          const numMeses = s.retirada_mensal_meses || 0;
+          const mesFim = inicio + numMeses - 1;
+          const valorMensal = s.retirada_mensal_valor || 0;
+          const mesesCols = MESES_RANGE.map(m => {
+            if (m >= inicio && m <= mesFim) {
+              const pago = pag2026.filter(p => p.suplente_id === s.id && p.mes === m && p.categoria === "retirada").reduce((a: number, p: any) => a + (p.valor || 0), 0);
+              return pago > 0 ? `${fmt(valorMensal)} (pago ${fmt(pago)})` : fmt(valorMensal);
+            }
+            return "-";
+          });
+          const t = calcTotaisFinanceiros(s);
+          return [String(i + 1), s.nome || "", fmt(valorMensal), String(numMeses), ...mesesCols, fmt(t.retirada), fmt(t.totalFinal)];
+        }),
+        margin: { left: 14, right: 14 },
+        headStyles: { fillColor: [...PINK], textColor: [...WHITE], fontStyle: "bold", fontSize: 5.5, halign: "center" },
+        bodyStyles: { fontSize: 5.5, textColor: [...DARK] },
+        footStyles: { fillColor: [252, 231, 243], textColor: [...PINK], fontStyle: "bold", fontSize: 5.5 },
+        alternateRowStyles: { fillColor: [250, 250, 250] },
+        theme: "grid",
+        styles: { cellPadding: 1.5 },
+        columnStyles: { 0: { halign: "center", cellWidth: 6 }, 1: { cellWidth: 28 }, 2: { halign: "right", cellWidth: 14 }, 3: { halign: "center", cellWidth: 8 } },
+      });
+      y = (doc as any).lastAutoTable?.finalY + 6 || y + 20;
+    }
+
+    // ── Detalhamento: Lideranças desta cidade ──
+    if (lidCid.length) {
+      checkPage(25);
+      cityTitle(nomeCidade, `-- Liderancas (${lidCid.length})`);
+
+      autoTable(doc, {
+        startY: y,
+        head: [["#", "Nome", "Setor", "Mensal", ...mesHeaders, "Total Contrato"]],
+        body: lidCid.map((l: any, i: number) => {
+          const inicio = getMesInicioComHistorico({ tipo: "lideranca", pessoaId: l.id, createdAt: l.created_at, mesInicioGlobal: MES_INICIO_LID, pagamentos, categoria: "retirada" });
+          const ateMes = Math.min(l.retirada_ate_mes || MES_FIM, MES_FIM);
+          const valorMensal = l.retirada_mensal_valor || 0;
+          const mesesCols = MESES_RANGE.map(m => {
+            if (m >= inicio && m <= ateMes) {
+              const pago = pag2026.filter(p => p.lideranca_id === l.id && p.mes === m && p.categoria === "retirada").reduce((a: number, p: any) => a + (p.valor || 0), 0);
+              return pago > 0 ? `${fmt(valorMensal)} (pago ${fmt(pago)})` : fmt(valorMensal);
+            }
+            return "-";
+          });
+          return [String(i + 1), l.nome || "", l.regiao || "", fmt(valorMensal), ...mesesCols, fmt(valorMensal * Math.max(0, ateMes - inicio + 1))];
+        }),
+        margin: { left: 14, right: 14 },
+        headStyles: { fillColor: [147, 51, 234], textColor: [...WHITE], fontStyle: "bold", fontSize: 5.5, halign: "center" },
+        bodyStyles: { fontSize: 5.5, textColor: [...DARK] },
+        alternateRowStyles: { fillColor: [250, 250, 250] },
+        theme: "grid",
+        styles: { cellPadding: 1.5 },
+        columnStyles: { 0: { halign: "center", cellWidth: 6 }, 1: { cellWidth: 26 }, 2: { cellWidth: 18 } },
+      });
+      y = (doc as any).lastAutoTable?.finalY + 6 || y + 20;
+    }
+
+    // ── Detalhamento: Administrativo desta cidade ──
+    if (admCid.length) {
+      checkPage(25);
+      cityTitle(nomeCidade, `-- Administrativo (${admCid.length})`);
+
+      autoTable(doc, {
+        startY: y,
+        head: [["#", "Nome", "Mensal", ...mesHeaders, "Total Contrato"]],
+        body: admCid.map((ad: any, i: number) => {
+          const inicio = getMesInicioComHistorico({ tipo: "admin", pessoaId: ad.id, createdAt: ad.created_at, mesInicioGlobal: MES_INICIO_ADM, pagamentos, categoria: "salario" });
+          const ateMes = Math.min(ad.contrato_ate_mes || MES_FIM, MES_FIM);
+          const valorMensal = ad.valor_contrato || 0;
+          const mesesCols = MESES_RANGE.map(m => {
+            if (m >= inicio && m <= ateMes) {
+              const pago = pag2026.filter(p => p.admin_id === ad.id && p.mes === m && p.categoria === "salario").reduce((a: number, p: any) => a + (p.valor || 0), 0);
+              return pago > 0 ? `${fmt(valorMensal)} (pago ${fmt(pago)})` : fmt(valorMensal);
+            }
+            return "-";
+          });
+          return [String(i + 1), ad.nome || "", fmt(valorMensal), ...mesesCols, fmt(valorMensal * Math.max(0, ateMes - inicio + 1))];
+        }),
+        margin: { left: 14, right: 14 },
+        headStyles: { fillColor: [59, 130, 246], textColor: [...WHITE], fontStyle: "bold", fontSize: 5.5, halign: "center" },
+        bodyStyles: { fontSize: 5.5, textColor: [...DARK] },
+        alternateRowStyles: { fillColor: [250, 250, 250] },
+        theme: "grid",
+        styles: { cellPadding: 1.5 },
+        columnStyles: { 0: { halign: "center", cellWidth: 6 }, 1: { cellWidth: 30 } },
+      });
+      y = (doc as any).lastAutoTable?.finalY + 6 || y + 20;
+    }
+  });
+
+  // ════════════════════════════════════════════════════════════
+  // RESUMO GERAL FINAL
+  // ════════════════════════════════════════════════════════════
+  doc.addPage();
+  y = 20;
+
+  addHeader(doc, "RESUMO GERAL");
+  y = 44;
+
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...DARK);
+  doc.text("RESUMO GERAL -- TODAS AS CIDADES", 14, y);
+  y += 8;
+
+  // ── Tabela resumo por cidade ──
+  const grandOrc = cidadeTotals.reduce((a, c) => a + c.orcTotal, 0);
+  const grandPago = cidadeTotals.reduce((a, c) => a + c.pago, 0);
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Cidade", "Suplentes", "Liderancas", "Admin", "Orcamento Total", "Pago", "Saldo"]],
+    body: cidadeTotals.map(c => [
+      c.nome,
+      fmt(c.orcSup),
+      fmt(c.orcLid),
+      fmt(c.orcAdm),
+      fmt(c.orcTotal),
+      fmt(c.pago),
+      fmt(Math.max(0, c.orcTotal - c.pago)),
+    ]),
+    foot: [["TOTAL GERAL", fmt(cidadeTotals.reduce((a, c) => a + c.orcSup, 0)), fmt(cidadeTotals.reduce((a, c) => a + c.orcLid, 0)), fmt(cidadeTotals.reduce((a, c) => a + c.orcAdm, 0)), fmt(grandOrc), fmt(grandPago), fmt(Math.max(0, grandOrc - grandPago))]],
+    margin: { left: 14, right: 14 },
+    headStyles: { fillColor: [...DARK], textColor: [...WHITE], fontStyle: "bold", fontSize: 8, halign: "center" },
+    bodyStyles: { fontSize: 8, textColor: [...DARK] },
+    footStyles: { fillColor: [252, 231, 243], textColor: [...PINK], fontStyle: "bold", fontSize: 8 },
+    alternateRowStyles: { fillColor: [250, 250, 250] },
+    theme: "grid",
+    styles: { cellPadding: 3 },
+    columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" } },
+  });
+  y = (doc as any).lastAutoTable?.finalY + 8 || y + 30;
+
+  // ── Fluxo mensal consolidado (todas as cidades) ──
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...PINK);
+  doc.text("FLUXO MENSAL CONSOLIDADO -- TODAS AS CIDADES", 14, y);
+  y += 5;
+
+  const globalFlow = MESES_RANGE.map(m => {
+    let supMes = 0, lidMes = 0, admMes = 0;
+    suplentes.forEach((s: any) => {
+      const inicio = getMesInicioComHistorico({ tipo: "suplente", pessoaId: s.id, createdAt: s.created_at, mesInicioGlobal: MES_INICIO_SUP, pagamentos, categoria: "retirada" });
+      const numMeses = s.retirada_mensal_meses || 0;
+      const mesFim = inicio + numMeses - 1;
+      if (m >= inicio && m <= mesFim) supMes += (s.retirada_mensal_valor || 0);
+    });
+    liderancas.forEach((l: any) => {
+      const inicio = getMesInicioComHistorico({ tipo: "lideranca", pessoaId: l.id, createdAt: l.created_at, mesInicioGlobal: MES_INICIO_LID, pagamentos, categoria: "retirada" });
+      const ateMes = Math.min(l.retirada_ate_mes || MES_FIM, MES_FIM);
+      if (m >= inicio && m <= ateMes) lidMes += (l.retirada_mensal_valor || 0);
+    });
+    administrativo.forEach((ad: any) => {
+      const inicio = getMesInicioComHistorico({ tipo: "admin", pessoaId: ad.id, createdAt: ad.created_at, mesInicioGlobal: MES_INICIO_ADM, pagamentos, categoria: "salario" });
+      const ateMes = Math.min(ad.contrato_ate_mes || MES_FIM, MES_FIM);
+      if (m >= inicio && m <= ateMes) admMes += (ad.valor_contrato || 0);
+    });
+    const pagoMes = pag2026.filter(p => p.mes === m).reduce((a, p) => a + (p.valor || 0), 0);
+    return [MESES_LABEL[m], fmt(supMes), fmt(lidMes), fmt(admMes), fmt(supMes + lidMes + admMes), fmt(pagoMes), fmt(Math.max(0, supMes + lidMes + admMes - pagoMes))];
+  });
+
+  autoTable(doc, {
+    startY: y,
+    head: [["Mes", "Suplentes", "Liderancas", "Admin", "Total Previsto", "Pago", "Saldo"]],
+    body: globalFlow,
+    foot: [["TOTAL", ...(() => {
+      const sums = [0, 0, 0, 0, 0, 0];
+      MESES_RANGE.forEach((m, i) => {
+        let supMes = 0, lidMes = 0, admMes = 0;
+        suplentes.forEach((s: any) => { const ini = getMesInicioComHistorico({ tipo: "suplente", pessoaId: s.id, createdAt: s.created_at, mesInicioGlobal: MES_INICIO_SUP, pagamentos, categoria: "retirada" }); const fim = ini + (s.retirada_mensal_meses || 0) - 1; if (m >= ini && m <= fim) supMes += (s.retirada_mensal_valor || 0); });
+        liderancas.forEach((l: any) => { const ini = getMesInicioComHistorico({ tipo: "lideranca", pessoaId: l.id, createdAt: l.created_at, mesInicioGlobal: MES_INICIO_LID, pagamentos, categoria: "retirada" }); if (m >= ini && m <= Math.min(l.retirada_ate_mes || MES_FIM, MES_FIM)) lidMes += (l.retirada_mensal_valor || 0); });
+        administrativo.forEach((ad: any) => { const ini = getMesInicioComHistorico({ tipo: "admin", pessoaId: ad.id, createdAt: ad.created_at, mesInicioGlobal: MES_INICIO_ADM, pagamentos, categoria: "salario" }); if (m >= ini && m <= Math.min(ad.contrato_ate_mes || MES_FIM, MES_FIM)) admMes += (ad.valor_contrato || 0); });
+        const pagoMes = pag2026.filter(p => p.mes === m).reduce((a, p) => a + (p.valor || 0), 0);
+        sums[0] += supMes; sums[1] += lidMes; sums[2] += admMes; sums[3] += supMes + lidMes + admMes; sums[4] += pagoMes; sums[5] += Math.max(0, supMes + lidMes + admMes - pagoMes);
+      });
+      return sums.map(v => fmt(v));
+    })()]],
+    margin: { left: 14, right: 14 },
+    headStyles: { fillColor: [...DARK], textColor: [...WHITE], fontStyle: "bold", fontSize: 7, halign: "center" },
+    bodyStyles: { fontSize: 7, textColor: [...DARK] },
+    footStyles: { fillColor: [252, 231, 243], textColor: [...PINK], fontStyle: "bold", fontSize: 7 },
+    alternateRowStyles: { fillColor: [250, 250, 250] },
+    theme: "grid",
+    styles: { cellPadding: 2 },
+    columnStyles: { 0: { fontStyle: "bold" }, 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" } },
+  });
+
+  y = (doc as any).lastAutoTable?.finalY + 8 || y + 20;
+
+  // ── Data e assinatura ──
+  checkPage(20);
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...GRAY);
+  doc.text(`Relatorio gerado em ${new Date().toLocaleDateString("pt-BR")} as ${new Date().toLocaleTimeString("pt-BR")}`, 14, y);
+  doc.text("Dra. Fernanda Sarelli -- Pre-candidata Dep. Estadual GO 2026", 14, y + 4);
 
   addFooter(doc);
   doc.save(`Auditoria_Completa_${new Date().toISOString().slice(0, 10)}.pdf`);
