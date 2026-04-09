@@ -406,6 +406,14 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
   ].filter(c => c.planejado > 0 || c.qtd > 0);
 
   const handleSave = async (valor: number, obs: string, cat: string) => {
+    // Para retirada: só 1 pagamento por mês
+    if (cat === "retirada") {
+      const jaExiste = pagsMes.some(p => p.categoria === "retirada");
+      if (jaExiste) {
+        toast({ title: "⚠️ Já existe pagamento de Retirada neste mês", description: "Apague o existente antes de inserir outro.", variant: "destructive" });
+        return;
+      }
+    }
     setSaving(true);
     const { error } = await (supabase as any).from("pagamentos").insert({
       tipo_pessoa: "suplente", suplente_id: s.id, mes, ano,
@@ -574,6 +582,12 @@ function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes,
   const catPadrao = tipo === "lideranca" ? "retirada" : "salario";
 
   const handleSave = async (valor: number, obs: string) => {
+    // Só 1 pagamento de retirada/salário por mês
+    const jaExiste = pagsMes.some(p => p.categoria === catPadrao);
+    if (jaExiste) {
+      toast({ title: `⚠️ Já existe pagamento de ${catPadrao === "retirada" ? "Retirada" : "Salário"} neste mês`, description: "Apague o existente antes de inserir outro.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
     const payload: Record<string, unknown> = { tipo_pessoa: tipo, mes, ano, categoria: catPadrao, valor, observacao: obs || null };
     if (tipo === "lideranca") payload.lideranca_id = id;
