@@ -459,6 +459,7 @@ function SuplentePayCard({ s, pagsMes, pagsTodos, mes, ano }: {
             <span>{fmt(pagoMes)} / {fmt(retiradaMes)}</span>
           </div>
           {retiradaMes > 0 && <Bar pago={pagoMes} total={retiradaMes} cor={pago ? "bg-green-500" : "bg-amber-500"} />}
+          <p className="text-[10px] text-muted-foreground mt-1">Cadastro: {new Date(s.created_at).toLocaleDateString("pt-BR")}</p>
         </div>
       </div>
 
