@@ -772,9 +772,19 @@ export default function Pagamentos() {
   const supIds = new Set(supComValor.map(s => s.id));
   const lidIds = new Set(lidComValor.map(l => l.id));
   const admIds = new Set(admComValor.map(a => a.id));
-  const supPago = pagsMes.filter(p => p.tipo_pessoa === "suplente" && supIds.has(p.suplente_id || "")).reduce((a, p) => a + p.valor, 0);
-  const lidPago = pagsMes.filter(p => p.tipo_pessoa === "lideranca" && lidIds.has(p.lideranca_id || "")).reduce((a, p) => a + p.valor, 0);
-  const admPago = pagsMes.filter(p => p.tipo_pessoa === "admin" && admIds.has(p.admin_id || "")).reduce((a, p) => a + p.valor, 0);
+  // Para retiradas/salários, cap pago no planejado por pessoa (não pode mostrar mais pago que planejado)
+  const supPago = supComValor.reduce((a, s) => {
+    const p = pagsMes.filter(p => p.suplente_id === s.id).reduce((acc, p) => acc + p.valor, 0);
+    return a + Math.min(p, s.retirada_mensal_valor || 0);
+  }, 0);
+  const lidPago = lidComValor.reduce((a, l) => {
+    const p = pagsMes.filter(p => p.lideranca_id === l.id).reduce((acc, p) => acc + p.valor, 0);
+    return a + Math.min(p, l.retirada_mensal_valor || 0);
+  }, 0);
+  const admPago = admComValor.reduce((a, ad) => {
+    const p = pagsMes.filter(p => p.admin_id === ad.id).reduce((acc, p) => acc + p.valor, 0);
+    return a + Math.min(p, ad.valor_contrato || 0);
+  }, 0);
   const totalPago = supPago + lidPago + admPago;
 
   // Calcular "falta" por pessoa (não permite que excesso de um compense falta de outro)
