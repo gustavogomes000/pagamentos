@@ -623,6 +623,7 @@ function PessoaPayCard({ tipo, id, nome, subtitulo, valorEsperado, pagsMes, mes,
             </div>
           </div>
         )}
+        {createdAt && <p className="text-[10px] text-muted-foreground mt-1">Cadastro: {new Date(createdAt).toLocaleDateString("pt-BR")}</p>}
       </div>
 
       <div className="flex border-t border-border/30 divide-x divide-border/30">
