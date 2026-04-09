@@ -72,31 +72,22 @@ export default function GerenciarCidades() {
       return;
     }
     setSaving(true);
-    try {
-      const { data: resp, error: fnError } = await supabase.functions.invoke("manage-municipios", {
-        body: { action: "insert", nome: nome.trim(), uf: uf.trim().toUpperCase() || "GO" },
-      });
-      if (fnError || resp?.error) {
-        toast({ title: "Erro ao adicionar", description: resp?.error || fnError?.message || "Erro desconhecido", variant: "destructive" });
-      } else {
-        toast({ title: `${nome} adicionada!` });
-        setNome("");
-        qc.invalidateQueries({ queryKey: ["municipios-admin"] });
-        refetchMunicipios();
-      }
-    } catch (e: any) {
-      toast({ title: "Erro ao adicionar", description: e?.message || "Erro de conexão", variant: "destructive" });
-    } finally {
-      setSaving(false);
+    const { error } = await (supabase as any).from("municipios").insert({ nome: nome.trim(), uf: uf.trim().toUpperCase() || "GO" });
+    setSaving(false);
+    if (error) {
+      toast({ title: "Erro ao adicionar", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: `${nome} adicionada!` });
+      setNome("");
+      qc.invalidateQueries({ queryKey: ["municipios-admin"] });
+      refetchMunicipios();
     }
   };
 
   const toggleAtivo = async (id: string, ativo: boolean) => {
-    const { data: resp, error: fnError } = await supabase.functions.invoke("manage-municipios", {
-      body: { action: "toggle", id, ativo },
-    });
-    if (fnError || resp?.error) {
-      toast({ title: "Erro", description: resp?.error || fnError?.message, variant: "destructive" });
+    const { error } = await (supabase as any).from("municipios").update({ ativo: !ativo }).eq("id", id);
+    if (error) {
+      toast({ title: "Erro", description: error.message, variant: "destructive" });
     } else {
       qc.invalidateQueries({ queryKey: ["municipios-admin"] });
       refetchMunicipios();
