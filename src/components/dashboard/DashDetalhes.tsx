@@ -1,21 +1,21 @@
 import { memo } from "react";
 import { Building2 } from "lucide-react";
 import { MiniBar, StatusBadge, EmptyState } from "./DashShared";
-import { fmt, fmtN, MES_FIM, MES_INICIO_LID, MES_INICIO_ADM, type CidadeData } from "./types";
+import { fmt, fmtN, type CidadeData } from "./types";
 
 interface Props {
   orcamentoTotal: number;
   totalPagoAno: number;
   saldoRestante: number;
   totalCampanhaSup: number;
-  totalLidMensal: number;
-  totalAdmMensal: number;
+  totalLidFluxo: number;
+  totalAdmFluxo: number;
   dadosPorCidade: CidadeData[];
 }
 
 function DashDetalhesInner({
   orcamentoTotal, totalPagoAno, saldoRestante,
-  totalCampanhaSup, totalLidMensal, totalAdmMensal,
+  totalCampanhaSup, totalLidFluxo, totalAdmFluxo,
   dadosPorCidade,
 }: Props) {
   return (
