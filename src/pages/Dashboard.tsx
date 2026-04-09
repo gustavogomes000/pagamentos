@@ -23,7 +23,7 @@ import {
   COLORS_CAT, COLORS_CITY,
 } from "@/components/dashboard/types";
 
-const STALE_TIME = 60_000; // 1 min cache
+const STALE_TIME = 60_000;
 
 export default function Dashboard() {
   const [search, setSearch] = useState("");
@@ -34,37 +34,31 @@ export default function Dashboard() {
   const [activeView, setActiveView] = useState<"resumo" | "mensal" | "detalhes" | "cidades">("resumo");
   const { cidadeAtiva, municipios, isAdmin } = useCidade();
 
-  // ─── QUERIES (staleTime 1min) ─────────────────────────────────────
-  const { data: suplentes, isLoading: loadS } = useQuery({
-    queryKey: ["suplentes", cidadeAtiva],
+  // ─── QUERIES: ALL DATA (used for Resumo, Mensal, Detalhes, Cidades) ──
+  const { data: allSuplentes, isLoading: loadS } = useQuery({
+    queryKey: ["suplentes-all"],
     queryFn: async () => {
-      let query = (supabase as any).from("suplentes").select("id, nome, numero_urna, bairro, regiao_atuacao, partido, situacao, telefone, cargo_disputado, ano_eleicao, total_votos, expectativa_votos, base_politica, retirada_mensal_valor, retirada_mensal_meses, plotagem_qtd, plotagem_valor_unit, liderancas_qtd, liderancas_valor_unit, fiscais_qtd, fiscais_valor_unit, total_campanha, municipio_id, created_at").order("nome");
-      if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
-      const { data, error } = await query;
+      const { data, error } = await (supabase as any).from("suplentes").select("id, nome, numero_urna, bairro, regiao_atuacao, partido, situacao, telefone, cargo_disputado, ano_eleicao, total_votos, expectativa_votos, base_politica, retirada_mensal_valor, retirada_mensal_meses, plotagem_qtd, plotagem_valor_unit, liderancas_qtd, liderancas_valor_unit, fiscais_qtd, fiscais_valor_unit, total_campanha, municipio_id, created_at").order("nome");
       if (error) throw error;
       return data;
     },
     staleTime: STALE_TIME,
   });
 
-  const { data: liderancas, isLoading: loadL } = useQuery({
-    queryKey: ["liderancas", cidadeAtiva],
+  const { data: allLiderancas, isLoading: loadL } = useQuery({
+    queryKey: ["liderancas-all"],
     queryFn: async () => {
-      let query = (supabase as any).from("liderancas").select("id, nome, regiao, retirada_mensal_valor, retirada_ate_mes, municipio_id, chave_pix, whatsapp, ligacao_politica, retirada_mensal_meses, created_at").order("nome");
-      if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
-      const { data, error } = await query;
+      const { data, error } = await (supabase as any).from("liderancas").select("id, nome, regiao, retirada_mensal_valor, retirada_ate_mes, municipio_id, chave_pix, whatsapp, ligacao_politica, retirada_mensal_meses, created_at").order("nome");
       if (error) throw error;
       return data as Lideranca[];
     },
     staleTime: STALE_TIME,
   });
 
-  const { data: administrativo, isLoading: loadA } = useQuery({
-    queryKey: ["administrativo", cidadeAtiva],
+  const { data: allAdministrativo, isLoading: loadA } = useQuery({
+    queryKey: ["administrativo-all"],
     queryFn: async () => {
-      let query = (supabase as any).from("administrativo").select("id, nome, valor_contrato, contrato_ate_mes, municipio_id, whatsapp, created_at").order("nome");
-      if (cidadeAtiva) query = query.eq("municipio_id", cidadeAtiva);
-      const { data, error } = await query;
+      const { data, error } = await (supabase as any).from("administrativo").select("id, nome, valor_contrato, contrato_ate_mes, municipio_id, whatsapp, created_at").order("nome");
       if (error) throw error;
       return data as AdminPessoa[];
     },
@@ -72,7 +66,7 @@ export default function Dashboard() {
   });
 
   const { data: pagamentos, isLoading: loadP } = useQuery({
-    queryKey: ["pagamentos-dash", cidadeAtiva],
+    queryKey: ["pagamentos-dash"],
     queryFn: async () => {
       const { data, error } = await supabase.from("pagamentos").select("id, suplente_id, lideranca_id, admin_id, tipo_pessoa, mes, ano, categoria, valor, observacao, created_at");
       if (error) throw error;
@@ -81,52 +75,18 @@ export default function Dashboard() {
     staleTime: STALE_TIME,
   });
 
-  // ─── FILTERED IDS ─────────────────────────────────────────────────
-  const supIds = useMemo(() => new Set((suplentes ?? []).map((s: any) => s.id)), [suplentes]);
-  const lidIds = useMemo(() => new Set((liderancas ?? []).map((l: any) => l.id)), [liderancas]);
-  const admIds = useMemo(() => new Set((administrativo ?? []).map((a: any) => a.id)), [administrativo]);
-
-  const pagamentosFiltrados = useMemo(() => {
-    if (!pagamentos) return [];
-    if (!cidadeAtiva) return pagamentos;
-    return pagamentos.filter(p => {
-      if (p.suplente_id && supIds.has(p.suplente_id)) return true;
-      if (p.lideranca_id && lidIds.has(p.lideranca_id)) return true;
-      if (p.admin_id && admIds.has(p.admin_id)) return true;
-      if (!p.suplente_id && !p.lideranca_id && !p.admin_id) return true;
-      return false;
-    });
-  }, [pagamentos, cidadeAtiva, supIds, lidIds, admIds]);
-
   const isLoading = loadS || loadL || loadA;
   const normalizeStr = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-  // ─── FILTER OPTIONS ──────────────────────────────────────────────
-  const regioes = useMemo(() => {
-    const set = new Set<string>();
-    (suplentes ?? []).forEach((s: any) => { if (s.regiao_atuacao) set.add(s.regiao_atuacao); if (s.bairro) set.add(s.bairro); });
-    (liderancas ?? []).forEach((l: any) => { if (l.regiao) set.add(l.regiao); });
-    return Array.from(set).sort();
-  }, [suplentes, liderancas]);
+  // ─── GLOBAL LISTS (all cities, no filter) ─────────────────────────
+  const globalSup = allSuplentes ?? [];
+  const globalLid = allLiderancas ?? [];
+  const globalAdm = allAdministrativo ?? [];
+  const globalPag = pagamentos ?? [];
 
-  const partidos = useMemo(() => {
-    const set = new Set<string>();
-    (suplentes ?? []).forEach((s: any) => { if (s.partido) set.add(s.partido); });
-    return Array.from(set).sort();
-  }, [suplentes]);
-
-  const situacoes = useMemo(() => {
-    const set = new Set<string>();
-    (suplentes ?? []).forEach((s: any) => { if (s.situacao) set.add(s.situacao); });
-    return Array.from(set).sort();
-  }, [suplentes]);
-
-  const activeFiltersCount = [filtroRegiao, filtroPartido, filtroSituacao].filter(Boolean).length;
-  const clearFilters = () => { setFiltroRegiao(""); setFiltroPartido(""); setFiltroSituacao(""); };
-
-  // ─── FILTERED LISTS ──────────────────────────────────────────────
+  // ─── FILTERED LISTS (for search/export only) ─────────────────────
   const supList = useMemo(() => {
-    let all = suplentes ?? [];
+    let all = globalSup;
     if (search.trim()) {
       const q = normalizeStr(search);
       all = all.filter((s: any) => normalizeStr(s.nome || "").includes(q) || normalizeStr(s.numero_urna || "").includes(q) || normalizeStr(s.regiao_atuacao || "").includes(q));
@@ -135,42 +95,47 @@ export default function Dashboard() {
     if (filtroPartido) all = all.filter((s: any) => s.partido === filtroPartido);
     if (filtroSituacao) all = all.filter((s: any) => s.situacao === filtroSituacao);
     return all;
-  }, [suplentes, search, filtroRegiao, filtroPartido, filtroSituacao]);
+  }, [globalSup, search, filtroRegiao, filtroPartido, filtroSituacao]);
 
-  const lidList = useMemo(() => {
-    let all = liderancas ?? [];
-    if (search.trim()) {
-      const q = normalizeStr(search);
-      all = all.filter((l: any) => normalizeStr(l.nome || "").includes(q) || normalizeStr(l.regiao || "").includes(q));
-    }
-    if (filtroRegiao) all = all.filter((l: any) => l.regiao === filtroRegiao);
-    return all;
-  }, [liderancas, search, filtroRegiao]);
+  // ─── FILTER OPTIONS ──────────────────────────────────────────────
+  const regioes = useMemo(() => {
+    const set = new Set<string>();
+    globalSup.forEach((s: any) => { if (s.regiao_atuacao) set.add(s.regiao_atuacao); if (s.bairro) set.add(s.bairro); });
+    globalLid.forEach((l: any) => { if (l.regiao) set.add(l.regiao); });
+    return Array.from(set).sort();
+  }, [globalSup, globalLid]);
 
-  const admList = useMemo(() => {
-    const all = administrativo ?? [];
-    if (!search.trim()) return all;
-    const q = normalizeStr(search);
-    return all.filter((a: any) => normalizeStr(a.nome || "").includes(q));
-  }, [administrativo, search]);
+  const partidos = useMemo(() => {
+    const set = new Set<string>();
+    globalSup.forEach((s: any) => { if (s.partido) set.add(s.partido); });
+    return Array.from(set).sort();
+  }, [globalSup]);
 
-  // ─── FINANCIAL CALCULATIONS (memoized) ────────────────────────────
+  const situacoes = useMemo(() => {
+    const set = new Set<string>();
+    globalSup.forEach((s: any) => { if (s.situacao) set.add(s.situacao); });
+    return Array.from(set).sort();
+  }, [globalSup]);
+
+  const activeFiltersCount = [filtroRegiao, filtroPartido, filtroSituacao].filter(Boolean).length;
+  const clearFilters = () => { setFiltroRegiao(""); setFiltroPartido(""); setFiltroSituacao(""); };
+
+  // ─── GLOBAL FINANCIAL CALCULATIONS ────────────────────────────────
   const financials = useMemo(() => {
-    const totalCampanhaSup = supList.reduce((a: number, s: any) => a + calcTotaisFinanceiros(s).totalFinal, 0);
-    const totalRetiradaMensalSup = supList.reduce((a: number, s: any) => a + (s.retirada_mensal_valor || 0), 0);
-    const totalLiderancasQtd = supList.reduce((a: number, s: any) => a + (s.liderancas_qtd || 0), 0);
-    const totalFiscais = supList.reduce((a: number, s: any) => a + (s.fiscais_qtd || 0), 0);
-    // #9: totalPessoas inclui lideranças contratadas reais + campo dos suplentes
-    const totalPessoas = totalLiderancasQtd + totalFiscais + lidList.length;
-    const totalVotos = supList.reduce((a: number, s: any) => a + (s.total_votos || 0), 0);
-    const totalExpectativa = supList.reduce((a: number, s: any) => a + (s.expectativa_votos || 0), 0);
-    const totalRetiradaSup = supList.reduce((a: number, s: any) => a + ((s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0)), 0);
-    const totalLiderancasVal = supList.reduce((a: number, s: any) => a + ((s.liderancas_qtd || 0) * (s.liderancas_valor_unit || 0)), 0);
-    const totalFiscaisVal = supList.reduce((a: number, s: any) => a + ((s.fiscais_qtd || 0) * (s.fiscais_valor_unit || 0)), 0);
-    const totalPlotagemVal = supList.reduce((a: number, s: any) => a + ((s.plotagem_qtd || 0) * (s.plotagem_valor_unit || 0)), 0);
-    const totalPlotagem = supList.reduce((a: number, s: any) => a + (s.plotagem_qtd || 0), 0);
-    const totalLidMensal = lidList.reduce((a: number, l: any) => a + (l.retirada_mensal_valor || 0), 0);
-    const totalAdmMensal = admList.reduce((a: number, p: any) => a + (p.valor_contrato || 0), 0);
+    const totalCampanhaSup = globalSup.reduce((a: number, s: any) => a + calcTotaisFinanceiros(s).totalFinal, 0);
+    const totalRetiradaMensalSup = globalSup.reduce((a: number, s: any) => a + (s.retirada_mensal_valor || 0), 0);
+    const totalLiderancasQtd = globalSup.reduce((a: number, s: any) => a + (s.liderancas_qtd || 0), 0);
+    const totalFiscais = globalSup.reduce((a: number, s: any) => a + (s.fiscais_qtd || 0), 0);
+    const totalPessoas = totalLiderancasQtd + totalFiscais + globalLid.length;
+    const totalVotos = globalSup.reduce((a: number, s: any) => a + (s.total_votos || 0), 0);
+    const totalExpectativa = globalSup.reduce((a: number, s: any) => a + (s.expectativa_votos || 0), 0);
+    const totalRetiradaSup = globalSup.reduce((a: number, s: any) => a + ((s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0)), 0);
+    const totalLiderancasVal = globalSup.reduce((a: number, s: any) => a + ((s.liderancas_qtd || 0) * (s.liderancas_valor_unit || 0)), 0);
+    const totalFiscaisVal = globalSup.reduce((a: number, s: any) => a + ((s.fiscais_qtd || 0) * (s.fiscais_valor_unit || 0)), 0);
+    const totalPlotagemVal = globalSup.reduce((a: number, s: any) => a + ((s.plotagem_qtd || 0) * (s.plotagem_valor_unit || 0)), 0);
+    const totalPlotagem = globalSup.reduce((a: number, s: any) => a + (s.plotagem_qtd || 0), 0);
+    const totalLidMensal = globalLid.reduce((a: number, l: any) => a + (l.retirada_mensal_valor || 0), 0);
+    const totalAdmMensal = globalAdm.reduce((a: number, p: any) => a + (p.valor_contrato || 0), 0);
 
     return {
       totalCampanhaSup, totalRetiradaMensalSup, totalLiderancasQtd,
@@ -178,21 +143,18 @@ export default function Dashboard() {
       totalRetiradaSup, totalLiderancasVal, totalFiscaisVal,
       totalPlotagemVal, totalPlotagem, totalLidMensal, totalAdmMensal,
     };
-  }, [supList, lidList, admList]);
+  }, [globalSup, globalLid, globalAdm]);
 
+  // ─── GLOBAL FLUXO MENSAL (all cities) ─────────────────────────────
   const fluxoMensal = useMemo(() => {
     const meses = [];
     for (let m = 1; m <= MES_FIM; m++) {
       let supMes = 0, lidMes = 0, admMes = 0;
       if (m >= MES_INICIO_SUP) {
-        supMes = supList.reduce((a: number, s: any) => {
+        supMes = globalSup.reduce((a: number, s: any) => {
           const inicio = getMesInicioComHistorico({
-            tipo: "suplente",
-            pessoaId: s.id,
-            createdAt: s.created_at,
-            mesInicioGlobal: MES_INICIO_SUP,
-            pagamentos: pagamentosFiltrados,
-            categoria: "retirada",
+            tipo: "suplente", pessoaId: s.id, createdAt: s.created_at,
+            mesInicioGlobal: MES_INICIO_SUP, pagamentos: globalPag, categoria: "retirada",
           });
           const numMeses = s.retirada_mensal_meses || 0;
           const mesFim = inicio + numMeses - 1;
@@ -200,34 +162,26 @@ export default function Dashboard() {
         }, 0);
       }
       if (m >= MES_INICIO_LID) {
-        lidMes = lidList.reduce((a: number, l: any) => {
+        lidMes = globalLid.reduce((a: number, l: any) => {
           const inicio = getMesInicioComHistorico({
-            tipo: "lideranca",
-            pessoaId: l.id,
-            createdAt: l.created_at,
-            mesInicioGlobal: MES_INICIO_LID,
-            pagamentos: pagamentosFiltrados,
-            categoria: "retirada",
+            tipo: "lideranca", pessoaId: l.id, createdAt: l.created_at,
+            mesInicioGlobal: MES_INICIO_LID, pagamentos: globalPag, categoria: "retirada",
           });
           const ateMes = l.retirada_ate_mes || MES_FIM;
           return (m >= inicio && m <= ateMes) ? a + (l.retirada_mensal_valor || 0) : a;
         }, 0);
       }
       if (m >= MES_INICIO_ADM) {
-        admMes = admList.reduce((a: number, ad: any) => {
+        admMes = globalAdm.reduce((a: number, ad: any) => {
           const inicio = getMesInicioComHistorico({
-            tipo: "admin",
-            pessoaId: ad.id,
-            createdAt: ad.created_at,
-            mesInicioGlobal: MES_INICIO_ADM,
-            pagamentos: pagamentosFiltrados,
-            categoria: "salario",
+            tipo: "admin", pessoaId: ad.id, createdAt: ad.created_at,
+            mesInicioGlobal: MES_INICIO_ADM, pagamentos: globalPag, categoria: "salario",
           });
           const ateMes = ad.contrato_ate_mes || MES_FIM;
           return (m >= inicio && m <= ateMes) ? a + (ad.valor_contrato || 0) : a;
         }, 0);
       }
-      const pagoMes = pagamentosFiltrados
+      const pagoMes = globalPag
         .filter(p => p.mes === m && p.ano === 2026)
         .reduce((a, p) => a + (p.valor || 0), 0);
 
@@ -238,46 +192,36 @@ export default function Dashboard() {
       });
     }
     return meses;
-  }, [supList, lidList, admList, pagamentosFiltrados]);
+  }, [globalSup, globalLid, globalAdm, globalPag]);
 
   const totalPrevistoAno = fluxoMensal.reduce((a, m) => a + m.total, 0);
   const custosPontuais = financials.totalPlotagemVal + financials.totalLiderancasVal + financials.totalFiscaisVal;
   const orcamentoTotal = totalPrevistoAno + custosPontuais;
-  const totalPagoAno = pagamentosFiltrados.filter(p => p.ano === 2026).reduce((a, p) => a + (p.valor || 0), 0);
+  const totalPagoAno = globalPag.filter(p => p.ano === 2026).reduce((a, p) => a + (p.valor || 0), 0);
   const saldoRestante = orcamentoTotal - totalPagoAno;
 
-  const cumulativeData = useMemo(() => {
-    let acumPrevisto = 0, acumPago = 0;
-    return fluxoMensal.filter(m => m.mes >= MES_INICIO_SUP).map(m => {
-      acumPrevisto += m.total;
-      acumPago += m.pago;
-      return { label: MESES_LABEL[m.mes], previsto: acumPrevisto, pago: acumPago };
-    });
-  }, [fluxoMensal]);
+  const totalSupFluxo = fluxoMensal.reduce((a, m) => a + m.suplentes, 0);
+  const totalLidFluxo = fluxoMensal.reduce((a, m) => a + m.liderancas, 0);
+  const totalAdmFluxo = fluxoMensal.reduce((a, m) => a + m.admin, 0);
 
   const pieData = useMemo(() => [
-    { name: "Suplentes", value: financials.totalCampanhaSup, fill: COLORS_CAT.suplentes },
-    { name: "Lideranças", value: financials.totalLidMensal * (MES_FIM - MES_INICIO_LID + 1), fill: COLORS_CAT.liderancas },
-    { name: "Administrativo", value: financials.totalAdmMensal * (MES_FIM - MES_INICIO_ADM + 1), fill: COLORS_CAT.admin },
-  ].filter(d => d.value > 0), [financials]);
+    { name: "Suplentes", value: totalSupFluxo + custosPontuais, fill: COLORS_CAT.suplentes },
+    { name: "Lideranças", value: totalLidFluxo, fill: COLORS_CAT.liderancas },
+    { name: "Administrativo", value: totalAdmFluxo, fill: COLORS_CAT.admin },
+  ].filter(d => d.value > 0), [totalSupFluxo, totalLidFluxo, totalAdmFluxo, custosPontuais]);
 
-  // ─── DADOS POR CIDADE ─────────────────────────────────────────────
+  // ─── DADOS POR CIDADE (always uses ALL data) ──────────────────────
   const dadosPorCidade = useMemo<CidadeData[]>(() => {
     if (municipios.length === 0) return [];
-    const allSup = suplentes ?? [];
-    const allLid = liderancas ?? [];
-    const allAdm = administrativo ?? [];
+    const aSup = globalSup;
+    const aLid = globalLid;
+    const aAdm = globalAdm;
+    const aPag = globalPag;
 
     return municipios.map((mun, idx) => {
-      const supCidade = cidadeAtiva
-        ? (cidadeAtiva === mun.id ? allSup : [])
-        : allSup.filter((s: any) => s.municipio_id === mun.id);
-      const lidCidade = cidadeAtiva
-        ? (cidadeAtiva === mun.id ? allLid : [])
-        : allLid.filter((l: any) => l.municipio_id === mun.id);
-      const admCidade = cidadeAtiva
-        ? (cidadeAtiva === mun.id ? allAdm : [])
-        : allAdm.filter((a: any) => a.municipio_id === mun.id);
+      const supCidade = aSup.filter((s: any) => s.municipio_id === mun.id);
+      const lidCidade = aLid.filter((l: any) => l.municipio_id === mun.id);
+      const admCidade = aAdm.filter((a: any) => a.municipio_id === mun.id);
 
       const retiradaSup = supCidade.reduce((a: number, s: any) => a + ((s.retirada_mensal_valor || 0) * (s.retirada_mensal_meses || 0)), 0);
       const liderancasVal = supCidade.reduce((a: number, s: any) => a + ((s.liderancas_qtd || 0) * (s.liderancas_valor_unit || 0)), 0);
@@ -289,15 +233,31 @@ export default function Dashboard() {
       const fiscaisQtd = supCidade.reduce((a: number, s: any) => a + (s.fiscais_qtd || 0), 0);
       const plotagemQtd = supCidade.reduce((a: number, s: any) => a + (s.plotagem_qtd || 0), 0);
       const lidMensal = lidCidade.reduce((a: number, l: any) => a + (l.retirada_mensal_valor || 0), 0);
-      const orcLid = lidMensal * (MES_FIM - MES_INICIO_LID + 1);
+      const orcLid = lidCidade.reduce((a: number, l: any) => {
+        const inicio = getMesInicioComHistorico({
+          tipo: "lideranca", pessoaId: l.id, createdAt: l.created_at,
+          mesInicioGlobal: MES_INICIO_LID, pagamentos: aPag, categoria: "retirada",
+        });
+        const ateMes = l.retirada_ate_mes || MES_FIM;
+        const mesesAtivos = Math.max(0, ateMes - inicio + 1);
+        return a + (l.retirada_mensal_valor || 0) * mesesAtivos;
+      }, 0);
       const admMensal = admCidade.reduce((a: number, ad: any) => a + (ad.valor_contrato || 0), 0);
-      const orcAdm = admMensal * (MES_FIM - MES_INICIO_ADM + 1);
+      const orcAdm = admCidade.reduce((a: number, ad: any) => {
+        const inicio = getMesInicioComHistorico({
+          tipo: "admin", pessoaId: ad.id, createdAt: ad.created_at,
+          mesInicioGlobal: MES_INICIO_ADM, pagamentos: aPag, categoria: "salario",
+        });
+        const ateMes = ad.contrato_ate_mes || MES_FIM;
+        const mesesAtivos = Math.max(0, ateMes - inicio + 1);
+        return a + (ad.valor_contrato || 0) * mesesAtivos;
+      }, 0);
       const orcTotal = orcSup + orcLid + orcAdm;
 
       const supIdsCity = new Set(supCidade.map((s: any) => s.id));
       const lidIdsCity = new Set(lidCidade.map((l: any) => l.id));
       const admIdsCity = new Set(admCidade.map((a: any) => a.id));
-      const pagoCity = (pagamentos ?? []).filter(p =>
+      const pagoCity = aPag.filter(p =>
         p.ano === 2026 && (
           (p.suplente_id && supIdsCity.has(p.suplente_id)) ||
           (p.lideranca_id && lidIdsCity.has(p.lideranca_id)) ||
@@ -319,7 +279,7 @@ export default function Dashboard() {
         admCidade: admCidade as AdminPessoa[],
       };
     }).filter(c => c.orcamento > 0 || c.suplentes > 0 || c.liderancasCount > 0 || c.admin > 0);
-  }, [municipios, suplentes, liderancas, administrativo, pagamentos, cidadeAtiva]);
+  }, [municipios, globalSup, globalLid, globalAdm, globalPag]);
 
   const mesAtual = new Date().getMonth() + 1;
 
@@ -327,7 +287,7 @@ export default function Dashboard() {
     ["resumo", "Resumo", BarChart3],
     ["mensal", "Mensal", Calendar],
     ["detalhes", "Detalhes", List],
-    ...(isAdmin && municipios.length > 1 ? [["cidades", "Cidades", Building2] as [string, string, any]] : []),
+    ["cidades", "Cidades", Building2],
   ];
 
   return (
@@ -435,9 +395,9 @@ export default function Dashboard() {
 
             {activeView === "resumo" && (
               <DashResumo
-                supList={supList}
-                lidList={lidList}
-                admList={admList}
+                supList={globalSup}
+                lidList={globalLid}
+                admList={globalAdm}
                 orcamentoTotal={orcamentoTotal}
                 totalPagoAno={totalPagoAno}
                 saldoRestante={saldoRestante}
@@ -455,6 +415,8 @@ export default function Dashboard() {
                 totalRetiradaMensalSup={financials.totalRetiradaMensalSup}
                 totalLidMensal={financials.totalLidMensal}
                 totalAdmMensal={financials.totalAdmMensal}
+                totalLidFluxo={totalLidFluxo}
+                totalAdmFluxo={totalAdmFluxo}
                 pieData={pieData}
               />
             )}
@@ -462,24 +424,17 @@ export default function Dashboard() {
             {activeView === "mensal" && (
               <DashMensal
                 fluxoMensal={fluxoMensal}
-                cumulativeData={cumulativeData}
                 mesAtual={mesAtual}
               />
             )}
 
             {activeView === "detalhes" && (
               <DashDetalhes
-                orcamentoTotal={orcamentoTotal}
-                totalPagoAno={totalPagoAno}
-                saldoRestante={saldoRestante}
-                totalCampanhaSup={financials.totalCampanhaSup}
-                totalLidMensal={financials.totalLidMensal}
-                totalAdmMensal={financials.totalAdmMensal}
                 dadosPorCidade={dadosPorCidade}
               />
             )}
 
-            {activeView === "cidades" && isAdmin && (
+            {activeView === "cidades" && (
               <DashCidades dadosPorCidade={dadosPorCidade} />
             )}
           </>
