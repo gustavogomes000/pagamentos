@@ -6,49 +6,29 @@ Deno.serve(async () => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  const results: string[] = [];
+  const { data: sups } = await supabase.from("suplentes").select("id, nome, created_at, retirada_mensal_meses, retirada_mensal_valor").order("nome").limit(100);
 
-  // Fix suplentes: meses = max(1, 10 - mes_cadastro), last payment = September
-  const { data: sups, error: e1 } = await supabase.from("suplentes").select("id, nome, created_at, retirada_mensal_valor, retirada_mensal_meses, plotagem_qtd, plotagem_valor_unit, liderancas_qtd, liderancas_valor_unit, fiscais_qtd, fiscais_valor_unit");
-  if (e1) return new Response(JSON.stringify({ error: e1.message }), { status: 500 });
-
-  for (const s of sups || []) {
+  const report = (sups || []).map(s => {
     const dt = new Date(s.created_at);
     const mesCad = dt.getMonth() + 1;
     const mesesCorreto = Math.max(1, 10 - mesCad);
-    const retirada = (s.retirada_mensal_valor || 0) * mesesCorreto;
-    const plotagem = (s.plotagem_qtd || 0) * (s.plotagem_valor_unit || 0);
-    const liderancas = (s.liderancas_qtd || 0) * (s.liderancas_valor_unit || 0);
-    const fiscais = (s.fiscais_qtd || 0) * (s.fiscais_valor_unit || 0);
-    const total = retirada + plotagem + liderancas + fiscais;
+    const mesInicio = mesCad;
+    const mesFim = mesCad + (s.retirada_mensal_meses || 0) - 1;
+    const mesFimCorreto = mesCad + mesesCorreto - 1;
+    return {
+      nome: s.nome,
+      mesCad,
+      mesesAtual: s.retirada_mensal_meses,
+      ultimoMesAtual: mesFim,
+      mesesCorreto,
+      ultimoMesCorreto: mesFimCorreto,
+      precisaFix: s.retirada_mensal_meses !== mesesCorreto
+    };
+  });
 
-    if (s.retirada_mensal_meses !== mesesCorreto) {
-      const { error } = await supabase.from("suplentes").update({
-        retirada_mensal_meses: mesesCorreto,
-        total_campanha: total
-      }).eq("id", s.id);
-      results.push(`SUP ${s.nome}: ${s.retirada_mensal_meses} → ${mesesCorreto} meses (cad mês ${mesCad}) total=${total} ${error ? "ERRO: " + error.message : "OK"}`);
-    }
-  }
+  const needsFix = report.filter(r => r.precisaFix);
 
-  // Fix liderancas: meses = max(1, 10 - mes_cadastro)
-  const { data: lids, error: e2 } = await supabase.from("liderancas").select("id, nome, created_at, retirada_mensal_meses");
-  if (e2) return new Response(JSON.stringify({ error: e2.message }), { status: 500 });
-
-  for (const l of lids || []) {
-    const dt = new Date(l.created_at);
-    const mesCad = dt.getMonth() + 1;
-    const mesesCorreto = Math.max(1, 10 - mesCad);
-
-    if (l.retirada_mensal_meses !== mesesCorreto) {
-      const { error } = await supabase.from("liderancas").update({
-        retirada_mensal_meses: mesesCorreto
-      }).eq("id", l.id);
-      results.push(`LID ${l.nome}: ${l.retirada_mensal_meses} → ${mesesCorreto} meses (cad mês ${mesCad}) ${error ? "ERRO: " + error.message : "OK"}`);
-    }
-  }
-
-  return new Response(JSON.stringify({ updated: results.length, results }), {
+  return new Response(JSON.stringify({ total: report.length, needsFix: needsFix.length, sample: report.slice(0, 20), fixes: needsFix }, null, 2), {
     headers: { "Content-Type": "application/json" }
   });
 });
