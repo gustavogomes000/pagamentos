@@ -157,7 +157,8 @@ export default function Dashboard() {
             mesInicioGlobal: MES_INICIO_SUP, pagamentos: globalPag, categoria: "retirada",
           });
           const numMeses = s.retirada_mensal_meses || 0;
-          const mesFim = inicio + numMeses - 1;
+          const mesFimCalc = inicio + numMeses - 1;
+          const mesFim = Math.min(mesFimCalc, MES_FIM);
           return (m >= inicio && m <= mesFim) ? a + (s.retirada_mensal_valor || 0) : a;
         }, 0);
       }
