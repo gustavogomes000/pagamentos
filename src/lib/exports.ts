@@ -209,7 +209,7 @@ export function exportSuplentePDF(s: any) {
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...PINK);
-    doc.text("ASSINATURA DO CANDIDATO", 14, sigY);
+    doc.text("ASSINATURA DO SUPLENTE", 14, sigY);
     sigY += 4;
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.3);
