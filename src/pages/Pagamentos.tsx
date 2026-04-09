@@ -1234,7 +1234,14 @@ export default function Pagamentos() {
           // Só mostra suplentes que recebem retirada E estão elegíveis neste mês
           const sups = (suplentes || []).filter(s => 
             (s.retirada_mensal_valor || 0) > 0 && 
-            mes >= getMesInicioPessoa(s.created_at, MES_INICIO_SUPLENTES)
+            mes >= getMesInicioComHistorico({
+              tipo: "suplente",
+              pessoaId: s.id,
+              createdAt: s.created_at,
+              mesInicioGlobal: MES_INICIO_SUPLENTES,
+              pagamentos: pagamentos || [],
+              categoria: "retirada",
+            })
           );
           const allPags = pagamentos || [];
           const supIds = new Set(sups.map(s => s.id));
