@@ -384,7 +384,7 @@ export function exportAllPDF(list: any[], filters?: ExportFilters, municipiosMap
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(...PINK);
-      doc.text(`📍 ${group.cidade}`, 14, y);
+      doc.text(`► ${group.cidade}`, 14, y);
       y += 5;
     }
 
@@ -953,7 +953,7 @@ export function exportAuditPDF(data: AuditExportData) {
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...DARK);
-    doc.text(`📍 ${nomeCidade} (${supsCidade.length} suplentes)`, 14, y);
+    doc.text(`► ${nomeCidade} (${supsCidade.length} suplentes)`, 14, y);
     y += 4;
 
     const mesHeaders = MESES_RANGE.map(m => MESES_LABEL[m]);
@@ -1034,7 +1034,7 @@ export function exportAuditPDF(data: AuditExportData) {
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...DARK);
-    doc.text(`📍 ${nomeCidade} (${lidCidade.length} lideranças)`, 14, y);
+    doc.text(`► ${nomeCidade} (${lidCidade.length} lideranças)`, 14, y);
     y += 4;
 
     const mesHeaders = MESES_RANGE.map(m => MESES_LABEL[m]);
@@ -1089,7 +1089,7 @@ export function exportAuditPDF(data: AuditExportData) {
     doc.setFontSize(9);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(...DARK);
-    doc.text(`📍 ${nomeCidade} (${admCidade.length} administrativos)`, 14, y);
+    doc.text(`► ${nomeCidade} (${admCidade.length} administrativos)`, 14, y);
     y += 4;
 
     const mesHeaders = MESES_RANGE.map(m => MESES_LABEL[m]);
