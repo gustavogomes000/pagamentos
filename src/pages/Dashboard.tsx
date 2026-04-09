@@ -255,11 +255,15 @@ export default function Dashboard() {
     });
   }, [fluxoMensal]);
 
+  const totalSupFluxo = fluxoMensal.reduce((a, m) => a + m.suplentes, 0);
+  const totalLidFluxo = fluxoMensal.reduce((a, m) => a + m.liderancas, 0);
+  const totalAdmFluxo = fluxoMensal.reduce((a, m) => a + m.admin, 0);
+
   const pieData = useMemo(() => [
-    { name: "Suplentes", value: financials.totalCampanhaSup, fill: COLORS_CAT.suplentes },
-    { name: "Lideranças", value: financials.totalLidMensal * (MES_FIM - MES_INICIO_LID + 1), fill: COLORS_CAT.liderancas },
-    { name: "Administrativo", value: financials.totalAdmMensal * (MES_FIM - MES_INICIO_ADM + 1), fill: COLORS_CAT.admin },
-  ].filter(d => d.value > 0), [financials]);
+    { name: "Suplentes", value: totalSupFluxo + custosPontuais, fill: COLORS_CAT.suplentes },
+    { name: "Lideranças", value: totalLidFluxo, fill: COLORS_CAT.liderancas },
+    { name: "Administrativo", value: totalAdmFluxo, fill: COLORS_CAT.admin },
+  ].filter(d => d.value > 0), [totalSupFluxo, totalLidFluxo, totalAdmFluxo, custosPontuais]);
 
   // ─── DADOS POR CIDADE ─────────────────────────────────────────────
   const dadosPorCidade = useMemo<CidadeData[]>(() => {
@@ -289,9 +293,26 @@ export default function Dashboard() {
       const fiscaisQtd = supCidade.reduce((a: number, s: any) => a + (s.fiscais_qtd || 0), 0);
       const plotagemQtd = supCidade.reduce((a: number, s: any) => a + (s.plotagem_qtd || 0), 0);
       const lidMensal = lidCidade.reduce((a: number, l: any) => a + (l.retirada_mensal_valor || 0), 0);
-      const orcLid = lidMensal * (MES_FIM - MES_INICIO_LID + 1);
+      // Orçamento lid/adm com elegibilidade individual
+      const orcLid = lidCidade.reduce((a: number, l: any) => {
+        const inicio = getMesInicioComHistorico({
+          tipo: "lideranca", pessoaId: l.id, createdAt: l.created_at,
+          mesInicioGlobal: MES_INICIO_LID, pagamentos: pagamentos ?? [], categoria: "retirada",
+        });
+        const ateMes = l.retirada_ate_mes || MES_FIM;
+        const mesesAtivos = Math.max(0, ateMes - inicio + 1);
+        return a + (l.retirada_mensal_valor || 0) * mesesAtivos;
+      }, 0);
       const admMensal = admCidade.reduce((a: number, ad: any) => a + (ad.valor_contrato || 0), 0);
-      const orcAdm = admMensal * (MES_FIM - MES_INICIO_ADM + 1);
+      const orcAdm = admCidade.reduce((a: number, ad: any) => {
+        const inicio = getMesInicioComHistorico({
+          tipo: "admin", pessoaId: ad.id, createdAt: ad.created_at,
+          mesInicioGlobal: MES_INICIO_ADM, pagamentos: pagamentos ?? [], categoria: "salario",
+        });
+        const ateMes = ad.contrato_ate_mes || MES_FIM;
+        const mesesAtivos = Math.max(0, ateMes - inicio + 1);
+        return a + (ad.valor_contrato || 0) * mesesAtivos;
+      }, 0);
       const orcTotal = orcSup + orcLid + orcAdm;
 
       const supIdsCity = new Set(supCidade.map((s: any) => s.id));
